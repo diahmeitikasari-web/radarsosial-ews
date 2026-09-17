@@ -6,7 +6,10 @@ import {
   RelationCriteria,
   RelationType,
   CoieDodgeStatus,
+  SocialCommunity,
+  NetworkCommunityAnalysis,
 } from '../types';
+import { detectCommunitiesAndBrokers } from '../services/snaEngine';
 import {
   Eye,
   Filter,
@@ -26,6 +29,12 @@ import {
   Layers,
   ArrowRight,
   HelpCircle,
+  Network,
+  Share2,
+  Info,
+  GitFork,
+  UserCheck,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface SNAVisualizerProps {
@@ -56,6 +65,11 @@ interface NodeSimulation {
   zSP: number;
   zSI: number;
   metric: StudentCalculatedMetrics;
+  communityId?: string;
+  communityName?: string;
+  communityColor?: string;
+  isBroker?: boolean;
+  betweennessScore?: number;
 }
 
 export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
@@ -82,6 +96,11 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
 
+  // Contemporary SNA: Community (Clique) Detection & Social Brokers
+  const [colorMode, setColorMode] = useState<'status' | 'community'>('status');
+  const [highlightBrokers, setHighlightBrokers] = useState<boolean>(true);
+  const [showCommunityModal, setShowCommunityModal] = useState<boolean>(false);
+
   // Simulation nodes storage
   const nodesRef = useRef<Map<string, NodeSimulation>>(new Map());
 
@@ -91,6 +110,28 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
     metrics.forEach((m) => map.set(m.studentId, m));
     return map;
   }, [metrics]);
+
+  // Contemporary Community & Broker Analysis
+  const communityAnalysis: NetworkCommunityAnalysis = useMemo(() => {
+    return detectCommunitiesAndBrokers(
+      students,
+      nominations,
+      metrics,
+      criteriaFilter === 'all' ? undefined : criteriaFilter
+    );
+  }, [students, nominations, metrics, criteriaFilter]);
+
+  const brokerSet = useMemo(() => {
+    return new Set(communityAnalysis.brokerStudentIds);
+  }, [communityAnalysis]);
+
+  const studentCommunityMap = useMemo(() => {
+    const map = new Map<string, SocialCommunity>();
+    communityAnalysis.communities.forEach((comm) => {
+      comm.memberIds.forEach((mId) => map.set(mId, comm));
+    });
+    return map;
+  }, [communityAnalysis]);
 
   // Status Colors matching the research and brand palette
   const getStatusColor = (status: CoieDodgeStatus) => {
@@ -208,6 +249,15 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
         }
       }
 
+      const comm = studentCommunityMap.get(s.id);
+      const isBroker = brokerSet.has(s.id);
+      const betweenness = communityAnalysis.betweennessScores[s.id] || 0;
+
+      const nodeColor =
+        colorMode === 'community' && comm
+          ? comm.color
+          : getStatusColor(m.status);
+
       newMap.set(s.id, {
         id: s.id,
         name: s.name,
@@ -217,7 +267,7 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
         vx: 0,
         vy: 0,
         radius: Math.max(14, Math.min(26, 13 + m.likesReceived * 1.5)),
-        color: getStatusColor(m.status),
+        color: nodeColor,
         status: m.status,
         likesReceived: m.likesReceived,
         dislikesReceived: m.dislikesReceived,
@@ -226,11 +276,16 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
         zSP: m.zSP,
         zSI: m.zSI,
         metric: m,
+        communityId: comm?.id,
+        communityName: comm?.name,
+        communityColor: comm?.color,
+        isBroker,
+        betweennessScore: betweenness,
       });
     });
 
     nodesRef.current = newMap;
-  }, [students, metrics, layoutMode]);
+  }, [students, metrics, layoutMode, colorMode, communityAnalysis, studentCommunityMap, brokerSet]);
 
   // Filter nominations according to user filters
   const filteredNominations = useMemo(() => {
@@ -514,6 +569,21 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
           ctx.stroke();
         }
 
+        // Highlight Social Broker (Jembatan Antar-Geng)
+        if (highlightBrokers && node.isBroker) {
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, node.radius + 6, 0, Math.PI * 2);
+          ctx.strokeStyle = '#f0c040';
+          ctx.lineWidth = 2.2;
+          ctx.setLineDash([3, 3]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.fillStyle = '#f7d970';
+          ctx.font = "bold 8px 'Inter', sans-serif";
+          ctx.fillText('⚡ JEMBATAN', node.x, node.y - node.radius - 5);
+        }
+
         // Node Circle Body
         ctx.beginPath();
         ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
@@ -536,9 +606,12 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
         const firstName = node.name.split(' ')[0];
         ctx.fillText(firstName, node.x, node.y);
 
-        // Status Badge Pill underneath when hovered or selected
+        // Status or Community Badge Pill underneath when hovered or selected
         if (isHovered || isSelected || zoom > 1.2 || isMatchSearch) {
-          const badgeText = `${node.status} (In: ${node.likesReceived})`;
+          const badgeText =
+            colorMode === 'community'
+              ? `${node.communityName || 'Klik'} (In: ${node.likesReceived})`
+              : `${node.status} (In: ${node.likesReceived})`;
           ctx.font = "bold 9px 'Inter', sans-serif";
           const textWidth = ctx.measureText(badgeText).width;
           const bgX = node.x - textWidth / 2 - 5;
@@ -568,6 +641,8 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
     selectedStudentId,
     searchStudent,
     layoutMode,
+    colorMode,
+    highlightBrokers,
     zoom,
     pan,
     nominationPairs,
@@ -695,46 +770,84 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
         </div>
 
         {/* Layout Switcher Tabs */}
-        <div className="flex items-center bg-[#0a2a4a] p-1 rounded-xl border border-[#1a3f64] text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Layout Mode */}
+          <div className="flex items-center bg-[#0a2a4a] p-1 rounded-xl border border-[#1a3f64] text-xs">
+            <button
+              onClick={() => setLayoutMode('force')}
+              className={`px-3 py-1.5 rounded-lg transition font-semibold flex items-center gap-1.5 ${
+                layoutMode === 'force'
+                  ? 'bg-[#f0c040] text-[#0a2a4a] shadow-md font-bold'
+                  : 'text-[#b0c4de] hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Organik</span>
+            </button>
+
+            <button
+              onClick={() => setLayoutMode('concentric')}
+              className={`px-3 py-1.5 rounded-lg transition font-semibold flex items-center gap-1.5 ${
+                layoutMode === 'concentric'
+                  ? 'bg-[#f0c040] text-[#0a2a4a] shadow-md font-bold'
+                  : 'text-[#b0c4de] hover:text-white'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Moreno</span>
+            </button>
+
+            <button
+              onClick={() => setLayoutMode('circular')}
+              className={`px-3 py-1.5 rounded-lg transition font-semibold flex items-center gap-1.5 ${
+                layoutMode === 'circular'
+                  ? 'bg-[#f0c040] text-[#0a2a4a] shadow-md font-bold'
+                  : 'text-[#b0c4de] hover:text-white'
+              }`}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Lingkaran</span>
+            </button>
+          </div>
+
+          {/* Color Mode: Status vs Community */}
+          <div className="flex items-center bg-[#0a2a4a] p-1 rounded-xl border border-[#1a3f64] text-xs">
+            <button
+              onClick={() => setColorMode('status')}
+              className={`px-2.5 py-1.5 rounded-lg transition font-semibold ${
+                colorMode === 'status'
+                  ? 'bg-[#10b981] text-[#0a2a4a] font-bold shadow-xs'
+                  : 'text-[#8ba3c7] hover:text-white'
+              }`}
+              title="Warna berdasarkan status Coie-Dodge (Popular, Rejected, Neglected)"
+            >
+              Status Sosial
+            </button>
+            <button
+              onClick={() => setColorMode('community')}
+              className={`px-2.5 py-1.5 rounded-lg transition font-semibold flex items-center gap-1 ${
+                colorMode === 'community'
+                  ? 'bg-[#38bdf8] text-[#0a2a4a] font-bold shadow-xs'
+                  : 'text-[#8ba3c7] hover:text-white'
+              }`}
+              title="Warna berdasarkan Deteksi Geng / Klik Otomatis"
+            >
+              <GitFork className="w-3 h-3" />
+              <span>Deteksi Klik ({communityAnalysis.cliqueCount})</span>
+            </button>
+          </div>
+
+          {/* Community Analytics Modal Button */}
           <button
-            onClick={() => setLayoutMode('force')}
-            className={`px-3 py-1.5 rounded-lg transition font-semibold flex items-center gap-1.5 ${
-              layoutMode === 'force'
-                ? 'bg-[#f0c040] text-[#0a2a4a] shadow-md'
-                : 'text-[#b0c4de] hover:text-white'
-            }`}
+            onClick={() => setShowCommunityModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#143d63] hover:bg-[#1a4f7e] text-[#f7d970] border border-[#f0c040]/30 text-xs font-bold transition shadow-xs cursor-pointer"
+            title="Buka Analisis Deteksi Geng & Jembatan Sosial"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Organik (Pegas)</span>
+            <Share2 className="w-3.5 h-3.5" />
+            <span>Analisis Geng &amp; Jembatan</span>
           </button>
 
-          <button
-            onClick={() => setLayoutMode('concentric')}
-            className={`px-3 py-1.5 rounded-lg transition font-semibold flex items-center gap-1.5 ${
-              layoutMode === 'concentric'
-                ? 'bg-[#f0c040] text-[#0a2a4a] shadow-md'
-                : 'text-[#b0c4de] hover:text-white'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Konsentris (Moreno)</span>
-          </button>
-
-          <button
-            onClick={() => setLayoutMode('circular')}
-            className={`px-3 py-1.5 rounded-lg transition font-semibold flex items-center gap-1.5 ${
-              layoutMode === 'circular'
-                ? 'bg-[#f0c040] text-[#0a2a4a] shadow-md'
-                : 'text-[#b0c4de] hover:text-white'
-            }`}
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Lingkaran</span>
-          </button>
-        </div>
-
-        {/* Export & Actions */}
-        <div className="flex items-center gap-2">
+          {/* Export PNG */}
           <button
             onClick={handleExportPNG}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1a3f64] hover:bg-[#1a4a6e] text-[#e8edf5] text-xs font-semibold border border-white/10 transition"
@@ -795,6 +908,17 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
               <option value="Average">Average (Rata-rata)</option>
             </select>
           </div>
+
+          {/* Highlight Brokers Toggle */}
+          <label className="flex items-center gap-1.5 text-[#f7d970] cursor-pointer font-medium pl-1">
+            <input
+              type="checkbox"
+              checked={highlightBrokers}
+              onChange={(e) => setHighlightBrokers(e.target.checked)}
+              className="rounded bg-[#0d3555] border-[#1a3f64] text-[#f0c040] focus:ring-0"
+            />
+            <span>Sorot Jembatan Sosial ({communityAnalysis.brokerStudentIds.length})</span>
+          </label>
         </div>
 
         {/* Quick Search Student */}
@@ -848,40 +972,78 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
           </button>
         </div>
 
-        {/* Status Legend Overlay */}
-        <div className="absolute bottom-4 left-4 bg-[#0a2a4a]/90 border border-[#1a3f64] p-2.5 rounded-xl backdrop-blur-md text-[11px] space-y-1.5 shadow-xl hidden md:block">
-          <div className="font-bold text-[#f0c040] text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1">
-            <Sparkles className="w-3 h-3" />
-            <span>Kategori Status Sosial</span>
+        {/* Dynamic Legend Overlay */}
+        <div className="absolute bottom-4 left-4 bg-[#0a2a4a]/95 border border-[#1a3f64] p-3 rounded-xl backdrop-blur-md text-[11px] space-y-1.5 shadow-xl hidden md:block max-w-xs">
+          <div className="font-bold text-[#f0c040] text-[10px] uppercase tracking-wider mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              <span>{colorMode === 'community' ? 'Deteksi Geng (Klik)' : 'Status Coie-Dodge'}</span>
+            </div>
+            <button
+              onClick={() => setColorMode(colorMode === 'community' ? 'status' : 'community')}
+              className="text-[#38bdf8] hover:underline cursor-pointer lowercase text-[10px]"
+            >
+              ganti mode
+            </button>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" />
-            <span className="text-slate-200">Popular (Banyak Disukai)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#f43f5e]" />
-            <span className="text-rose-200">Rejected (Banyak Ditolak)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#94a3b8]" />
-            <span className="text-slate-300">Neglected (Terabaikan)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#f0c040]" />
-            <span className="text-amber-200">Controversial (Kontroversial)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#38bdf8]" />
-            <span className="text-sky-200">Average (Rata-rata Kelas)</span>
-          </div>
-          <div className="pt-1 border-t border-white/10 text-[10px] text-[#b0c4de]">
-            <span className="text-[#f0c040] font-bold">Garis Emas</span>: Pertemanan Resiprokal (Saling Pilih)
+
+          {colorMode === 'community' ? (
+            <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+              {communityAnalysis.communities.map((comm) => (
+                <div key={comm.id} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: comm.color }}
+                    />
+                    <span className="text-slate-200 font-medium">{comm.name}</span>
+                  </div>
+                  <span className="text-[10px] text-[#8ba3c7] font-mono">
+                    {comm.memberIds.length} Siswa
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" />
+                <span className="text-slate-200">Popular (Disukai)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#f43f5e]" />
+                <span className="text-rose-200">Rejected (Ditolak)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#94a3b8]" />
+                <span className="text-slate-300">Neglected (Terabaikan)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#f0c040]" />
+                <span className="text-amber-200">Controversial (Kontroversial)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#38bdf8]" />
+                <span className="text-sky-200">Average (Rata-rata)</span>
+              </div>
+            </>
+          )}
+
+          <div className="pt-1.5 border-t border-white/10 text-[10px] space-y-0.5 text-[#b0c4de]">
+            <div>
+              <span className="text-[#f0c040] font-bold">Garis Emas</span>: Resiprokal (Saling Pilih)
+            </div>
+            {highlightBrokers && (
+              <div>
+                <span className="text-[#f7d970] font-bold">⚡ Cincin Putus-Putus</span>: Siswa Jembatan (Broker)
+              </div>
+            )}
           </div>
         </div>
 
         {/* Selected Student Quick Inspection HUD */}
         {activeInspectedStudent && (
-          <div className="absolute top-4 right-4 w-72 bg-[#0a2a4a]/95 border border-[#f0c040]/40 rounded-2xl p-4 shadow-2xl backdrop-blur-md space-y-2.5 text-xs animate-in fade-in slide-in-from-right-2 duration-150">
+          <div className="absolute top-4 right-4 w-76 bg-[#0a2a4a]/95 border border-[#f0c040]/40 rounded-2xl p-4 shadow-2xl backdrop-blur-md space-y-2.5 text-xs animate-in fade-in slide-in-from-right-2 duration-150">
             <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2">
               <div>
                 <div className="font-bold text-white text-sm">{activeInspectedStudent.name}</div>
@@ -898,6 +1060,44 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
                 {activeInspectedStudent.status}
               </span>
             </div>
+
+            {/* Contemporary Sub-group & Broker Status */}
+            {(() => {
+              const comm = studentCommunityMap.get(activeInspectedStudent.studentId);
+              const isBroker = brokerSet.has(activeInspectedStudent.studentId);
+              const betweenness = communityAnalysis.betweennessScores[activeInspectedStudent.studentId] || 0;
+              return (
+                <div className="p-2 rounded-xl bg-[#0d3555]/80 border border-[#1a3f64] text-[11px] space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#8ba3c7]">Afiliasi Geng / Klik:</span>
+                    <span className="font-bold text-white flex items-center gap-1">
+                      {comm ? (
+                        <>
+                          <span
+                            className="w-2 h-2 rounded-full inline-block"
+                            style={{ backgroundColor: comm.color }}
+                          />
+                          <span>{comm.name}</span>
+                        </>
+                      ) : (
+                        'Independen'
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#8ba3c7]">Peran Jembatan Sosial:</span>
+                    <span className={`font-bold ${isBroker ? 'text-[#f7d970]' : 'text-slate-400'}`}>
+                      {isBroker ? '⚡ Social Broker' : 'Bukan Jembatan'}
+                    </span>
+                  </div>
+                  {isBroker && (
+                    <div className="text-[10px] text-[#f7d970] pt-0.5">
+                      Betweenness: {betweenness} (Menjaga koneksi antar faksi)
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="grid grid-cols-2 gap-2 text-[11px]">
               <div className="bg-black/30 p-2 rounded-lg border border-white/5">
@@ -920,15 +1120,15 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
                 <span className="font-bold text-white">{activeInspectedStudent.zSP.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Pertemanan Resiprokal:</span>
-                <span className="font-bold text-[#f0c040]">
-                  {activeInspectedStudent.reciprocalCount} Pasangan
+                <span>Perilaku Dominan:</span>
+                <span className="font-bold text-[#38bdf8]">
+                  {activeInspectedStudent.behavioralStatus}
                 </span>
               </div>
             </div>
 
             <div className="pt-2 border-t border-white/10 text-[11px]">
-              <span className="text-[#f7d970] font-bold block mb-0.5">Saran Aksi Bimbingan:</span>
+              <span className="text-[#f7d970] font-bold block mb-0.5">Saran Aksi Guru BK:</span>
               <p className="text-slate-300 text-[10px] leading-relaxed line-clamp-3">
                 {activeInspectedStudent.dssRecommendation}
               </p>
@@ -936,6 +1136,181 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
           </div>
         )}
       </div>
+
+      {/* COMMUNITY & BROKER ANALYSIS MODAL */}
+      {showCommunityModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+          <div className="bg-[#0a2a4a] border border-[#1a3f64] rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-5 max-h-[85vh] flex flex-col text-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-[#1a3f64]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#38bdf8]/20 text-[#38bdf8] flex items-center justify-center font-bold">
+                  <GitFork className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-base">
+                    Analisis Struktur Geng, Klik Informal &amp; Jembatan Sosial
+                  </h3>
+                  <p className="text-[11px] text-[#8ba3c7]">
+                    Algoritma deteksi komunitas pertemanan &amp; Betweenness Centrality (Brandes Algorithm)
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCommunityModal(false)}
+                className="text-[#8ba3c7] hover:text-white px-3 py-1.5 rounded-lg bg-white/5 font-bold"
+              >
+                Tutup
+              </button>
+            </div>
+
+            {/* KPI Overview */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3 rounded-xl bg-[#0d2a45] border border-[#1a3f64]">
+                <span className="text-[#8ba3c7] text-[10px] block">Jumlah Klik Terdeteksi:</span>
+                <span className="text-xl font-bold text-[#38bdf8] font-mono">
+                  {communityAnalysis.cliqueCount} Sub-Grup
+                </span>
+                <span className="text-[10px] text-[#b0c4de] block mt-0.5">Modularity: {communityAnalysis.modularityScore}</span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#0d2a45] border border-[#1a3f64]">
+                <span className="text-[#8ba3c7] text-[10px] block">Indeks Homofili Gender:</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-bold text-[#f7d970] font-mono">
+                    {Math.round((communityAnalysis.genderHomophilyIndex + 1) * 50)}%
+                  </span>
+                  <span className="text-[10px] text-[#8ba3c7]">Same-gender preference</span>
+                </div>
+                <span className="text-[10px] text-[#b0c4de] block mt-0.5">
+                  {communityAnalysis.genderHomophilyIndex > 0.4
+                    ? 'Kecenderungan berteman sesama jenis kuat (tipikal fase remaja)'
+                    : 'Relasi pertemanan silang antar-gender terintegrasi baik'}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#0d2a45] border border-[#1a3f64]">
+                <span className="text-[#8ba3c7] text-[10px] block">Siswa Jembatan (Brokers):</span>
+                <span className="text-xl font-bold text-emerald-400 font-mono">
+                  {communityAnalysis.brokerStudentIds.length} Siswa
+                </span>
+                <span className="text-[10px] text-emerald-300 block mt-0.5">Penghubung vital antar faksi</span>
+              </div>
+            </div>
+
+            {/* Content Tabs: Communities list & Brokers detail */}
+            <div className="overflow-y-auto space-y-4 flex-1 pr-1">
+              <div>
+                <h4 className="font-bold text-white text-xs mb-2 flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-[#38bdf8]" />
+                  <span>Daftar Klik / Geng Informal di Kelas:</span>
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {communityAnalysis.communities.map((comm) => (
+                    <div
+                      key={comm.id}
+                      className="p-3.5 rounded-xl bg-[#0d2a45] border border-[#1a3f64] space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: comm.color }}
+                          />
+                          <span className="font-bold text-white text-xs">{comm.name}</span>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/40 text-[#f7d970] font-mono">
+                          {comm.memberIds.length} Anggota
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-[#b0c4de] leading-relaxed">
+                        {comm.description}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2 text-[10px] bg-[#0a233a] p-2 rounded-lg">
+                        <div>
+                          <span className="text-[#8ba3c7] block">Densitas Internal:</span>
+                          <span className="font-bold text-emerald-400">
+                            {Math.round(comm.internalDensity * 100)}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#8ba3c7] block">Indeks Eksklusivitas (E-I):</span>
+                          <span className="font-bold text-[#38bdf8]">
+                            {comm.exclusivityIndex > 0 ? `+${comm.exclusivityIndex} (Tertutup)` : `${comm.exclusivityIndex} (Terbuka)`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="pt-1 text-[10px] text-[#8ba3c7]">
+                        <span className="font-semibold text-white">Anggota: </span>
+                        {comm.memberIds
+                          .map((id) => students.find((s) => s.id === id)?.name)
+                          .filter(Boolean)
+                          .join(', ')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Social Brokers Detailed Advice */}
+              <div className="p-4 rounded-xl bg-[#0d3555]/80 border border-[#f0c040]/40 space-y-3">
+                <div className="flex items-center gap-2 text-[#f7d970] font-bold text-xs">
+                  <Share2 className="w-4 h-4" />
+                  <span>Siswa Jembatan Sosial (Social Brokers) &amp; Peran Strategis Guru BK</span>
+                </div>
+                <p className="text-[11px] text-[#b0c4de] leading-relaxed">
+                  Siswa dengan nilai <em>Betweenness Centrality</em> tinggi berada di persimpangan jalan relasi pertemanan. Merekalah yang menghubungkan geng-geng yang terpisah. Jika siswa jembatan ini mengalami perundungan, absen panjang, atau berpindah sekolah, kelas berisiko tinggi terpecah menjadi kubu-kubu bermusuhan (*balkanisasi kelas*).
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {communityAnalysis.brokerStudentIds.map((bId) => {
+                    const s = students.find((std) => std.id === bId);
+                    const score = communityAnalysis.betweennessScores[bId];
+                    if (!s) return null;
+                    return (
+                      <div
+                        key={bId}
+                        className="p-2.5 rounded-lg bg-[#0a2a4a] border border-[#1a3f64] flex items-center justify-between"
+                      >
+                        <div>
+                          <span className="font-bold text-white text-xs block">{s.name}</span>
+                          <span className="text-[10px] text-[#8ba3c7]">NIS: {s.nis}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#f0c040]/20 text-[#f7d970] border border-[#f0c040]/30 font-mono">
+                            Broker ({score})
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-[#1a3f64] flex justify-between items-center">
+              <button
+                onClick={() => {
+                  setColorMode('community');
+                  setShowCommunityModal(false);
+                }}
+                className="px-4 py-2 rounded-xl bg-[#38bdf8] text-[#0a2a4a] font-bold text-xs hover:bg-[#7dd3fc] transition shadow-md cursor-pointer"
+              >
+                Tampilkan Warna Geng di Graf SNA
+              </button>
+              <button
+                onClick={() => setShowCommunityModal(false)}
+                className="px-4 py-2 rounded-xl bg-[#143d63] text-white font-bold text-xs hover:bg-[#1a4f7e] transition cursor-pointer"
+              >
+                Selesai
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

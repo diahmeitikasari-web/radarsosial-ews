@@ -280,3 +280,70 @@ export interface AuditLog {
   action: string;
   details: string;
 }
+
+// ==========================================
+// CONTEMPORARY SOCIOMETRIC EXTENSIONS
+// ==========================================
+
+export interface SocialCommunity {
+  id: string;
+  name: string;
+  color: string;
+  memberIds: string[];
+  leaderId: string;
+  internalDensity: number;
+  exclusivityIndex: number; // E-I Index (-1: completely external, +1: strictly insular)
+  description: string;
+}
+
+export interface NetworkCommunityAnalysis {
+  communities: SocialCommunity[];
+  brokerStudentIds: string[]; // Social brokers connecting sub-groups
+  betweennessScores: Record<string, number>;
+  genderHomophilyIndex: number; // -1 to 1 (Degree of cross-gender integration vs segregation)
+  cliqueCount: number;
+  modularityScore: number;
+}
+
+export type SeatingLayoutType = 'pairs_grid' | 'u_shape' | 'groups_4' | 'traditional_rows';
+
+export interface SeatingDesk {
+  deskId: string;
+  row: number;
+  col: number;
+  tableNumber: number;
+  seatPosition: 'left' | 'right' | 'center' | 'single';
+  studentId: string | null;
+  assignedStudent?: Student;
+  assignedMetric?: StudentCalculatedMetrics;
+  isLocked?: boolean;
+}
+
+export interface SeatingOptimizationResult {
+  layoutType: SeatingLayoutType;
+  rows: number;
+  cols: number;
+  desks: SeatingDesk[];
+  harmonyScore: number; // 0-100
+  buddyPairsCount: number;
+  preventedConflictsCount: number;
+  optimizationLog: string[];
+  unassignedStudentIds: string[];
+}
+
+export interface CooperativeGroup {
+  groupId: number;
+  groupName: string;
+  color: string;
+  memberIds: string[];
+  members: {
+    student: Student;
+    metric: StudentCalculatedMetrics;
+    role: 'Leader/Prososial' | 'Kawan Suportif' | 'Anggota Aktif';
+  }[];
+  avgProsocial: number;
+  genderRatio: string;
+  hasIsolatedStudent: boolean;
+  harmonyValid: boolean;
+}
+

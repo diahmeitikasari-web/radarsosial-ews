@@ -17,6 +17,7 @@ import { LongitudinalTrendChart } from '../components/LongitudinalTrendChart';
 import { PredictiveAnalyticsDSS } from '../components/PredictiveAnalyticsDSS';
 import { QualitativeNotesWorkspace } from '../components/QualitativeNotesWorkspace';
 import { SchoolBrandingModal } from '../components/SchoolBrandingModal';
+import { SmartSeatingOptimizer } from '../components/SmartSeatingOptimizer';
 import { getSchoolTheme } from '../utils/themePresets';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -46,6 +47,7 @@ import {
   ArrowRight,
   X,
   AlertTriangle,
+  LayoutGrid,
 } from 'lucide-react';
 import { dataStorage } from '../services/dataStorage';
 
@@ -87,7 +89,7 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
   onRefreshData,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    'sosiogram' | 'predictive_dss' | 'metrics_table' | 'qualitative_notes'
+    'sosiogram' | 'predictive_dss' | 'seating_optimizer' | 'metrics_table' | 'qualitative_notes'
   >('sosiogram');
   const [selectedStudent, setSelectedStudent] = useState<StudentCalculatedMetrics | null>(() => {
     // Default to a priority high risk student (Rejected/Neglected) if exists
@@ -648,6 +650,22 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
         </button>
 
         <button
+          id="btn-tab-seating-optimizer"
+          onClick={() => setActiveTab('seating_optimizer')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition duration-150 shrink-0 cursor-pointer ${
+            activeTab === 'seating_optimizer'
+              ? 'bg-[#f0c040] text-[#0a2a4a] shadow-lg'
+              : 'bg-[#0d3555] hover:bg-[#1a3f64] text-[#b0c4de] border border-[#1a3f64]'
+          }`}
+        >
+          <LayoutGrid className="w-4 h-4" />
+          <span>Denah Duduk &amp; Kelompok Kooperatif</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+            Smart Seating
+          </span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('metrics_table')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition duration-150 shrink-0 cursor-pointer ${
             activeTab === 'metrics_table'
@@ -780,6 +798,17 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
           aggregate={aggregate}
           activeClassName={activeClass.name}
           counselorName="Liengga Brian Darea, S.Sos.,Gr"
+        />
+      )}
+
+      {/* TAB: Smart Seating Chart & Cooperative Groups Optimizer */}
+      {activeTab === 'seating_optimizer' && (
+        <SmartSeatingOptimizer
+          students={students}
+          nominations={nominations}
+          metrics={metrics}
+          className={activeClass.name}
+          homeroomTeacher={activeClass.homeroomTeacher}
         />
       )}
 
