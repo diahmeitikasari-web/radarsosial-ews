@@ -381,183 +381,236 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
     <div className="space-y-6 text-[#e8edf5]">
       {/* Top Banner / Classroom Overview matching school branding and radar-sosial palette */}
       <div
-        className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 p-5 rounded-2xl border shadow-2xl transition-all duration-300"
+        className="rounded-2xl border shadow-2xl overflow-hidden transition-all duration-300"
         style={{
           background: `linear-gradient(135deg, ${schoolTheme.primaryColor}, ${schoolTheme.secondaryColor})`,
           borderColor: `${schoolTheme.accentColor}40`,
         }}
       >
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2 flex-wrap text-xs">
-            <span
-              className="px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider text-[10px] flex items-center gap-1.5"
-              style={{
-                backgroundColor: `${schoolTheme.accentColor}25`,
-                color: schoolTheme.accentLight || schoolTheme.accentColor,
-                border: `1px solid ${schoolTheme.accentColor}50`,
-              }}
-            >
-              <Sparkles className="w-3 h-3" />
-              <span>{school?.name || 'MTs Negeri 2 Bangka'}</span>
-              {school?.npsn && <span className="opacity-80">({school.npsn})</span>}
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-black/30 text-[#b0c4de] text-[10px] border border-white/10">
-              Guru BK: <strong className="text-white">{currentUser?.name || activeClass.counselorName || 'Liengga Brian Darea, S.Sos.,Gr'}</strong>
-            </span>
-            {activeClass.homeroomTeacher && (
-              <span className="px-2 py-0.5 rounded-full bg-black/20 text-[#b0c4de] text-[10px]">
-                Wali Kelas: <span className="text-white">{activeClass.homeroomTeacher}</span>
-              </span>
-            )}
+        {/* Tier 1: Identity, Title & Primary Operational Actions */}
+        <div className="p-5 sm:p-6 pb-4">
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+            {/* Left: School Identity & Diagnostic Title */}
+            <div className="space-y-2 max-w-3xl">
+              {/* Meta Chips: Sekolah, Guru BK, Wali Kelas */}
+              <div className="flex items-center gap-2 flex-wrap text-xs">
+                <span
+                  className="px-2.5 py-1 rounded-lg font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5 shadow-xs"
+                  style={{
+                    backgroundColor: `${schoolTheme.accentColor}25`,
+                    color: schoolTheme.accentLight || schoolTheme.accentColor,
+                    border: `1px solid ${schoolTheme.accentColor}50`,
+                  }}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{school?.name || 'MTs Negeri 2 Bangka'}</span>
+                  {school?.npsn && <span className="opacity-75 font-mono">({school.npsn})</span>}
+                </span>
+
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 text-[#b0c4de] text-[11px] border border-white/10 shadow-xs">
+                  <span className="text-[#8ba3c7]">Guru BK:</span>
+                  <strong className="text-white font-semibold">{currentUser?.name || activeClass.counselorName || 'Liengga Brian Darea, S.Sos.,Gr'}</strong>
+                </span>
+
+                {activeClass.homeroomTeacher && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/25 text-[#b0c4de] text-[11px] border border-white/5">
+                    <span className="text-[#8ba3c7]">Wali Kelas:</span>
+                    <strong className="text-white font-medium">{activeClass.homeroomTeacher}</strong>
+                  </span>
+                )}
+              </div>
+
+              {/* Page Title & Class Badge */}
+              <div className="pt-0.5">
+                <h2 className="font-serif text-xl sm:text-2xl lg:text-3xl font-bold text-white tracking-tight flex items-center gap-2.5 flex-wrap">
+                  <span>Diagnostik Sosiometri &amp; Radar Perilaku:</span>
+                  <motion.span
+                    key={activeClass.id}
+                    initial={{ opacity: 0, scale: 0.92, y: 3 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.22, ease: 'easeOut' }}
+                    className="px-3 py-0.5 rounded-xl text-white font-extrabold shadow-md inline-flex items-center gap-1.5"
+                    style={{ backgroundColor: `${schoolTheme.accentColor}30`, border: `1px solid ${schoolTheme.accentColor}70` }}
+                  >
+                    <span>{activeClass.name}</span>
+                    <span className="text-xs font-normal text-[#b0c4de] font-mono">({students.length} Siswa)</span>
+                  </motion.span>
+                </h2>
+                <p className="text-xs sm:text-sm text-[#b0c4de] max-w-2xl leading-relaxed mt-1">
+                  Pemetaan struktur relasi sosial, deteksi dini siswa rentan (Rejected/Neglected), dan rekomendasi intervensi konseling berbasis sosiometri Moreno &amp; klasifikasi Coie-Dodge.
+                </p>
+              </div>
+            </div>
+
+            {/* Right: Primary Operational Action Group (Fixed, tidy layout) */}
+            <div className="flex items-center gap-2.5 shrink-0 self-start lg:self-center">
+              {/* School Branding Customizer */}
+              <button
+                id="btn-branding-school"
+                onClick={() => setIsBrandingModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-[#f7d970] border border-white/20 text-xs font-bold transition shadow-xs cursor-pointer"
+                title="Ubah Preferensi Warna Tema Branding Satuan Pendidikan"
+              >
+                <Palette className="w-3.5 h-3.5 text-[#f0c040]" />
+                <span className="hidden sm:inline">Tema Branding</span>
+              </button>
+
+              {/* Unggah Excel */}
+              <button
+                id="btn-upload-excel"
+                onClick={onOpenExcelModal}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition duration-150 cursor-pointer"
+                title="Impor Data Angket Sosiometri & Perilaku dari Excel"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>Unggah Excel</span>
+              </button>
+
+              {/* Cetak PDF */}
+              <button
+                id="btn-print-official-report"
+                onClick={onOpenReportModal}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#f0c040] hover:bg-[#f7d970] active:bg-[#e0b030] text-[#0a2a4a] text-xs font-extrabold shadow-md shadow-black/30 transition duration-150 cursor-pointer"
+                title="Cetak Dokumen Laporan Resmi Diagnostik BK & Rekomendasi Konseling"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Cetak PDF</span>
+              </button>
+            </div>
           </div>
-          <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2 flex-wrap">
-            <span>Diagnostik Sosiometri &amp; Radar Perilaku:</span>
-            <motion.span
-              key={activeClass.id}
-              initial={{ opacity: 0, scale: 0.92, y: 3 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
-              className="px-2.5 py-0.5 rounded-xl text-white font-extrabold shadow-sm"
-              style={{ backgroundColor: `${schoolTheme.accentColor}30`, border: `1px solid ${schoolTheme.accentColor}60` }}
-            >
-              {activeClass.name}
-            </motion.span>
-          </h2>
-          <p className="text-xs text-[#b0c4de] max-w-2xl leading-relaxed">
-            Pemetaan struktur relasi sosial, deteksi dini siswa rentan (Rejected/Neglected), dan rekomendasi intervensi konseling berbasis sosiometri Moreno &amp; klasifikasi Coie-Dodge.
-          </p>
         </div>
 
-        {/* Action Buttons & Management Bar */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          {/* School Branding Customizer */}
-          <button
-            id="btn-branding-school"
-            onClick={() => setIsBrandingModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-[#f7d970] border border-white/20 text-xs font-bold transition shadow-sm cursor-pointer"
-            title="Ubah Preferensi Warna Tema Branding Satuan Pendidikan"
-          >
-            <Palette className="w-3.5 h-3.5 text-[#f0c040]" />
-            <span>Tema Branding</span>
-          </button>
-
-          {/* Period Manager Button */}
-          <button
-            id="btn-manage-periods"
-            onClick={() => setIsPeriodManagerOpen(true)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0a2a4a]/90 hover:bg-[#1a3f64] text-white border border-[#1a3f64] text-xs font-bold transition shadow-sm cursor-pointer"
-            title="Kelola Siklus Periode Input (Semester Ganjil/Genap & Triwulan)"
-          >
-            <Calendar className="w-3.5 h-3.5 text-[#f0c040]" />
-            <div className="flex flex-col text-left">
-              <span className="text-[9px] text-[#b0c4de] uppercase font-semibold">Periode Asesmen:</span>
-              <motion.span
-                key={activePeriod.id}
-                initial={{ opacity: 0, y: -3 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-                className="text-[#f7d970] font-bold text-xs truncate max-w-[130px]"
-              >
-                {activePeriod.name}
-              </motion.span>
-            </div>
-            <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-              {activePeriod.cycleType === 'triwulan' ? 'Triwulan' : 'Semester'}
-            </span>
-          </button>
-
-          {/* Multi-counselor Class Filter */}
-          {hasAssignedClasses && (
-            <div className="flex items-center rounded-xl bg-[#0a2a4a] p-1 border border-[#1a3f64] text-xs">
-              <button
-                onClick={() => setClassFilterScope('my')}
-                className={`px-2 py-1 rounded-lg font-bold transition cursor-pointer text-[10px] ${
-                  classFilterScope === 'my'
-                    ? 'bg-[#1a3f64] text-[#f7d970] shadow-xs'
-                    : 'text-[#b0c4de] hover:text-white'
-                }`}
-                title="Tampilkan hanya rombel yang ditugaskan ke Guru BK ini"
-              >
-                Rombel Saya
-              </button>
-              <button
-                onClick={() => setClassFilterScope('all')}
-                className={`px-2 py-1 rounded-lg font-bold transition cursor-pointer text-[10px] ${
-                  classFilterScope === 'all'
-                    ? 'bg-[#1a3f64] text-[#f7d970] shadow-xs'
-                    : 'text-[#b0c4de] hover:text-white'
-                }`}
-                title="Tampilkan semua rombel di sekolah"
-              >
-                Semua ({classes.length})
-              </button>
-            </div>
-          )}
-
-          {/* Rombel Selector & Management */}
-          {classes.length > 0 && onSelectClass && (
-            <div className="flex items-center gap-1 bg-[#0a2a4a] px-2.5 py-1.5 rounded-xl border border-[#1a3f64] text-xs">
-              <span className="text-[#b0c4de] text-[10px] font-semibold">Rombel:</span>
-              <select
-                value={activeClass.id}
-                onChange={(e) => onSelectClass(e.target.value)}
-                className="bg-transparent text-white font-bold text-xs focus:outline-hidden cursor-pointer max-w-[100px] truncate"
-              >
-                {displayedClasses.map((cls) => (
-                  <option key={cls.id} value={cls.id} className="bg-[#0a2a4a] text-white">
-                    {cls.name}
-                  </option>
-                ))}
-              </select>
-
-              {/* Edit Current Class */}
-              <button
-                onClick={() => handleOpenEditClass(activeClass)}
-                className="p-1 rounded-lg hover:bg-white/10 text-cyan-400 hover:text-cyan-300 transition cursor-pointer"
-                title="Kelola & Edit Rombel Ini"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-              </button>
-
-              {/* Delete Current Class if multiple exist */}
-              {classes.length > 1 && (
+        {/* Tier 2: Dedicated Control & Context Shelf (Bilah Kontrol Rombel & Periode) */}
+        <div className="bg-[#06182a]/75 backdrop-blur-md border-t border-white/10 px-5 py-2.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          {/* Left: Rombel Scope Filter, Dropdown Selector & Class Management */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            {/* Multi-counselor Class Filter Scope */}
+            {hasAssignedClasses && (
+              <div className="flex items-center rounded-xl bg-[#0d2a45] p-1 border border-[#1a3f64] text-xs shadow-xs">
                 <button
-                  onClick={() => handleDeleteClass(activeClass.id)}
-                  className="p-1 rounded-lg hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 transition cursor-pointer"
-                  title="Hapus Rombel Ini"
+                  onClick={() => setClassFilterScope('my')}
+                  className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer text-xs ${
+                    classFilterScope === 'my'
+                      ? 'bg-[#1a4a6e] text-[#f7d970] shadow-xs'
+                      : 'text-[#8ba3c7] hover:text-white'
+                  }`}
+                  title="Tampilkan hanya rombel yang ditugaskan ke Guru BK ini"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  Rombel Saya
                 </button>
-              )}
+                <button
+                  onClick={() => setClassFilterScope('all')}
+                  className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer text-xs ${
+                    classFilterScope === 'all'
+                      ? 'bg-[#1a4a6e] text-[#f7d970] shadow-xs'
+                      : 'text-[#8ba3c7] hover:text-white'
+                  }`}
+                  title="Tampilkan semua rombel di sekolah"
+                >
+                  Semua ({classes.length})
+                </button>
+              </div>
+            )}
+
+            {/* Rombel Selector & Management Dropdown */}
+            {classes.length > 0 && onSelectClass && (
+              <div className="flex items-center gap-1.5 bg-[#0d2a45] px-3 py-1.5 rounded-xl border border-[#1a3f64] text-xs shadow-xs">
+                <Layers className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span className="text-[#8ba3c7] text-xs font-semibold">Rombel:</span>
+                <select
+                  value={activeClass.id}
+                  onChange={(e) => onSelectClass(e.target.value)}
+                  className="bg-transparent text-white font-bold text-xs focus:outline-hidden cursor-pointer max-w-[140px] sm:max-w-[180px] truncate"
+                >
+                  {displayedClasses.map((cls) => (
+                    <option key={cls.id} value={cls.id} className="bg-[#0a2a4a] text-white">
+                      {cls.name} {cls.gradeLevel ? `(Kls ${cls.gradeLevel})` : ''}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Edit Current Class */}
+                <button
+                  onClick={() => handleOpenEditClass(activeClass)}
+                  className="p-1 rounded-lg hover:bg-white/10 text-cyan-400 hover:text-cyan-300 transition cursor-pointer ml-0.5"
+                  title="Kelola & Edit Rombel Ini"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Delete Current Class if multiple exist */}
+                {classes.length > 1 && (
+                  <button
+                    onClick={() => handleDeleteClass(activeClass.id)}
+                    className="p-1 rounded-lg hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 transition cursor-pointer"
+                    title="Hapus Rombel Ini"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Quick Class Selector Chips (if classes <= 5) */}
+            <div className="hidden xl:flex items-center gap-1 pl-0.5">
+              {displayedClasses.slice(0, 5).map((cls) => {
+                const isActive = cls.id === activeClass.id;
+                return (
+                  <button
+                    key={cls.id}
+                    onClick={() => onSelectClass?.(cls.id)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                      isActive
+                        ? 'bg-[#f0c040]/20 text-[#f7d970] border border-[#f0c040]/50 font-bold shadow-xs'
+                        : 'text-[#8ba3c7] hover:text-white hover:bg-white/5 border border-transparent'
+                    }`}
+                  >
+                    {cls.name}
+                  </button>
+                );
+              })}
             </div>
-          )}
 
-          <button
-            id="btn-add-class"
-            onClick={() => setIsAddClassModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1a3f64] hover:bg-[#204c75] text-[#f7d970] text-xs font-bold border border-[#f0c040]/40 shadow-sm transition duration-150 cursor-pointer"
-            title="Tambah Rombongan Belajar Baru (Sinkron ke Admin)"
-          >
-            <Plus className="w-3.5 h-3.5 text-[#f0c040]" />
-            <span>Tambah Kelas</span>
-          </button>
+            {/* Add Class Button */}
+            <button
+              id="btn-add-class"
+              onClick={() => setIsAddClassModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#143d63] hover:bg-[#1c4d7b] text-[#f7d970] text-xs font-bold border border-[#f0c040]/30 shadow-xs transition duration-150 cursor-pointer"
+              title="Tambah Rombongan Belajar Baru (Sinkron ke Admin)"
+            >
+              <Plus className="w-3.5 h-3.5 text-[#f0c040]" />
+              <span>Tambah Kelas</span>
+            </button>
+          </div>
 
-          <button
-            id="btn-upload-excel"
-            onClick={onOpenExcelModal}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition duration-150 cursor-pointer"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>Unggah Excel</span>
-          </button>
-          <button
-            id="btn-print-official-report"
-            onClick={onOpenReportModal}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#f0c040] hover:bg-[#f7d970] text-[#0a2a4a] text-xs font-extrabold shadow-sm transition duration-150 cursor-pointer"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Cetak PDF</span>
-          </button>
+          {/* Right: Period Manager Pill */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              id="btn-manage-periods"
+              onClick={() => setIsPeriodManagerOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0d2a45] hover:bg-[#1a4a6e] text-white border border-[#1a3f64] text-xs font-medium transition shadow-xs cursor-pointer w-full sm:w-auto justify-between sm:justify-start"
+              title="Kelola Siklus Periode Input (Semester Ganjil/Genap & Triwulan)"
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="w-3.5 h-3.5 text-[#f0c040] shrink-0" />
+                <div className="flex items-center gap-1.5 text-left">
+                  <span className="text-[11px] text-[#8ba3c7]">Periode:</span>
+                  <motion.span
+                    key={activePeriod.id}
+                    initial={{ opacity: 0, y: -2 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-[#f7d970] font-bold text-xs truncate max-w-[180px]"
+                  >
+                    {activePeriod.name}
+                  </motion.span>
+                </div>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold">
+                {activePeriod.cycleType === 'triwulan' ? 'Triwulan' : 'Semester'}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
