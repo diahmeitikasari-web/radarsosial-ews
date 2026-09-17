@@ -1,0 +1,6 @@
+{
+  "name": "Radar Sosial — Pemetaan Sosiometri & Perilaku",
+  "description": "Platform pemetaan sosial, analisis jaringan relasi siswa (Social Network Analysis), dan radar perilaku multidimensi untuk mengelola iklim sosial kelas dan mendukung kesejahteraan relasional siswa secara suportif.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

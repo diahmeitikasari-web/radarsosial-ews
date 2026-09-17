@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    match /schools/{schoolId} {
+      allow read: if true;
+      allow write: if isValidId(schoolId);
+    }
+
+    match /periods/{periodId} {
+      allow read: if true;
+      allow write: if isValidId(periodId);
+    }
+
+    match /classes/{classId} {
+      allow read: if true;
+      allow write: if isValidId(classId);
+    }
+
+    match /students/{studentId} {
+      allow read: if true;
+      allow write: if isValidId(studentId);
+    }
+
+    match /nominations/{nominationId} {
+      allow read: if true;
+      allow write: if isValidId(nominationId);
+    }
+
+    match /behaviors/{behaviorId} {
+      allow read: if true;
+      allow write: if isValidId(behaviorId);
+    }
+
+    match /student_notes/{noteId} {
+      allow read: if true;
+      allow write: if isValidId(noteId);
+    }
+
+    match /class_summaries/{summaryId} {
+      allow read: if true;
+      allow write: if isValidId(summaryId);
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow write: if isValidId(notificationId);
+    }
+
+    match /audit_logs/{auditLogId} {
+      allow read: if true;
+      allow write: if isValidId(auditLogId);
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isValidId(settingId);
+    }
+  }
+}

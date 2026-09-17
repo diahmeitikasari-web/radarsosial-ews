@@ -1,0 +1,225 @@
+{
+  "entities": {
+    "School": {
+      "title": "School",
+      "description": "School profile and branding configuration",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "npsn": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "province": { "type": "string" },
+        "counselorName": { "type": "string" },
+        "counselorNip": { "type": "string" },
+        "principalName": { "type": "string" },
+        "principalNip": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "Period": {
+      "title": "Period",
+      "description": "Sociometric assessment academic period",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "academicYear": { "type": "string" }
+      },
+      "required": ["id", "name", "code", "isActive"]
+    },
+    "SchoolClass": {
+      "title": "SchoolClass",
+      "description": "Classroom unit containing students",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "grade": { "type": "string" },
+        "totalStudents": { "type": "number" },
+        "academicYear": { "type": "string" },
+        "counselorName": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["id", "name", "grade"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student record in a class",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "classId": { "type": "string" },
+        "name": { "type": "string" },
+        "gender": { "type": "string", "enum": ["L", "P"] },
+        "nisn": { "type": "string" },
+        "isSpecialNeeds": { "type": "boolean" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "classId", "name", "gender"]
+    },
+    "SociometricNomination": {
+      "title": "SociometricNomination",
+      "description": "Peer choice or nomination for study or play",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "periodId": { "type": "string" },
+        "classId": { "type": "string" },
+        "voterStudentId": { "type": "string" },
+        "targetStudentId": { "type": "string" },
+        "criteria": { "type": "string" },
+        "rank": { "type": "number" },
+        "weight": { "type": "number" }
+      },
+      "required": ["id", "periodId", "classId", "voterStudentId", "targetStudentId", "criteria"]
+    },
+    "PeerBehavioralRating": {
+      "title": "PeerBehavioralRating",
+      "description": "Peer rating across behavioral dimensions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "periodId": { "type": "string" },
+        "classId": { "type": "string" },
+        "voterStudentId": { "type": "string" },
+        "targetStudentId": { "type": "string" },
+        "behaviorDimension": { "type": "string" },
+        "score": { "type": "number" }
+      },
+      "required": ["id", "periodId", "classId", "voterStudentId", "targetStudentId", "behaviorDimension", "score"]
+    },
+    "StudentQualitativeNote": {
+      "title": "StudentQualitativeNote",
+      "description": "Counselor observation or student self-report qualitative note",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "classId": { "type": "string" },
+        "periodId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "date": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "noteType": { "type": "string" },
+        "category": { "type": "string" },
+        "sentiment": { "type": "string" },
+        "isConfidential": { "type": "boolean" },
+        "aiInsight": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "studentId", "title", "content", "noteType"]
+    },
+    "ClassCounselorSummary": {
+      "title": "ClassCounselorSummary",
+      "description": "Class-level qualitative synthesis and counselor reflection",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "classId": { "type": "string" },
+        "periodId": { "type": "string" },
+        "counselorName": { "type": "string" },
+        "date": { "type": "string" },
+        "narrativeSummary": { "type": "string" },
+        "recommendedActions": { "type": "string" },
+        "lastUpdated": { "type": "string" }
+      },
+      "required": ["id", "classId", "periodId", "narrativeSummary"]
+    },
+    "NotificationItem": {
+      "title": "NotificationItem",
+      "description": "System broadcast notification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["id", "title", "message", "timestamp"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable security and audit trail log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "user": { "type": "string" },
+        "role": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" }
+      },
+      "required": ["id", "timestamp", "user", "role", "action"]
+    },
+    "AppSettings": {
+      "title": "AppSettings",
+      "description": "Global application state and active selections",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "activePeriodId": { "type": "string" },
+        "activeClassId": { "type": "string" }
+      },
+      "required": ["id"]
+    }
+  },
+  "firestore": {
+    "/schools/{schoolId}": {
+      "schema": { "$ref": "#/entities/School" },
+      "description": "School metadata and settings"
+    },
+    "/periods/{periodId}": {
+      "schema": { "$ref": "#/entities/Period" },
+      "description": "Assessment periods"
+    },
+    "/classes/{classId}": {
+      "schema": { "$ref": "#/entities/SchoolClass" },
+      "description": "School classes"
+    },
+    "/students/{studentId}": {
+      "schema": { "$ref": "#/entities/Student" },
+      "description": "Students enrolled in classes"
+    },
+    "/nominations/{nominationId}": {
+      "schema": { "$ref": "#/entities/SociometricNomination" },
+      "description": "Sociometric student nominations"
+    },
+    "/behaviors/{behaviorId}": {
+      "schema": { "$ref": "#/entities/PeerBehavioralRating" },
+      "description": "Peer behavioral ratings"
+    },
+    "/student_notes/{noteId}": {
+      "schema": { "$ref": "#/entities/StudentQualitativeNote" },
+      "description": "Qualitative counseling notes"
+    },
+    "/class_summaries/{summaryId}": {
+      "schema": { "$ref": "#/entities/ClassCounselorSummary" },
+      "description": "Counselor summaries per class"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/NotificationItem" },
+      "description": "System notification items"
+    },
+    "/audit_logs/{auditLogId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Audit logging events"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/AppSettings" },
+      "description": "Global active class/period settings"
+    }
+  }
+}
