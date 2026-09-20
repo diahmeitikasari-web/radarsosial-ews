@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Period, SchoolClass, UserRole } from '../types';
+import { Period, SchoolClass, School, UserRole } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
 import { NotificationCenter } from './NotificationCenter';
 import { dataStorage } from '../services/dataStorage';
@@ -18,12 +18,15 @@ import {
   BookOpen,
   Printer,
   Sparkles,
+  Building2,
   Cloud,
   CloudOff,
   RefreshCw,
 } from 'lucide-react';
 
 interface NavbarProps {
+  school?: School;
+  activeSchool?: School;
   periods: Period[];
   activePeriod: Period;
   onChangePeriod: (periodId: string) => void;
@@ -36,6 +39,8 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
+  school,
+  activeSchool,
   periods,
   activePeriod,
   onChangePeriod,
@@ -105,14 +110,22 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Global Selectors: Period & Class */}
+        {/* Global Selectors: School, Period & Class */}
         <div className="flex items-center gap-2">
+          {/* Active School Badge */}
+          <div className="hidden sm:flex items-center gap-1.5 bg-[#0d3555] px-2.5 py-1 rounded-xl border border-[#1a3f64] text-xs shadow-xs">
+            <Building2 className="w-3.5 h-3.5 text-[#f0c040] shrink-0" />
+            <span className="text-white font-semibold truncate max-w-[140px] md:max-w-[190px] lg:max-w-[240px]">
+              {activeSchool?.name || school?.name || currentUser?.schoolName || 'Radar Sosial'}
+            </span>
+          </div>
+
           {/* Period Selector */}
           <div className="flex items-center gap-1.5 bg-[#0d3555] px-2.5 py-1 rounded-xl border border-[#1a3f64] text-xs">
             <Calendar className="w-3.5 h-3.5 text-[#f0c040] shrink-0" />
             <select
               id="select-period"
-              value={activePeriod.id}
+              value={activePeriod?.id || ''}
               onChange={(e) => onChangePeriod(e.target.value)}
               className="bg-transparent text-white text-xs font-semibold focus:outline-hidden cursor-pointer"
             >
@@ -130,7 +143,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Layers className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
               <select
                 id="select-class"
-                value={activeClass.id}
+                value={activeClass?.id || ''}
                 onChange={(e) => onChangeClass(e.target.value)}
                 className="bg-transparent text-white text-xs font-semibold focus:outline-hidden cursor-pointer"
               >

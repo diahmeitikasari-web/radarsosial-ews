@@ -405,13 +405,20 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
                   }}
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>{school?.name || 'MTs Negeri 2 Bangka'}</span>
+                  <span>{school?.name || (currentUser?.schoolId === 'sch-smpn1-mendobarat' ? 'SMP Negeri 1 Mendo Barat' : 'MTs Negeri 2 Bangka')}</span>
                   {school?.npsn && <span className="opacity-75 font-mono">({school.npsn})</span>}
                 </span>
 
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 text-[#b0c4de] text-[11px] border border-white/10 shadow-xs">
                   <span className="text-[#8ba3c7]">Guru BK:</span>
-                  <strong className="text-white font-semibold">{currentUser?.name || activeClass.counselorName || 'Liengga Brian Darea, S.Sos.,Gr'}</strong>
+                  <strong className="text-white font-semibold">
+                    {currentUser?.name ||
+                      activeClass.counselorName ||
+                      school?.counselorName ||
+                      (school?.id === 'sch-smpn1-mendobarat'
+                        ? 'Rahmat Hidayat, S.Pd., Kons.'
+                        : 'Liengga Brian Darea, S.Sos.,Gr')}
+                  </strong>
                 </span>
 
                 {activeClass.homeroomTeacher && (
@@ -797,7 +804,13 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
           metrics={metrics}
           aggregate={aggregate}
           activeClassName={activeClass.name}
-          counselorName="Liengga Brian Darea, S.Sos.,Gr"
+          counselorName={
+            activeClass.counselorName ||
+            school?.counselorName ||
+            currentUser?.name ||
+            (school?.id === 'sch-smpn1-mendobarat' ? 'Rahmat Hidayat, S.Pd., Kons.' : 'Liengga Brian Darea, S.Sos.,Gr')
+          }
+          schoolName={school?.name || (school?.id === 'sch-smpn1-mendobarat' ? 'SMP Negeri 1 Mendo Barat' : 'MTs Negeri 2 Bangka')}
         />
       )}
 

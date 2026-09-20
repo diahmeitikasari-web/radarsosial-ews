@@ -88,8 +88,12 @@ class FirestoreSyncService {
         return;
       }
 
-      // Check if Firestore already has classes
-      const classesSnap = await getDocs(collection(db, 'classes'));
+      // Check if Firestore already has classes and schools
+      const [classesSnap, schoolsSnap] = await Promise.all([
+        getDocs(collection(db, 'classes')),
+        getDocs(collection(db, 'schools')),
+      ]);
+
       if (classesSnap.empty) {
         // First-time setup: Seed cloud database with initial local dataset
         console.info('[FirestoreSync] Cloud database is empty. Performing initial seed to Firestore...');
@@ -98,6 +102,14 @@ class FirestoreSyncService {
         // Cloud has existing data: pull down initial state to memory & cache
         console.info('[FirestoreSync] Cloud database active. Fetching latest remote documents...');
         await this.pullAllFromCloud();
+
+        // Check if multi-tenant schools or classes are missing in Firestore
+        const hasMendoSchool = schoolsSnap.docs.some((d) => d.id === 'sch-smpn1-mendobarat');
+        const hasMendoClass = classesSnap.docs.some((d) => (d.data() as SchoolClass).schoolId === 'sch-smpn1-mendobarat');
+        if (!hasMendoSchool || !hasMendoClass) {
+          console.info('[FirestoreSync] Cloud missing SMPN 1 tenant documents. Uploading multi-tenant seed to Firestore...');
+          await this.seedMissingTenantsToCloud();
+        }
       }
 
       // Setup real-time Firestore listeners for multi-browser live updates
@@ -178,66 +190,65 @@ class FirestoreSyncService {
   }
 
   /**
-   * Seed all initial data from dataStorage into Firestore
+   * Seed all initial data from dataStorage into Firestore safely using batched chunks
    */
   private async seedInitialDataToCloud(): Promise<void> {
     try {
-      const batch = writeBatch(db);
-
-      // 1. Schools
       const schools = dataStorage.getSchools();
-      schools.forEach((s) => {
-        batch.set(doc(db, 'schools', s.id), s);
-      });
+      await this.saveBatch('schools', schools);
 
-      // 2. Classes
       const classes = dataStorage.getClasses();
-      classes.forEach((c) => {
-        batch.set(doc(db, 'classes', c.id), c);
-      });
+      await this.saveBatch('classes', classes);
 
-      // 3. Periods
       const periods = dataStorage.getPeriods();
-      periods.forEach((p) => {
-        batch.set(doc(db, 'periods', p.id), p);
-      });
+      await this.saveBatch('periods', periods);
 
-      // 4. Students
       const students = dataStorage.getAllStudents();
-      students.forEach((st) => {
-        batch.set(doc(db, 'students', st.id), st);
-      });
+      await this.saveBatch('students', students);
 
-      // 5. Qualitative notes (includes the 15 simulated notes)
       const notes = dataStorage.getStudentNotes();
-      notes.forEach((n) => {
-        batch.set(doc(db, 'student_notes', n.id), n);
-      });
+      await this.saveBatch('student_notes', notes);
 
-      // 6. Nominations
       const noms = dataStorage.getNominations();
-      noms.forEach((nm) => {
-        batch.set(doc(db, 'nominations', nm.id), nm);
-      });
+      await this.saveBatch('nominations', noms);
 
-      // 7. Behavioral ratings
       const behaviors = dataStorage.getBehaviors();
-      behaviors.forEach((b) => {
-        batch.set(doc(db, 'behaviors', b.id), b);
-      });
+      await this.saveBatch('behaviors', behaviors);
 
-      // 8. Settings
-      batch.set(doc(db, 'settings', 'global'), {
+      await this.saveDocument('settings', 'global', {
         id: 'global',
         activePeriodId: dataStorage.getActivePeriod()?.id || 'period-2026-s1',
         activeClassId: dataStorage.getActiveClass()?.id || 'cls-8a',
         lastUpdated: new Date().toISOString(),
       });
-
-      await batch.commit();
       console.info('[FirestoreSync] Initial seed committed successfully to Firestore.');
     } catch (e) {
       console.error('[FirestoreSync] Error seeding initial data:', e);
+    }
+  }
+
+  /**
+   * Seed missing multi-tenant schools, classes, and students to cloud Firestore
+   */
+  private async seedMissingTenantsToCloud(): Promise<void> {
+    try {
+      const schools = dataStorage.getSchools();
+      await this.saveBatch('schools', schools);
+
+      const classes = dataStorage.getClasses();
+      await this.saveBatch('classes', classes);
+
+      const students = dataStorage.getAllStudents();
+      await this.saveBatch('students', students);
+
+      const noms = dataStorage.getNominations();
+      await this.saveBatch('nominations', noms);
+
+      const behaviors = dataStorage.getBehaviors();
+      await this.saveBatch('behaviors', behaviors);
+      console.info('[FirestoreSync] Missing tenant records committed successfully to Firestore.');
+    } catch (e) {
+      console.warn('[FirestoreSync] Error seeding missing tenants to cloud:', e);
     }
   }
 

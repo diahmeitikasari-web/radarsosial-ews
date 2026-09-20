@@ -26,9 +26,20 @@ export const PrintableQuestionnaireA4: React.FC<PrintableQuestionnaireA4Props> =
     window.print();
   };
 
-  const schoolName = school?.name || 'MTs Negeri 2 Bangka';
-  const counselorName = activeClass?.counselorName || school?.counselorName || 'Liengga Brian Darea, S.Sos.,Gr';
-  const cityLocation = school?.city || 'Sungailiat, Bangka';
+  const isMadrasah = school?.type === 'Madrasah' || school?.name?.includes('MTs');
+  const schoolName = school?.name || (school?.id === 'sch-smpn1-mendobarat' ? 'SMP Negeri 1 Mendo Barat' : 'MTs Negeri 2 Bangka');
+  const counselorName =
+    activeClass?.counselorName ||
+    school?.counselorName ||
+    (school?.id === 'sch-smpn1-mendobarat' ? 'Rahmat Hidayat, S.Pd., Kons.' : 'Liengga Brian Darea, S.Sos.,Gr');
+  const counselorNip =
+    school?.id === 'sch-smpn1-mendobarat' ? '19870512 201402 1 003' : '19880914 201503 1 002';
+  const cityLocation =
+    school?.id === 'sch-smpn1-mendobarat'
+      ? 'Mendo Barat, Bangka'
+      : school?.city
+      ? `${school.city}, Bangka`
+      : 'Sungailiat, Bangka';
   const className = activeClass?.name || 'Kelas VIII-A';
   const periodName = activePeriod?.name || 'Semester Ganjil 2026/2027';
 
@@ -102,11 +113,36 @@ export const PrintableQuestionnaireA4: React.FC<PrintableQuestionnaireA4Props> =
 
         {/* A4 Printable Document Sheet */}
         <div className="p-8 sm:p-10 font-sans text-[13px] leading-relaxed text-slate-900 print:p-0 bg-white">
-          {/* HEADER KUESIONER: CUKUP TEKS NAMA SEKOLAH SAJA */}
-          <div className="pb-3 mb-4 border-b-2 border-slate-900 text-center">
-            <h1 className="font-serif text-lg sm:text-xl font-black tracking-wide uppercase text-slate-900 leading-tight">
-              {schoolName}
-            </h1>
+          {/* HEADER KUESIONER: KOP RESMI SESUAI TENANT */}
+          <div className="pb-3 mb-4 border-b-2 border-slate-900 text-center space-y-0.5">
+            {isMadrasah ? (
+              <>
+                <p className="text-[11px] font-semibold tracking-widest uppercase text-slate-700">
+                  KEMENTERIAN AGAMA REPUBLIK INDONESIA
+                </p>
+                <p className="text-[11px] font-bold tracking-wider uppercase text-slate-800">
+                  KANTOR KEMENTERIAN AGAMA KABUPATEN BANGKA
+                </p>
+                <h1 className="font-serif text-lg sm:text-xl font-black tracking-wide uppercase text-slate-900 leading-tight pt-0.5">
+                  {schoolName}
+                </h1>
+              </>
+            ) : (
+              <>
+                <p className="text-[11px] font-semibold tracking-widest uppercase text-slate-700">
+                  PEMERINTAH KABUPATEN BANGKA
+                </p>
+                <p className="text-[11px] font-bold tracking-wider uppercase text-slate-800">
+                  DINAS PENDIDIKAN KEPEMUDAAN DAN OLAHRAGA
+                </p>
+                <h1 className="font-serif text-lg sm:text-xl font-black tracking-wide uppercase text-slate-900 leading-tight pt-0.5">
+                  {schoolName}
+                </h1>
+              </>
+            )}
+            <p className="text-[10px] text-slate-600 font-medium">
+              {school?.address || 'Kabupaten Bangka, Kepulauan Bangka Belitung'} &bull; NPSN: {school?.npsn || '-'}
+            </p>
           </div>
 
           {/* JUDUL DOKUMEN & METADATA KUESIONER */}
@@ -336,7 +372,7 @@ export const PrintableQuestionnaireA4: React.FC<PrintableQuestionnaireA4Props> =
               <div className="font-semibold">Guru Bimbingan &amp; Konseling (BK)</div>
               <div className="h-14"></div>
               <div className="font-bold underline text-slate-900">{counselorName}</div>
-              <div className="text-[10px] text-slate-500">NIP. 19880914 201503 1 002</div>
+              <div className="text-[10px] text-slate-500">NIP. {counselorNip}</div>
             </div>
 
             <div className="text-center w-56">

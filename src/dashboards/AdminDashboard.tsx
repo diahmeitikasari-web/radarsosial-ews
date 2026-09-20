@@ -59,6 +59,7 @@ import {
   Square,
 } from 'lucide-react';
 import { SchoolBrandingModal } from '../components/SchoolBrandingModal';
+import { TwoTrackAuditTab } from '../components/TwoTrackAuditTab';
 
 interface AdminDashboardProps {
   users: User[];
@@ -76,16 +77,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onRefreshData,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    'analytics' | 'heatmap' | 'periods' | 'longitudinal' | 'users' | 'oauth' | 'master' | 'audit'
+    'analytics' | 'heatmap' | 'periods' | 'longitudinal' | 'users' | 'oauth' | 'master' | 'audit' | 'two_track_audit'
   >('analytics');
 
   // Unified Filtering State (Mirroring Guru BK Filters + School / Cross-Class Level)
-  const [selectedSchoolId, setSelectedSchoolId] = useState<string>(schools[0]?.id || 'sch-01');
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string>('ALL');
   const [selectedClassId, setSelectedClassId] = useState<string>('ALL');
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>(periods[0]?.id || '2026-s1');
   const [statusFilter, setStatusFilter] = useState<'ALL' | CoieDodgeStatus | 'RISK_ONLY'>('ALL');
   const [criteriaFilter, setCriteriaFilter] = useState<'all' | 'belajar' | 'bermain'>('all');
   const [searchStudent, setSearchStudent] = useState('');
+
+  // Master Data School Filter
+  const [masterClassFilterSchool, setMasterClassFilterSchool] = useState<string>('ALL');
+
+  // School resolution & filtered classes
+  const currentSelectedSchool = useMemo(() => {
+    if (selectedSchoolId === 'ALL') return null;
+    return schools.find((s) => s.id === selectedSchoolId) || null;
+  }, [schools, selectedSchoolId]);
+
+  const filteredClasses = useMemo(() => {
+    if (selectedSchoolId === 'ALL') {
+      return classes;
+    }
+    return classes.filter((c) => c.schoolId === selectedSchoolId);
+  }, [classes, selectedSchoolId]);
 
   // Selected Heatmap Cell for Insight Card
   const [selectedHeatmapCell, setSelectedHeatmapCell] = useState<{
@@ -109,6 +126,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Heatmap Class Drill-Down State
   const [drilldownClassId, setDrilldownClassId] = useState<string>(classes[0]?.id || 'cls-8a');
   const [selectedStudentDrilldown, setSelectedStudentDrilldown] = useState<StudentCalculatedMetrics | null>(null);
+
+  // Synchronize selectedClassId and drilldownClassId when selectedSchoolId changes
+  React.useEffect(() => {
+    if (selectedSchoolId !== 'ALL' && selectedClassId !== 'ALL') {
+      const match = classes.some((c) => c.id === selectedClassId && c.schoolId === selectedSchoolId);
+      if (!match) {
+        setSelectedClassId('ALL');
+      }
+    }
+  }, [selectedSchoolId, selectedClassId, classes]);
+
+  React.useEffect(() => {
+    if (selectedSchoolId !== 'ALL') {
+      const schoolClasses = classes.filter((c) => c.schoolId === selectedSchoolId);
+      if (schoolClasses.length > 0 && !schoolClasses.some((c) => c.id === drilldownClassId)) {
+        setDrilldownClassId(schoolClasses[0].id);
+        setSelectedStudentDrilldown(null);
+      }
+    }
+  }, [selectedSchoolId, classes, drilldownClassId]);
 
   // Period Management State
   const [showAddPeriodModal, setShowAddPeriodModal] = useState(false);
@@ -214,27 +251,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const auditLogs = dataStorage.getAuditLogs();
 
-  // Load students and data according to Class Filter
+  // Load students and data according to School & Class Filter
   const allStudents = useMemo(() => {
+    let studentList: Student[] = [];
     if (selectedClassId === 'ALL') {
-      return dataStorage.getAllStudents();
+      if (selectedSchoolId === 'ALL') {
+        studentList = dataStorage.getAllStudents();
+      } else {
+        studentList = dataStorage.getAllStudents().filter((s) => s.schoolId === selectedSchoolId);
+      }
+    } else {
+      studentList = dataStorage.getStudents(selectedClassId);
     }
-    return dataStorage.getStudents(selectedClassId);
-  }, [selectedClassId]);
+    return studentList;
+  }, [selectedSchoolId, selectedClassId]);
+
+  const studentIdSet = useMemo(() => new Set(allStudents.map((s) => s.id)), [allStudents]);
 
   const allNominations = useMemo(() => {
-    return dataStorage.getNominations(
+    const rawNoms = dataStorage.getNominations(
       selectedPeriodId,
       selectedClassId === 'ALL' ? undefined : selectedClassId
     );
-  }, [selectedPeriodId, selectedClassId]);
+    if (selectedClassId === 'ALL' && selectedSchoolId !== 'ALL') {
+      return rawNoms.filter((n) => studentIdSet.has(n.studentId) || studentIdSet.has(n.targetId));
+    }
+    return rawNoms;
+  }, [selectedPeriodId, selectedClassId, selectedSchoolId, studentIdSet]);
 
   const allBehaviors = useMemo(() => {
-    return dataStorage.getBehaviors(
+    const rawBehs = dataStorage.getBehaviors(
       selectedPeriodId,
       selectedClassId === 'ALL' ? undefined : selectedClassId
     );
-  }, [selectedPeriodId, selectedClassId]);
+    if (selectedClassId === 'ALL' && selectedSchoolId !== 'ALL') {
+      return rawBehs.filter((b) => studentIdSet.has(b.studentId));
+    }
+    return rawBehs;
+  }, [selectedPeriodId, selectedClassId, selectedSchoolId, studentIdSet]);
 
   // Calculate SNA and Behavioral Metrics
   const calculatedMetrics = useMemo(() => {
@@ -266,6 +320,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
     return map;
   }, [allStudents, allNominations]);
+
+  // Map studentId to School Name for multi-school analytics
+  const studentSchoolMap = useMemo(() => {
+    const schoolById = new Map<string, string>(schools.map((s) => [s.id, s.name]));
+    const classById = new Map<string, string>(classes.map((c) => [c.id, c.schoolId]));
+    const map = new Map<string, string>();
+    allStudents.forEach((st) => {
+      let schName = schoolById.get(st.schoolId);
+      if (!schName && st.classId) {
+        const schId = classById.get(st.classId);
+        if (schId) schName = schoolById.get(schId);
+      }
+      map.set(st.id, schName || 'Sekolah Terdaftar');
+    });
+    return map;
+  }, [schools, classes, allStudents]);
 
   // Filtered metrics based on Admin Search & Filters
   const filteredMetrics = useMemo(() => {
@@ -605,6 +675,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       'ID_Siswa',
       'NIS',
       'Nama_Lengkap',
+      'Satuan_Pendidikan',
       'Jenis_Kelamin',
       'Kelas',
       'Periode_Semester',
@@ -630,6 +701,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       `"${m.studentId}"`,
       `"${m.nis}"`,
       `"${m.name.replace(/"/g, '""')}"`,
+      `"${(studentSchoolMap.get(m.studentId) || 'Sekolah').replace(/"/g, '""')}"`,
       `"${m.gender}"`,
       `"${m.className || selectedClassId}"`,
       `"${selectedPeriodId}"`,
@@ -667,7 +739,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       app: 'Radar Sosial Research Suite',
       version: '1.0.0',
       exportedAt: new Date().toISOString(),
-      school: schools.find((s) => s.id === selectedSchoolId),
+      schoolFilter: selectedSchoolId,
+      schoolName: selectedSchoolId === 'ALL' ? 'Semua Satuan Pendidikan' : currentSelectedSchool?.name,
+      schoolDetail: currentSelectedSchool,
       classFilter: selectedClassId,
       periodId: selectedPeriodId,
       statsSummary,
@@ -1060,75 +1134,198 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <Download className="w-4 h-4" />
             <span>JSON Bundle</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('two_track_audit')}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs border border-purple-400/40 shadow-lg transition duration-150 cursor-pointer"
+            title="Buka Laporan Audit Algoritmik Dua Jalur (Two-Track Program Comprehension)"
+          >
+            <ShieldCheck className="w-4 h-4 text-purple-200" />
+            <span>Audit Dua Jalur</span>
+          </button>
         </div>
       </div>
 
-      {/* FILTER BAR (Mirroring Guru BK Filters for Complete Parity) */}
-      <div className="p-4 rounded-2xl bg-[#0d3555]/80 border border-[#1a3f64] shadow-xl flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Class Filter */}
-          <div className="flex items-center gap-1.5 text-[#b0c4de]">
-            <Filter className="w-3.5 h-3.5 text-[#f0c040]" />
-            <span className="font-semibold text-white">Rombel / Kelas:</span>
-            <select
-              value={selectedClassId}
-              onChange={(e) => setSelectedClassId(e.target.value)}
-              className="bg-[#0a2a4a] border border-[#1a3f64] rounded-lg px-2.5 py-1 text-white font-medium focus:outline-hidden focus:border-[#f0c040]"
+      {/* FILTER BAR (Filter per Satuan Pendidikan & Rombel Kelas) */}
+      <div className="p-4 rounded-2xl bg-[#0d3555]/90 border border-[#1a3f64] shadow-xl space-y-3 text-xs">
+        {/* Quick School Switcher Chips */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[#1a3f64]/60">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-semibold text-[#b0c4de] flex items-center gap-1 mr-1">
+              <Building2 className="w-3.5 h-3.5 text-[#f0c040]" />
+              <span>Satuan Pendidikan:</span>
+            </span>
+
+            <button
+              id="filter-school-all"
+              type="button"
+              onClick={() => {
+                setSelectedSchoolId('ALL');
+                setSelectedClassId('ALL');
+              }}
+              className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer text-xs ${
+                selectedSchoolId === 'ALL'
+                  ? 'bg-[#f0c040] text-[#0a2a4a] shadow-md'
+                  : 'bg-[#0a2a4a] text-[#b0c4de] hover:bg-[#1a3f64] hover:text-white border border-[#1a3f64]'
+              }`}
             >
-              <option value="ALL">🌟 Semua Rombel (Agregat Sekolah)</option>
-              {classes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.gradeLevel})
-                </option>
-              ))}
-            </select>
+              <span>Semua Satuan Pendidikan</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                selectedSchoolId === 'ALL' ? 'bg-[#0a2a4a]/20 text-[#0a2a4a]' : 'bg-black/30 text-[#f7d970]'
+              }`}>
+                {schools.length} Sekolah
+              </span>
+            </button>
+
+            {schools.map((s) => {
+              const schoolClassCount = classes.filter((c) => c.schoolId === s.id).length;
+              const isSelected = selectedSchoolId === s.id;
+              return (
+                <button
+                  key={s.id}
+                  id={`filter-school-${s.id}`}
+                  type="button"
+                  onClick={() => {
+                    setSelectedSchoolId(s.id);
+                    setSelectedClassId('ALL');
+                  }}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer text-xs ${
+                    isSelected
+                      ? 'bg-cyan-500 text-[#0a2a4a] shadow-md ring-2 ring-cyan-300'
+                      : 'bg-[#0a2a4a] text-[#b0c4de] hover:bg-[#1a3f64] hover:text-white border border-[#1a3f64]'
+                  }`}
+                >
+                  <Building2 className={`w-3 h-3 ${isSelected ? 'text-[#0a2a4a]' : 'text-cyan-400'}`} />
+                  <span>{s.name}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                    isSelected ? 'bg-[#0a2a4a]/20 text-[#0a2a4a]' : 'bg-black/30 text-cyan-300'
+                  }`}>
+                    {schoolClassCount} Rombel
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
-          {/* Period Semester Filter */}
-          <div className="flex items-center gap-1.5 text-[#b0c4de]">
-            <span>Periode:</span>
-            <select
-              value={selectedPeriodId}
-              onChange={(e) => setSelectedPeriodId(e.target.value)}
-              className="bg-[#0a2a4a] border border-[#1a3f64] rounded-lg px-2.5 py-1 text-white font-medium focus:outline-hidden focus:border-[#f0c040]"
-            >
-              {periods.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} {p.status === 'aktif' ? '(Aktif)' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Status Coie-Dodge Filter */}
-          <div className="flex items-center gap-1.5 text-[#b0c4de]">
-            <span>Status:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="bg-[#0a2a4a] border border-[#1a3f64] rounded-lg px-2.5 py-1 text-white font-medium focus:outline-hidden focus:border-[#f0c040]"
-            >
-              <option value="ALL">Semua Status</option>
-              <option value="RISK_ONLY">⚠️ Siswa Berisiko Saja</option>
-              <option value="Popular">Popular</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Neglected">Neglected</option>
-              <option value="Controversial">Controversial</option>
-              <option value="Average">Average</option>
-            </select>
+          {/* Active Scope Summary Badge */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-[#0a2a4a] border border-[#1a3f64] text-[#f7d970]">
+              Populasi Aktif: <strong className="text-white">{allStudents.length}</strong> Siswa &bull;{' '}
+              <strong className="text-white">{filteredClasses.length}</strong> Rombel
+            </span>
           </div>
         </div>
 
-        {/* Quick Search Student in Research View */}
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 text-[#b0c4de] absolute left-2.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Cari nama / NIS siswa..."
-            value={searchStudent}
-            onChange={(e) => setSearchStudent(e.target.value)}
-            className="bg-[#0a2a4a] border border-[#1a3f64] rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-[#b0c4de]/50 focus:outline-hidden focus:border-[#f0c040] w-52"
-          />
+        {/* Detailed Dropdown Filters & Search Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* School Dropdown */}
+            <div className="flex items-center gap-1.5 text-[#b0c4de]">
+              <Building2 className="w-3.5 h-3.5 text-[#f0c040]" />
+              <span className="font-semibold text-white">Sekolah:</span>
+              <select
+                id="admin-filter-school"
+                value={selectedSchoolId}
+                onChange={(e) => {
+                  setSelectedSchoolId(e.target.value);
+                  setSelectedClassId('ALL');
+                }}
+                className="bg-[#0a2a4a] border border-[#1a3f64] rounded-lg px-2.5 py-1.5 text-white font-medium focus:outline-hidden focus:border-[#f0c040] cursor-pointer"
+              >
+                <option value="ALL">🏫 Semua Sekolah (Multi-Tenant Lintas Sekolah)</option>
+                {schools.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.type || 'Sekolah'})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Class Filter (Scoped to School) */}
+            <div className="flex items-center gap-1.5 text-[#b0c4de]">
+              <Filter className="w-3.5 h-3.5 text-[#f0c040]" />
+              <span className="font-semibold text-white">Rombel / Kelas:</span>
+              <select
+                id="admin-filter-class"
+                value={selectedClassId}
+                onChange={(e) => setSelectedClassId(e.target.value)}
+                className="bg-[#0a2a4a] border border-[#1a3f64] rounded-lg px-2.5 py-1.5 text-white font-medium focus:outline-hidden focus:border-[#f0c040] cursor-pointer max-w-[260px] truncate"
+              >
+                <option value="ALL">
+                  {selectedSchoolId === 'ALL'
+                    ? '🌟 Semua Rombel (Agregat Seluruh Sekolah)'
+                    : `🌟 Semua Rombel (${currentSelectedSchool?.name || 'Sekolah Terpilih'})`}
+                </option>
+                {selectedSchoolId === 'ALL' ? (
+                  schools.map((s) => {
+                    const sClasses = classes.filter((c) => c.schoolId === s.id);
+                    if (sClasses.length === 0) return null;
+                    return (
+                      <optgroup key={s.id} label={`🏫 ${s.name}`}>
+                        {sClasses.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            Kelas {c.name} (Tingkat {c.grade || c.gradeLevel || '8'})
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })
+                ) : (
+                  filteredClasses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      Kelas {c.name} (Tingkat {c.grade || c.gradeLevel || '8'})
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            {/* Period Semester Filter */}
+            <div className="flex items-center gap-1.5 text-[#b0c4de]">
+              <span>Periode:</span>
+              <select
+                value={selectedPeriodId}
+                onChange={(e) => setSelectedPeriodId(e.target.value)}
+                className="bg-[#0a2a4a] border border-[#1a3f64] rounded-lg px-2.5 py-1.5 text-white font-medium focus:outline-hidden focus:border-[#f0c040] cursor-pointer"
+              >
+                {periods.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.status === 'aktif' ? '(Aktif)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status Coie-Dodge Filter */}
+            <div className="flex items-center gap-1.5 text-[#b0c4de]">
+              <span>Status:</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="bg-[#0a2a4a] border border-[#1a3f64] rounded-lg px-2.5 py-1.5 text-white font-medium focus:outline-hidden focus:border-[#f0c040] cursor-pointer"
+              >
+                <option value="ALL">Semua Status</option>
+                <option value="RISK_ONLY">⚠️ Siswa Berisiko Saja</option>
+                <option value="Popular">Popular</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Neglected">Neglected</option>
+                <option value="Controversial">Controversial</option>
+                <option value="Average">Average</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Quick Search Student in Research View */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-[#b0c4de] absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Cari nama / NIS siswa..."
+              value={searchStudent}
+              onChange={(e) => setSearchStudent(e.target.value)}
+              className="bg-[#0a2a4a] border border-[#1a3f64] rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-[#b0c4de]/50 focus:outline-hidden focus:border-[#f0c040] w-52"
+            />
+          </div>
         </div>
       </div>
 
@@ -1228,6 +1425,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         >
           <History className="w-4 h-4" />
           <span>Audit Logs ({auditLogs.length})</span>
+        </button>
+
+        <button
+          id="btn-tab-two-track-audit"
+          onClick={() => setActiveTab('two_track_audit')}
+          className={`px-4 py-2 rounded-xl transition flex items-center gap-2 cursor-pointer ${
+            activeTab === 'two_track_audit'
+              ? 'bg-purple-600 text-white font-bold shadow-lg ring-2 ring-purple-300'
+              : 'text-purple-300 hover:bg-purple-900/30 hover:text-white border border-purple-500/40'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4 text-purple-300" />
+          <span>Audit Dua Jalur (Two-Track)</span>
         </button>
       </div>
 
@@ -1373,6 +1583,152 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Filtered Students Roster & Sociometric Profile Table */}
+          <div className="p-5 rounded-2xl bg-[#0d3555]/80 border border-[#1a3f64] shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-serif text-base font-bold text-white flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[#f0c040]" />
+                  <span>Daftar Siswa &amp; Profil Sosiometrik Terfilter</span>
+                </h3>
+                <p className="text-xs text-[#b0c4de]">
+                  Menampilkan {filteredMetrics.length} siswa berdasarkan filter aktif:{' '}
+                  <span className="text-[#f7d970] font-semibold">
+                    {selectedSchoolId === 'ALL' ? 'Seluruh Sekolah' : currentSelectedSchool?.name}
+                  </span>{' '}
+                  &bull;{' '}
+                  <span className="text-cyan-300 font-semibold">
+                    {selectedClassId === 'ALL'
+                      ? 'Semua Rombel'
+                      : `Kelas ${classes.find((c) => c.id === selectedClassId)?.name || selectedClassId}`}
+                  </span>
+                  {statusFilter !== 'ALL' && (
+                    <>
+                      {' '}
+                      &bull; Status: <span className="text-amber-300 font-semibold">{statusFilter}</span>
+                    </>
+                  )}
+                  {searchStudent && (
+                    <>
+                      {' '}
+                      &bull; Pencarian: &ldquo;<span className="text-white font-semibold">{searchStudent}</span>&rdquo;
+                    </>
+                  )}
+                </p>
+              </div>
+
+              {/* Status Breakdown Chips */}
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span className="px-2 py-0.5 rounded-md bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 font-mono">
+                  Popular: {filteredMetrics.filter((m) => m.status === 'Popular').length}
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-rose-950/60 border border-rose-500/40 text-rose-300 font-mono">
+                  Rejected: {filteredMetrics.filter((m) => m.status === 'Rejected').length}
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-600 text-slate-300 font-mono">
+                  Neglected: {filteredMetrics.filter((m) => m.status === 'Neglected').length}
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-amber-950/60 border border-amber-500/40 text-amber-300 font-mono">
+                  Risiko Tinggi: {filteredMetrics.filter((m) => m.riskLevel === 'Tinggi').length}
+                </span>
+              </div>
+            </div>
+
+            {filteredMetrics.length === 0 ? (
+              <div className="p-8 text-center bg-[#0a2a4a] border border-[#1a3f64] rounded-xl text-xs text-[#b0c4de]">
+                Tidak ada data siswa yang cocok dengan kombinasi filter sekolah, rombel, atau kriteria status yang dipilih.
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-[#1a3f64] rounded-xl max-h-[500px]">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="bg-[#0a2a4a] text-[#f0c040] border-b border-[#1a3f64]">
+                      <th className="p-3 w-10 text-center">No</th>
+                      <th className="p-3">Nama Siswa / NIS</th>
+                      <th className="p-3">Satuan Pendidikan</th>
+                      <th className="p-3 text-center">Rombel</th>
+                      <th className="p-3 text-center">Status Sosiometrik</th>
+                      <th className="p-3 text-center font-mono">Z_SP</th>
+                      <th className="p-3 text-center font-mono">Z_SI</th>
+                      <th className="p-3 text-center font-mono">Prososial</th>
+                      <th className="p-3 text-center">Level Risiko</th>
+                      <th className="p-3">Rekomendasi Layanan BK</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 bg-[#0a2a4a]/60">
+                    {filteredMetrics.map((m, idx) => {
+                      const schoolName = studentSchoolMap.get(m.studentId) || 'Sekolah';
+                      return (
+                        <tr key={m.studentId} className="hover:bg-white/5 transition">
+                          <td className="p-3 text-center text-[#b0c4de] font-mono">{idx + 1}</td>
+                          <td className="p-3 font-semibold text-white">
+                            <div>{m.name}</div>
+                            <div className="text-[10px] text-[#b0c4de] font-mono font-normal">
+                              NIS: {m.nis} &bull; {m.gender === 'L' ? 'Laki-Laki' : 'Perempuan'}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#1a3f64]/80 text-cyan-200 border border-cyan-500/30 text-[11px]">
+                              <Building2 className="w-3 h-3 text-cyan-300" />
+                              <span className="truncate max-w-[140px]">{schoolName}</span>
+                            </span>
+                          </td>
+                          <td className="p-3 text-center font-bold text-white">
+                            <span className="px-2 py-0.5 rounded bg-black/30 border border-white/10 font-mono text-[11px]">
+                              {m.className || selectedClassId}
+                            </span>
+                          </td>
+                          <td className="p-3 text-center">
+                            <span
+                              className={`px-2 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wider ${
+                                m.status === 'Popular'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                  : m.status === 'Rejected'
+                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                                  : m.status === 'Neglected'
+                                  ? 'bg-slate-500/20 text-slate-300 border border-slate-500/40'
+                                  : m.status === 'Controversial'
+                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                  : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                              }`}
+                            >
+                              {m.status}
+                            </span>
+                          </td>
+                          <td className="p-3 text-center font-mono text-[#f7d970] font-semibold">
+                            {m.zSP != null ? (m.zSP > 0 ? `+${m.zSP.toFixed(2)}` : m.zSP.toFixed(2)) : '0.00'}
+                          </td>
+                          <td className="p-3 text-center font-mono text-amber-300">
+                            {m.zSI != null ? m.zSI.toFixed(2) : '0.00'}
+                          </td>
+                          <td className="p-3 text-center font-mono text-emerald-400 font-bold">
+                            {m.prosocialScore ?? 0}
+                          </td>
+                          <td className="p-3 text-center">
+                            <span
+                              className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                                m.riskLevel === 'Tinggi'
+                                  ? 'bg-rose-600 text-white'
+                                  : m.riskLevel === 'Sedang'
+                                  ? 'bg-amber-500/30 text-amber-300 border border-amber-500/40'
+                                  : 'bg-emerald-500/20 text-emerald-300'
+                              }`}
+                            >
+                              {m.riskLevel}
+                            </span>
+                          </td>
+                          <td className="p-3 text-[#b0c4de] text-[11px] max-w-[240px] truncate" title={m.dssRecommendation || ''}>
+                            {m.dssRecommendation || 'Pertahankan relasi positif dan pantau secara berkala.'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1534,11 +1890,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   }}
                   className="bg-[#0d3555] text-white text-xs font-bold border border-[#1a3f64] rounded-lg px-3 py-1.5 focus:outline-hidden focus:border-[#f0c040]"
                 >
-                  {classes.map((cls) => (
-                    <option key={cls.id} value={cls.id}>
-                      {cls.name} ({cls.academicYear})
-                    </option>
-                  ))}
+                  {selectedSchoolId === 'ALL' ? (
+                    schools.map((s) => {
+                      const sClasses = classes.filter((c) => c.schoolId === s.id);
+                      if (sClasses.length === 0) return null;
+                      return (
+                        <optgroup key={s.id} label={`🏫 ${s.name}`}>
+                          {sClasses.map((cls) => (
+                            <option key={cls.id} value={cls.id}>
+                              Kelas {cls.name} ({cls.academicYear})
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    })
+                  ) : (
+                    filteredClasses.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        Kelas {cls.name} ({cls.academicYear})
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
             </div>
@@ -2529,28 +2901,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Rombongan Belajar Management */}
           <div className="p-5 rounded-2xl bg-[#0d3555]/80 border border-[#1a3f64] shadow-xl space-y-4 text-xs">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <h3 className="font-serif text-base font-bold text-white flex items-center gap-2">
                 <Database className="w-4 h-4 text-[#f0c040]" />
                 <span>Rombongan Belajar (Rombel) Terdaftar</span>
               </h3>
-              <button
-                id="btn-add-class-master"
-                onClick={() => {
-                  setNewMasterClassName('');
-                  setNewMasterHomeroom('');
-                  setNewMasterCounselorId('');
-                  setShowAddClassMasterModal(true);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1a3f64] hover:bg-[#204c75] text-[#f7d970] font-bold text-xs border border-[#f0c040]/40 shadow-md transition cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5 text-[#f0c040]" />
-                <span>Tambah Rombel</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <select
+                  value={masterClassFilterSchool}
+                  onChange={(e) => setMasterClassFilterSchool(e.target.value)}
+                  className="bg-[#0a2a4a] border border-[#1a3f64] rounded-lg px-2.5 py-1 text-xs text-white focus:outline-hidden focus:border-[#f0c040] cursor-pointer"
+                >
+                  <option value="ALL">Semua Sekolah ({classes.length})</option>
+                  {schools.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({classes.filter((c) => c.schoolId === s.id).length})
+                    </option>
+                  ))}
+                </select>
+                <button
+                  id="btn-add-class-master"
+                  onClick={() => {
+                    setNewMasterClassName('');
+                    setNewMasterHomeroom('');
+                    setNewMasterCounselorId('');
+                    setShowAddClassMasterModal(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1a3f64] hover:bg-[#204c75] text-[#f7d970] font-bold text-xs border border-[#f0c040]/40 shadow-md transition cursor-pointer shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5 text-[#f0c040]" />
+                  <span>Tambah Rombel</span>
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
-              {classes.map((c) => {
+              {classes
+                .filter((c) => masterClassFilterSchool === 'ALL' || c.schoolId === masterClassFilterSchool)
+                .map((c) => {
                 const schoolOwner = schools.find((s) => s.id === c.schoolId);
                 const counselor = users.find((u) => u.id === c.counselorId);
                 const counselorName = counselor?.name || c.counselorName || 'Guru BK';
@@ -2645,6 +3033,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* ===================== TAB 8: TWO-TRACK ALGORITHMIC AUDIT ===================== */}
+      {activeTab === 'two_track_audit' && <TwoTrackAuditTab />}
 
       {/* Add User Modal */}
       {showAddUserModal && (

@@ -144,6 +144,7 @@ export type SimulationScenario =
 export interface Student {
   id: string;
   nis: string;
+  nisn?: string;
   name: string;
   gender: 'L' | 'P';
   classId: string;

@@ -39,6 +39,25 @@ export const OfficialPDFReport: React.FC<OfficialPDFReportProps> = ({
     window.print();
   };
 
+  // Dynamic signature and personnel details per tenant
+  const schoolUsers = dataStorage.getUsers().filter((u) => u.schoolId === school.id);
+  const kepsekUser = schoolUsers.find((u) => u.role === 'kepala_sekolah');
+  const bkUser =
+    schoolUsers.find(
+      (u) =>
+        u.role === 'guru_bk' &&
+        (!activeClass?.id || !u.assignedClassIds || u.assignedClassIds.includes(activeClass.id))
+    ) || schoolUsers.find((u) => u.role === 'guru_bk');
+
+  const resolvedPrincipalNip =
+    kepsekUser?.nip ||
+    (school.id === 'sch-smpn1-mendobarat' ? '19720814 199803 1 004' : '19740512 199903 1 002');
+  const resolvedCounselorNip =
+    bkUser?.nip ||
+    (school.id === 'sch-smpn1-mendobarat' ? '19870512 201402 1 003' : '19880914 201503 1 002');
+  const signCity =
+    school.id === 'sch-smpn1-mendobarat' ? 'Mendo Barat' : school.city || 'Sungailiat';
+
   const maleCount = metrics.filter((m) => m.gender === 'L').length;
   const femaleCount = metrics.filter((m) => m.gender === 'P').length;
 
@@ -85,11 +104,36 @@ export const OfficialPDFReport: React.FC<OfficialPDFReportProps> = ({
 
         {/* Document Content (Rendered & Printed) */}
         <div id="printable-official-report" className="p-8 sm:p-12 space-y-6 print:p-6 print:text-black">
-          {/* 1. Institutional Letterhead (Kop Surat: Cukup Teks Nama Sekolah Saja) */}
-          <div className="pb-4 border-b-4 border-double border-slate-900 text-center">
-            <h1 className="text-xl sm:text-2xl font-black tracking-wide uppercase text-slate-900 leading-tight">
-              {school.name}
-            </h1>
+          {/* 1. Institutional Letterhead (Kop Surat Resmi Sesuai Tenant) */}
+          <div className="pb-3 border-b-4 border-double border-slate-900 text-center space-y-0.5">
+            {school.type === 'Madrasah' ? (
+              <>
+                <p className="text-xs font-semibold tracking-widest uppercase text-slate-700">
+                  KEMENTERIAN AGAMA REPUBLIK INDONESIA
+                </p>
+                <p className="text-xs font-bold tracking-wider uppercase text-slate-800">
+                  KANTOR KEMENTERIAN AGAMA KABUPATEN BANGKA
+                </p>
+                <h1 className="text-xl sm:text-2xl font-black tracking-wide uppercase text-slate-900 leading-tight pt-0.5">
+                  {school.name}
+                </h1>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-semibold tracking-widest uppercase text-slate-700">
+                  PEMERINTAH KABUPATEN BANGKA
+                </p>
+                <p className="text-xs font-bold tracking-wider uppercase text-slate-800">
+                  DINAS PENDIDIKAN KEPEMUDAAN DAN OLAHRAGA
+                </p>
+                <h1 className="text-xl sm:text-2xl font-black tracking-wide uppercase text-slate-900 leading-tight pt-0.5">
+                  {school.name}
+                </h1>
+              </>
+            )}
+            <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium pt-0.5">
+              {school.address} &bull; Telp: {school.phone || '-'} &bull; NPSN: {school.npsn}
+            </p>
           </div>
 
           {/* Title Box */}
@@ -344,24 +388,26 @@ export const OfficialPDFReport: React.FC<OfficialPDFReportProps> = ({
             <div className="flex justify-between items-start text-center">
               <div className="w-64">
                 <div className="text-slate-600">Mengetahui,</div>
-                <div className="font-bold text-slate-900">Kepala Sekolah / Madrasah</div>
+                <div className="font-bold text-slate-900">
+                  {school.type === 'Madrasah' ? 'Kepala Madrasah' : 'Kepala Sekolah'}
+                </div>
                 <div className="h-20 flex items-center justify-center text-slate-300 italic text-[10px]">
                   [Tanda Tangan & Cap Resmi]
                 </div>
                 <div className="font-bold text-slate-900 uppercase underline">{principalName}</div>
-                <div className="text-slate-600 text-[11px]">NIP. 19740512 199903 1 002</div>
+                <div className="text-slate-600 text-[11px]">NIP. {resolvedPrincipalNip}</div>
               </div>
 
               <div className="w-64">
                 <div className="text-slate-600">
-                  {school.city}, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  {signCity}, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </div>
                 <div className="font-bold text-slate-900">Guru Bimbingan dan Konseling (BK)</div>
                 <div className="h-20 flex items-center justify-center text-slate-300 italic text-[10px]">
                   [Tanda Tangan Konselor]
                 </div>
                 <div className="font-bold text-slate-900 uppercase underline">{counselorName}</div>
-                <div className="text-slate-600 text-[11px]">NIP. 19800815 200501 2 004</div>
+                <div className="text-slate-600 text-[11px]">NIP. {resolvedCounselorNip}</div>
               </div>
             </div>
           </div>

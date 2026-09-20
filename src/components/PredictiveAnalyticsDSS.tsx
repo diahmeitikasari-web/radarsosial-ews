@@ -62,6 +62,7 @@ interface PredictiveAnalyticsDSSProps {
   aggregate: ClassMetricsAggregate;
   activeClassName: string;
   counselorName?: string;
+  schoolName?: string;
 }
 
 export const PredictiveAnalyticsDSS: React.FC<PredictiveAnalyticsDSSProps> = ({
@@ -71,6 +72,7 @@ export const PredictiveAnalyticsDSS: React.FC<PredictiveAnalyticsDSSProps> = ({
   aggregate,
   activeClassName,
   counselorName = 'Liengga Brian Darea, S.Sos.,Gr',
+  schoolName = 'MTs Negeri 2 Bangka',
 }) => {
   // Compute predictive risk reports for all students
   const riskReports: PredictiveRiskReport[] = useMemo(() => {
@@ -390,7 +392,7 @@ export const PredictiveAnalyticsDSS: React.FC<PredictiveAnalyticsDSSProps> = ({
               {counselorName}
             </div>
             <div className="text-[10px] text-[#f7d970] mt-0.5 font-medium">
-              Guru BK MTsN 2 Bangka &bull; TPPK
+              Guru BK {schoolName} &bull; TPPK
             </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
@@ -644,7 +646,7 @@ export const PredictiveAnalyticsDSS: React.FC<PredictiveAnalyticsDSSProps> = ({
                 </span>
                 <div className="font-bold text-white">{counselorName}</div>
                 <div className="text-[11px] text-[#b0c4de]">
-                  Satuan Pendidikan: MTs Negeri 2 Bangka &bull; Kelas {activeClassName}
+                  Satuan Pendidikan: {schoolName} &bull; Kelas {activeClassName}
                 </div>
               </div>
               <div className="text-right">

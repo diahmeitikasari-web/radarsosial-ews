@@ -161,10 +161,10 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({
             <span>Panduan Pendampingan Pengasuhan di Rumah (Parenting Advice)</span>
           </div>
           <h4 className="text-sm font-bold text-white">
-            Rekomendasi Psikososial untuk Ananda {student.name.split(' ')[0]}
+            Rekomendasi Pendampingan Ananda {student.name.split(' ')[0]}
           </h4>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            {student.dssRecommendation}
+          <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+            {student.parentNote || student.dssRecommendation}
           </p>
 
           <div className="space-y-2 pt-2 border-t border-slate-800 text-xs text-slate-300">

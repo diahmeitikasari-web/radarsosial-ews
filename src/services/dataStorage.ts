@@ -17,6 +17,7 @@ import {
   INITIAL_PERIODS,
   INITIAL_SCHOOLS,
   INITIAL_CLASSES,
+  INITIAL_STUDENTS,
   INITIAL_STUDENTS_8A,
   INITIAL_USERS,
   INITIAL_NOTIFICATIONS,
@@ -98,7 +99,7 @@ export class DataStorageService {
       ...c,
       counselorName: c.counselorName || 'Liengga Brian Darea, S.Sos.,Gr',
     }));
-    this.students = getStoredOr(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS_8A);
+    this.students = getStoredOr(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
 
     const defaultNoms = generateSeedNominations('period-2026-s1');
     this.nominations = getStoredOr(STORAGE_KEYS.NOMINATIONS, defaultNoms);
@@ -114,7 +115,61 @@ export class DataStorageService {
       }
       return u;
     });
-    setStored(STORAGE_KEYS.USERS, this.users);
+
+    // Multi-tenant migration check: ensure SMPN 1 Mendo Barat and differentiated student names exist
+    const SEED_VERSION_KEY = 'radar_sosial_seed_v2026_tenant_fix_v6';
+    const hasSeed = typeof window !== 'undefined' ? localStorage.getItem(SEED_VERSION_KEY) : null;
+    const needsMigration =
+      !hasSeed ||
+      !this.schools.some((s) => s.id === 'sch-smpn1-mendobarat') ||
+      !this.classes.some((c) => c.schoolId === 'sch-smpn1-mendobarat') ||
+      !this.users.some((u) => u.email === 'gurubk-1@radarsosial.id') ||
+      this.students.length < 240;
+
+    if (needsMigration) {
+      this.schools = INITIAL_SCHOOLS;
+      this.classes = INITIAL_CLASSES;
+      this.students = INITIAL_STUDENTS;
+      this.nominations = generateSeedNominations('period-2026-s1');
+      this.behaviors = generateSeedBehavioralRatings('period-2026-s1');
+      this.users = INITIAL_USERS;
+
+      setStored(STORAGE_KEYS.SCHOOLS, this.schools);
+      setStored(STORAGE_KEYS.CLASSES, this.classes);
+      setStored(STORAGE_KEYS.STUDENTS, this.students);
+      setStored(STORAGE_KEYS.NOMINATIONS, this.nominations);
+      setStored(STORAGE_KEYS.BEHAVIORS, this.behaviors);
+      setStored(STORAGE_KEYS.USERS, this.users);
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(SEED_VERSION_KEY, 'true');
+      }
+    } else {
+      // Safety guarantee: ensure all multi-tenant schools, classes, students, and users exist
+      const schoolMap = new Map<string, School>();
+      INITIAL_SCHOOLS.forEach((s) => schoolMap.set(s.id, s));
+      this.schools.forEach((s) => schoolMap.set(s.id, { ...schoolMap.get(s.id), ...s }));
+      this.schools = Array.from(schoolMap.values());
+      setStored(STORAGE_KEYS.SCHOOLS, this.schools);
+
+      const classMap = new Map<string, SchoolClass>();
+      INITIAL_CLASSES.forEach((c) => classMap.set(c.id, c));
+      this.classes.forEach((c) => classMap.set(c.id, { ...classMap.get(c.id), ...c }));
+      this.classes = Array.from(classMap.values());
+      setStored(STORAGE_KEYS.CLASSES, this.classes);
+
+      const userMap = new Map<string, User>();
+      INITIAL_USERS.forEach((u) => userMap.set(u.id, u));
+      this.users.forEach((u) => userMap.set(u.id, { ...userMap.get(u.id), ...u }));
+      this.users = Array.from(userMap.values());
+      setStored(STORAGE_KEYS.USERS, this.users);
+
+      const studentMap = new Map<string, Student>();
+      INITIAL_STUDENTS.forEach((st) => studentMap.set(st.id, st));
+      this.students.forEach((st) => studentMap.set(st.id, { ...studentMap.get(st.id), ...st }));
+      this.students = Array.from(studentMap.values());
+      setStored(STORAGE_KEYS.STUDENTS, this.students);
+    }
 
     this.notifications = getStoredOr(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
     this.auditLogs = getStoredOr(STORAGE_KEYS.AUDIT_LOGS, [
@@ -165,22 +220,38 @@ export class DataStorageService {
   public syncFromCloud(collectionName: string, items: any[]): void {
     if (!items || !Array.isArray(items)) return;
     switch (collectionName) {
-      case 'schools':
-        this.schools = items;
+      case 'schools': {
+        const schoolMap = new Map<string, School>();
+        INITIAL_SCHOOLS.forEach((s) => schoolMap.set(s.id, s));
+        items.forEach((s: School) => schoolMap.set(s.id, { ...schoolMap.get(s.id), ...s }));
+        this.schools = Array.from(schoolMap.values());
         setStored(STORAGE_KEYS.SCHOOLS, this.schools);
         break;
-      case 'classes':
-        this.classes = items;
+      }
+      case 'classes': {
+        const classMap = new Map<string, SchoolClass>();
+        INITIAL_CLASSES.forEach((c) => classMap.set(c.id, c));
+        items.forEach((c: SchoolClass) => classMap.set(c.id, { ...classMap.get(c.id), ...c }));
+        this.classes = Array.from(classMap.values());
         setStored(STORAGE_KEYS.CLASSES, this.classes);
         break;
-      case 'periods':
-        this.periods = items;
+      }
+      case 'periods': {
+        const periodMap = new Map<string, Period>();
+        INITIAL_PERIODS.forEach((p) => periodMap.set(p.id, p));
+        items.forEach((p: Period) => periodMap.set(p.id, { ...periodMap.get(p.id), ...p }));
+        this.periods = Array.from(periodMap.values());
         setStored(STORAGE_KEYS.PERIODS, this.periods);
         break;
-      case 'students':
-        this.students = items;
+      }
+      case 'students': {
+        const studentMap = new Map<string, Student>();
+        INITIAL_STUDENTS.forEach((st) => studentMap.set(st.id, st));
+        items.forEach((st: Student) => studentMap.set(st.id, { ...studentMap.get(st.id), ...st }));
+        this.students = Array.from(studentMap.values());
         setStored(STORAGE_KEYS.STUDENTS, this.students);
         break;
+      }
       case 'student_notes':
         this.studentNotes = items;
         setStored(STORAGE_KEYS.STUDENT_NOTES, this.studentNotes);
@@ -195,14 +266,22 @@ export class DataStorageService {
         setStored(STORAGE_KEYS.CLASS_SUMMARIES, this.classSummaries);
         break;
       }
-      case 'nominations':
-        this.nominations = items;
+      case 'nominations': {
+        const nomMap = new Map<string, SociometricNomination>();
+        generateSeedNominations('period-2026-s1').forEach((nm) => nomMap.set(nm.id, nm));
+        items.forEach((nm: SociometricNomination) => nomMap.set(nm.id, nm));
+        this.nominations = Array.from(nomMap.values());
         setStored(STORAGE_KEYS.NOMINATIONS, this.nominations);
         break;
-      case 'behaviors':
-        this.behaviors = items;
+      }
+      case 'behaviors': {
+        const behMap = new Map<string, PeerBehavioralRating>();
+        generateSeedBehavioralRatings('period-2026-s1').forEach((b) => behMap.set(b.id, b));
+        items.forEach((b: PeerBehavioralRating) => behMap.set(b.id, b));
+        this.behaviors = Array.from(behMap.values());
         setStored(STORAGE_KEYS.BEHAVIORS, this.behaviors);
         break;
+      }
     }
     this.notifySubscribers(collectionName);
   }
@@ -1145,7 +1224,7 @@ export class DataStorageService {
       this.periods = INITIAL_PERIODS;
       this.schools = INITIAL_SCHOOLS;
       this.classes = INITIAL_CLASSES;
-      this.students = INITIAL_STUDENTS_8A;
+      this.students = INITIAL_STUDENTS;
       this.nominations = generateSeedNominations('period-2026-s1');
       this.behaviors = generateSeedBehavioralRatings('period-2026-s1');
       this.users = INITIAL_USERS;

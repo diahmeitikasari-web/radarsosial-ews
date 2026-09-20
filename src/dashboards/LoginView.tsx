@@ -428,6 +428,111 @@ export const LoginView: React.FC = () => {
                 </span>
               </div>
 
+              {/* Quick Multi-Tenant Account Picker for Testing */}
+              <div className="bg-[#0a2a4a]/80 border border-[#1a3f64] rounded-2xl p-3.5 space-y-2">
+                <div className="text-[11px] font-semibold text-[#f7d970] flex items-center justify-between">
+                  <span>Klik Cepat Kredensial Uji Multi-Tenant:</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-300 font-mono">
+                    Multi-Sekolah Aktif
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                  {/* SMPN 1 Mendo Barat - Guru BK */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('gurubk-1@radarsosial.id');
+                      setPassword('bk123456');
+                    }}
+                    className="text-left p-2.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/50 transition cursor-pointer group"
+                  >
+                    <div className="font-bold text-emerald-300 group-hover:text-emerald-200 transition flex items-center justify-between">
+                      <span>SMPN 1 Mendo Barat</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-800/80 text-emerald-100">Guru BK</span>
+                    </div>
+                    <div className="text-[10px] text-emerald-200/80">gurubk-1@radarsosial.id</div>
+                    <div className="text-[9px] text-emerald-400 mt-0.5">Rahmat Hidayat • 6 Rombel SMPN</div>
+                  </button>
+
+                  {/* SMPN 1 Mendo Barat - Kepsek */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('kepsek.mendobarat@radarsosial.id');
+                      setPassword('kepsek123456');
+                    }}
+                    className="text-left p-2.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/30 transition cursor-pointer group"
+                  >
+                    <div className="font-bold text-emerald-300 group-hover:text-emerald-200 transition flex items-center justify-between">
+                      <span>SMPN 1 Mendo Barat</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-800/80 text-emerald-100">Kepsek</span>
+                    </div>
+                    <div className="text-[10px] text-emerald-200/80">kepsek.mendobarat@radarsosial.id</div>
+                    <div className="text-[9px] text-emerald-400 mt-0.5">Drs. Hermansyah, M.Pd.</div>
+                  </button>
+
+                  {/* MTsN 2 Bangka - Guru BK */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('gurubk@radarsosial.id');
+                      setPassword('bk123456');
+                    }}
+                    className="text-left p-2.5 rounded-xl bg-[#0d3555] hover:bg-[#1a3f64] border border-[#1a3f64] transition cursor-pointer group"
+                  >
+                    <div className="font-bold text-white group-hover:text-[#f7d970] transition flex items-center justify-between">
+                      <span>MTsN 2 Bangka</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-900/80 text-[#f7d970]">Guru BK</span>
+                    </div>
+                    <div className="text-[10px] text-[#b0c4de]">gurubk@radarsosial.id</div>
+                    <div className="text-[9px] text-[#f0c040] mt-0.5">Liengga Brian Darea • 6 Rombel MTsN</div>
+                  </button>
+
+                  {/* MTsN 2 Bangka - Kepsek */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('kepsek@radarsosial.id');
+                      setPassword('kepsek123456');
+                    }}
+                    className="text-left p-2.5 rounded-xl bg-[#0d3555]/80 hover:bg-[#1a3f64] border border-[#1a3f64] transition cursor-pointer group"
+                  >
+                    <div className="font-bold text-white group-hover:text-[#f7d970] transition flex items-center justify-between">
+                      <span>MTsN 2 Bangka</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-900/80 text-[#f7d970]">Kepsek</span>
+                    </div>
+                    <div className="text-[10px] text-[#b0c4de]">kepsek@radarsosial.id</div>
+                    <div className="text-[9px] text-[#b0c4de] mt-0.5">Drs. H. Ahmad Fauzi, M.Ag.</div>
+                  </button>
+
+                  {/* SMPN 1 Sungailiat */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('bk.sungailiat@radarsosial.id');
+                      setPassword('bk123456');
+                    }}
+                    className="text-left p-2 rounded-lg bg-sky-950/40 hover:bg-sky-900/50 border border-sky-600/30 transition cursor-pointer"
+                  >
+                    <div className="font-bold text-sky-300">SMPN 1 Sungailiat</div>
+                    <div className="text-[10px] text-sky-200/70">bk.sungailiat@radarsosial.id</div>
+                  </button>
+
+                  {/* Super Admin */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('admin@radarsosial.id');
+                      setPassword('admin123456');
+                    }}
+                    className="text-left p-2 rounded-lg bg-purple-950/40 hover:bg-purple-900/50 border border-purple-600/30 transition cursor-pointer"
+                  >
+                    <div className="font-bold text-purple-300">Super-Admin Lab</div>
+                    <div className="text-[10px] text-purple-200/70">admin@radarsosial.id</div>
+                  </button>
+                </div>
+              </div>
+
               {/* Form Login Standar */}
               <form onSubmit={handleManualLogin} className="space-y-4 text-xs">
                 {errorMessage && (
@@ -533,23 +638,24 @@ export const LoginView: React.FC = () => {
               Sistem akan memverifikasi identitas dan menghubungkan Anda ke hak akses peran yang telah dikonfigurasi.
             </p>
 
-            <div className="space-y-2">
-              {dataStorage.getUsers().slice(0, 3).map((u) => (
+            <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+              {dataStorage.getUsers().map((u) => (
                 <button
                   key={u.id}
                   onClick={() => handleGoogleSsoSelect(u.email)}
-                  className="w-full p-3 rounded-xl bg-[#0a2a4a] hover:bg-[#1a3f64] border border-[#1a3f64] flex items-center justify-between text-left transition cursor-pointer"
+                  className="w-full p-3 rounded-xl bg-[#0a2a4a] hover:bg-[#1a3f64] border border-[#1a3f64] flex items-center justify-between text-left transition cursor-pointer group"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-cyan-950 text-cyan-300 flex items-center justify-center font-bold">
+                    <div className="w-8 h-8 rounded-full bg-cyan-950 text-cyan-300 flex items-center justify-center font-bold shrink-0">
                       {u.name.charAt(0)}
                     </div>
-                    <div>
-                      <div className="font-bold text-white">{u.name}</div>
-                      <div className="text-[11px] text-[#b0c4de]">{u.email}</div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-white group-hover:text-[#f7d970] transition truncate">{u.name}</div>
+                      <div className="text-[11px] text-[#b0c4de] truncate">{u.email}</div>
+                      <div className="text-[10px] text-emerald-400 font-medium truncate">{u.schoolName}</div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black/40 text-[#f7d970] uppercase">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black/40 text-[#f7d970] uppercase shrink-0">
                     {u.role.replace('_', ' ')}
                   </span>
                 </button>

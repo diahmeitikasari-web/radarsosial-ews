@@ -33,44 +33,71 @@ const MainApp: React.FC = () => {
 
   // Schools, classes, periods from dataStorage
   const schools = useMemo(() => dataStorage.getSchools(), [version]);
-  
-  // Multi-tenant scoped activeSchool:
-  const activeSchool = useMemo(() => {
-    if (!currentUser) return schools[0];
-    if (currentUser.role === 'admin') {
-      return schools[0];
-    }
-    // Guru BK and Kepala Sekolah are strictly scoped to their tenant
-    return schools.find((s) => s.id === currentUser.schoolId) || schools[0];
-  }, [schools, currentUser]);
-
   const periods = useMemo(() => dataStorage.getPeriods(), [version]);
+
+  // Tenant-scoped default school for user:
+  const userSchool = useMemo(() => {
+    if (!currentUser) return schools[0];
+    if (currentUser.schoolId) {
+      const found = schools.find((s) => s.id === currentUser.schoolId);
+      if (found) return found;
+    }
+    return schools[0];
+  }, [schools, currentUser]);
 
   // Multi-tenant scoped classes:
   const classes = useMemo(() => {
     if (!currentUser || currentUser.role === 'admin') {
       return dataStorage.getClasses();
     }
-    return dataStorage.getClasses(activeSchool?.id);
-  }, [activeSchool?.id, currentUser, version]);
+    const tenantClasses = dataStorage.getClasses(userSchool?.id);
+    if (tenantClasses && tenantClasses.length > 0) {
+      return tenantClasses;
+    }
+    return dataStorage.getClasses();
+  }, [userSchool?.id, currentUser, version]);
 
   const [activePeriodId, setActivePeriodId] = useState<string>(() => {
-    return periods.find((p) => p.status === 'aktif')?.id || periods[0]?.id || '2026-s1';
+    return periods.find((p) => p.status === 'aktif')?.id || periods[0]?.id || 'period-2026-s1';
   });
 
   const [activeClassId, setActiveClassId] = useState<string>(() => {
-    return classes[0]?.id || 'c-8a';
+    if (currentUser?.schoolId) {
+      const userClasses = dataStorage.getClasses(currentUser.schoolId);
+      if (userClasses.length > 0) return userClasses[0].id;
+    }
+    return classes[0]?.id || 'cls-8a';
   });
 
-  // Keep activeClass in sync with tenant scoped classes
+  // Keep activeClass in sync with tenant scoped classes whenever currentUser or their school changes
   useEffect(() => {
-    if (classes.length > 0 && !classes.some((c) => c.id === activeClassId)) {
-      setActiveClassId(classes[0].id);
+    if (classes.length > 0) {
+      const hasActiveClass = classes.some((c) => c.id === activeClassId);
+      if (!hasActiveClass) {
+        setActiveClassId(classes[0].id);
+      }
     }
-  }, [classes, activeClassId]);
+  }, [currentUser?.id, currentUser?.schoolId, classes, activeClassId]);
 
   const activePeriod = periods.find((p) => p.id === activePeriodId) || periods[0];
-  const activeClass = classes.find((c) => c.id === activeClassId) || classes[0];
+  const activeClass = useMemo(() => {
+    const found = classes.find((c) => c.id === activeClassId);
+    if (found) return found;
+    return classes[0] || dataStorage.getClasses()[0];
+  }, [classes, activeClassId]);
+
+  // Dynamic activeSchool strictly tracks the user's school and the selected activeClass's schoolId
+  const activeSchool = useMemo(() => {
+    if (currentUser?.schoolId) {
+      const uSchool = schools.find((s) => s.id === currentUser.schoolId);
+      if (uSchool) return uSchool;
+    }
+    if (activeClass?.schoolId) {
+      const classSchool = schools.find((s) => s.id === activeClass.schoolId);
+      if (classSchool) return classSchool;
+    }
+    return userSchool || schools[0];
+  }, [schools, currentUser?.schoolId, activeClass?.schoolId, userSchool]);
 
   // Modals state
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
@@ -160,6 +187,8 @@ const MainApp: React.FC = () => {
 
       {/* Global Navigation Bar */}
       <Navbar
+        school={activeSchool}
+        activeSchool={activeSchool}
         periods={periods}
         activePeriod={activePeriod}
         onChangePeriod={setActivePeriodId}
@@ -255,8 +284,15 @@ const MainApp: React.FC = () => {
         period={activePeriod}
         metrics={metrics}
         aggregate={aggregate}
-        counselorName={activeClass.counselorName || activeSchool.counselorName || 'Liengga Brian Darea, S.Sos.,Gr'}
-        principalName={activeSchool.principalName || 'Drs. H. Ahmad Fauzi, M.Ag.'}
+        counselorName={
+          activeClass?.counselorName ||
+          activeSchool?.counselorName ||
+          (activeSchool?.id === 'sch-smpn1-mendobarat' ? 'Rahmat Hidayat, S.Pd., Kons.' : 'Liengga Brian Darea, S.Sos.,Gr')
+        }
+        principalName={
+          activeSchool?.principalName ||
+          (activeSchool?.id === 'sch-smpn1-mendobarat' ? 'Drs. Hermansyah, M.Pd.' : 'Drs. H. Ahmad Fauzi, M.Ag.')
+        }
       />
 
       {/* Printable Questionnaire Modal */}

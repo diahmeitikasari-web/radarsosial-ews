@@ -11,6 +11,14 @@ import {
   ClassCounselorSummary,
   PasswordResetRequest,
 } from '../types';
+import {
+  ALL_SCHOOLS,
+  ALL_CLASSES,
+  ALL_USERS,
+  generateAllStudents,
+  generateAllNominations,
+  generateAllBehavioralRatings,
+} from './seedStudents';
 
 export const INITIAL_PERIODS: Period[] = [
   {
@@ -89,212 +97,10 @@ export const INITIAL_PERIODS: Period[] = [
   },
 ];
 
-export const INITIAL_SCHOOLS: School[] = [
-  {
-    id: 'sch-mtsn2-bangka',
-    name: 'MTs Negeri 2 Bangka',
-    npsn: '10901234',
-    address: 'Jl. Pemuda No. 45, Sungailiat, Bangka Belitung',
-    city: 'Kabupaten Bangka',
-    type: 'Madrasah',
-    totalClasses: 12,
-    principalName: 'Drs. H. Ahmad Fauzi, M.Ag.',
-    counselorName: 'Liengga Brian Darea, S.Sos.,Gr',
-    phone: '(0717) 92345',
-    status: 'aktif',
-    theme: {
-      preset: 'navy_gold',
-      primaryColor: '#0a2a4a',
-      secondaryColor: '#0d3555',
-      accentColor: '#f0c040',
-      accentLight: '#f7d970',
-      schoolBadge: 'Madrasah Hebat Bermartabat',
-    },
-  },
-  {
-    id: 'sch-smpn1-sungailiat',
-    name: 'SMP Negeri 1 Sungailiat',
-    npsn: '10905678',
-    address: 'Jl. Jenderal Sudirman No. 12, Sungailiat',
-    city: 'Kabupaten Bangka',
-    type: 'SMP',
-    totalClasses: 15,
-    principalName: 'H. Hendra, M.Pd.',
-    counselorName: 'Rina Marlina, S.Pd.',
-    phone: '(0717) 91122',
-    status: 'aktif',
-    theme: {
-      preset: 'royal_sapphire',
-      primaryColor: '#0f2b5c',
-      secondaryColor: '#1a3f7a',
-      accentColor: '#38bdf8',
-      accentLight: '#7dd3fc',
-      schoolBadge: 'Sekolah Penggerak Berprestasi',
-    },
-  },
-];
+export const INITIAL_SCHOOLS: School[] = ALL_SCHOOLS;
+export const INITIAL_CLASSES: SchoolClass[] = ALL_CLASSES;
+export const INITIAL_USERS: User[] = ALL_USERS;
 
-export const INITIAL_CLASSES: SchoolClass[] = [
-  {
-    id: 'cls-8a',
-    schoolId: 'sch-mtsn2-bangka',
-    name: 'Kelas 8A',
-    grade: '8',
-    academicYear: '2026/2027',
-    homeroomTeacher: 'Budi Santoso, S.Pd.',
-    counselorId: 'usr-guru-bk',
-    counselorName: 'Liengga Brian Darea, S.Sos.,Gr',
-    targetStudentCount: 30,
-    description: 'Rombongan belajar unggulan sosiometri semester ganjil',
-  },
-  {
-    id: 'cls-8b',
-    schoolId: 'sch-mtsn2-bangka',
-    name: 'Kelas 8B',
-    grade: '8',
-    academicYear: '2026/2027',
-    homeroomTeacher: 'Nurul Hidayati, M.Pd.',
-    counselorId: 'usr-guru-bk',
-    counselorName: 'Liengga Brian Darea, S.Sos.,Gr',
-    targetStudentCount: 28,
-  },
-  {
-    id: 'cls-7a',
-    schoolId: 'sch-mtsn2-bangka',
-    name: 'Kelas 7A',
-    grade: '7',
-    academicYear: '2026/2027',
-    homeroomTeacher: 'Dra. Endang Purwanti',
-    counselorId: 'usr-guru-bk-2',
-    counselorName: 'Dra. Siti Rahmawati, M.Pd.Kons',
-    targetStudentCount: 32,
-    description: 'Rombongan belajar tingkat 7',
-  },
-  {
-    id: 'cls-9a',
-    schoolId: 'sch-mtsn2-bangka',
-    name: 'Kelas 9A',
-    grade: '9',
-    academicYear: '2026/2027',
-    homeroomTeacher: 'Drs. Ahmad Mansur',
-    counselorId: 'usr-guru-bk-3',
-    counselorName: 'Ahmad Zaki, S.Pd.I, Gr',
-    targetStudentCount: 32,
-  },
-  {
-    id: 'cls-smp1-8a',
-    schoolId: 'sch-smpn1-sungailiat',
-    name: 'Kelas VIII-A (SMPN 1)',
-    grade: '8',
-    academicYear: '2026/2027',
-    homeroomTeacher: 'Slamet Riyadi, S.Pd.',
-    counselorId: 'usr-guru-bk-sungailiat',
-    counselorName: 'Rina Marlina, S.Pd.',
-    targetStudentCount: 30,
-  },
-];
-
-export const INITIAL_USERS: User[] = [
-  {
-    id: 'usr-guru-bk',
-    name: 'Liengga Brian Darea, S.Sos.,Gr',
-    email: 'gurubk@radarsosial.id',
-    password: 'bk123456',
-    role: 'guru_bk',
-    schoolId: 'sch-mtsn2-bangka',
-    schoolName: 'MTs Negeri 2 Bangka',
-    assignedClassIds: ['cls-8a', 'cls-8b'],
-    nip: '19880914 201503 1 002',
-    phone: '0812-7890-1234',
-    title: 'Guru Bimbingan dan Konseling (Koordinator Kelas 8)',
-    status: 'active',
-    createdAt: '2025-01-10',
-  },
-  {
-    id: 'usr-guru-bk-2',
-    name: 'Dra. Siti Rahmawati, M.Pd.Kons',
-    email: 'siti.bk@radarsosial.id',
-    password: 'bk123456',
-    role: 'guru_bk',
-    schoolId: 'sch-mtsn2-bangka',
-    schoolName: 'MTs Negeri 2 Bangka',
-    assignedClassIds: ['cls-7a'],
-    nip: '19790614 200501 2 004',
-    phone: '0813-7345-6677',
-    title: 'Guru Bimbingan dan Konseling (Kelas 7)',
-    status: 'active',
-    createdAt: '2025-01-12',
-  },
-  {
-    id: 'usr-guru-bk-3',
-    name: 'Ahmad Zaki, S.Pd.I, Gr',
-    email: 'zaki.bk@radarsosial.id',
-    password: 'bk123456',
-    role: 'guru_bk',
-    schoolId: 'sch-mtsn2-bangka',
-    schoolName: 'MTs Negeri 2 Bangka',
-    assignedClassIds: ['cls-9a'],
-    nip: '19910419 201903 1 007',
-    phone: '0821-7788-9900',
-    title: 'Guru Bimbingan dan Konseling (Kelas 9)',
-    status: 'active',
-    createdAt: '2025-01-15',
-  },
-  {
-    id: 'usr-admin',
-    name: 'Dr. Diah Meitikasari, M.Psi.',
-    email: 'admin@radarsosial.id',
-    password: 'admin123456',
-    role: 'admin',
-    schoolId: 'sch-mtsn2-bangka',
-    schoolName: 'Psychosophia Behavioral Lab',
-    title: 'Super-Administrator Sistem & Peneliti Utama',
-    status: 'active',
-    createdAt: '2024-12-01',
-  },
-  {
-    id: 'usr-kepsek',
-    name: 'Drs. H. Ahmad Fauzi, M.Ag.',
-    email: 'kepsek@radarsosial.id',
-    password: 'kepsek123456',
-    role: 'kepala_sekolah',
-    schoolId: 'sch-mtsn2-bangka',
-    schoolName: 'MTs Negeri 2 Bangka',
-    nip: '19740512 199903 1 002',
-    phone: '0813-6712-4455',
-    title: 'Kepala Sekolah / Madrasah',
-    status: 'active',
-    createdAt: '2025-01-05',
-  },
-  {
-    id: 'usr-guru-bk-sungailiat',
-    name: 'Rina Marlina, S.Pd.',
-    email: 'bk.sungailiat@radarsosial.id',
-    password: 'bk123456',
-    role: 'guru_bk',
-    schoolId: 'sch-smpn1-sungailiat',
-    schoolName: 'SMP Negeri 1 Sungailiat',
-    assignedClassIds: ['cls-smp1-8a'],
-    nip: '19830412 200801 2 003',
-    phone: '0821-8899-7711',
-    title: 'Guru Bimbingan dan Konseling (BK)',
-    status: 'active',
-    createdAt: '2025-02-01',
-  },
-  {
-    id: 'usr-kepsek-sungailiat',
-    name: 'H. Hendra, M.Pd.',
-    email: 'kepsek.sungailiat@radarsosial.id',
-    password: 'kepsek123456',
-    role: 'kepala_sekolah',
-    schoolId: 'sch-smpn1-sungailiat',
-    schoolName: 'SMP Negeri 1 Sungailiat',
-    nip: '19710315 199602 1 001',
-    title: 'Kepala Sekolah',
-    status: 'active',
-    createdAt: '2025-02-01',
-  },
-];
 
 export const INITIAL_PASSWORD_REQUESTS: PasswordResetRequest[] = [
   {
@@ -585,142 +391,18 @@ Hasil pemetaan kuantitatif sosiometri Coie-Dodge dan triangulasi catatan kualita
   },
 };
 
-export const INITIAL_STUDENTS_8A: Student[] = [
-  { id: 's-01', nis: '20260801', name: 'Alya Rahma Azzahra', gender: 'P', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-02', nis: '20260802', name: 'Budi Pratama', gender: 'L', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' }, // Target priority: Rejected
-  { id: 's-03', nis: '20260803', name: 'Citra Dewi Lestari', gender: 'P', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-04', nis: '20260804', name: 'Dimas Aditya Nugraha', gender: 'L', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' }, // Popular
-  { id: 's-05', nis: '20260805', name: 'Erna Susilowati', gender: 'P', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' }, // Neglected
-  { id: 's-06', nis: '20260806', name: 'Fajar Hidayatullah', gender: 'L', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' }, // Controversial
-  { id: 's-07', nis: '20260807', name: 'Gita Savitri Maharani', gender: 'P', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-08', nis: '20260808', name: 'Hafiiz Al-Farisi', gender: 'L', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-09', nis: '20260809', name: 'Indah Permata Sari', gender: 'P', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-10', nis: '20260810', name: 'Jaka Tarub Pratama', gender: 'L', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-11', nis: '20260811', name: 'Kevin Prasetya', gender: 'L', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-12', nis: '20260812', name: 'Laras Sati Wulandari', gender: 'P', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-13', nis: '20260813', name: 'Muhammad Rizky Ramadhan', gender: 'L', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-14', nis: '20260814', name: 'Nabila Putri Cahyani', gender: 'P', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-15', nis: '20260815', name: 'Oki Setiawan', gender: 'L', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-16', nis: '20260816', name: 'Putri Ayu Wandira', gender: 'P', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-17', nis: '20260817', name: 'Qori Anjani Fitria', gender: 'P', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-18', nis: '20260818', name: 'Rangga Danendra', gender: 'L', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-19', nis: '20260819', name: 'Siti Maisaroh', gender: 'P', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-  { id: 's-20', nis: '20260820', name: 'Taufiq Ismail', gender: 'L', classId: 'cls-8a', className: 'Kelas 8A', schoolId: 'sch-mtsn2-bangka' },
-];
+export const INITIAL_STUDENTS: Student[] = generateAllStudents();
+export const INITIAL_STUDENTS_8A: Student[] = INITIAL_STUDENTS.filter((s) => s.classId === 'cls-8a');
 
-// Helper to seed nominations for 8A in current period (period-2026-s1)
-export function generateSeedNominations(periodId: string): SociometricNomination[] {
-  const noms: SociometricNomination[] = [];
-  let idCounter = 1;
-
-  // Pattern engineered to produce clear Coie & Dodge statuses:
-  // s-04 (Dimas Aditya): Popular (high likes, 0 dislikes)
-  // s-02 (Budi Pratama): Rejected (1 like, 7 dislikes)
-  // s-05 (Erna Susilowati): Neglected (0 likes, 0 dislikes - invisible)
-  // s-06 (Fajar Hidayatullah): Controversial (5 likes, 5 dislikes)
-  // Others: Average distribution
-
-  const likesMapping: Record<string, string[]> = {
-    's-01': ['s-04', 's-03', 's-07'],
-    's-02': ['s-04', 's-08', 's-13'],
-    's-03': ['s-01', 's-04', 's-09'],
-    's-04': ['s-08', 's-10', 's-01'],
-    's-05': ['s-01', 's-03', 's-09'],
-    's-06': ['s-04', 's-11', 's-18'],
-    's-07': ['s-01', 's-03', 's-14'],
-    's-08': ['s-04', 's-06', 's-13'],
-    's-09': ['s-03', 's-04', 's-12'],
-    's-10': ['s-04', 's-08', 's-11'],
-    's-11': ['s-06', 's-10', 's-18'],
-    's-12': ['s-04', 's-09', 's-14'],
-    's-13': ['s-04', 's-08', 's-06'],
-    's-14': ['s-01', 's-07', 's-12'],
-    's-15': ['s-04', 's-06', 's-13'],
-    's-16': ['s-03', 's-04', 's-17'],
-    's-17': ['s-01', 's-16', 's-19'],
-    's-18': ['s-06', 's-11', 's-04'],
-    's-19': ['s-17', 's-03', 's-04'],
-    's-20': ['s-04', 's-08', 's-13'],
-  };
-
-  const dislikesMapping: Record<string, string[]> = {
-    's-01': ['s-02'],
-    's-03': ['s-02', 's-06'],
-    's-04': ['s-06'],
-    's-07': ['s-02'],
-    's-08': ['s-02', 's-06'],
-    's-09': ['s-02'],
-    's-10': ['s-02'],
-    's-11': ['s-02'],
-    's-12': ['s-06'],
-    's-13': ['s-06'],
-    's-14': ['s-02'],
-    's-15': ['s-06'],
-    's-16': ['s-02'],
-    's-18': ['s-02'],
-  };
-
-  // Generate both 'belajar' and 'bermain'
-  for (const [nominator, targets] of Object.entries(likesMapping)) {
-    targets.forEach((target, idx) => {
-      noms.push({
-        id: `nom-${idCounter++}`,
-        periodId,
-        classId: 'cls-8a',
-        studentId: nominator,
-        targetId: target,
-        criteria: idx % 2 === 0 ? 'belajar' : 'bermain',
-        type: 'like',
-      });
-    });
-  }
-
-  for (const [nominator, targets] of Object.entries(dislikesMapping)) {
-    targets.forEach((target, idx) => {
-      noms.push({
-        id: `nom-${idCounter++}`,
-        periodId,
-        classId: 'cls-8a',
-        studentId: nominator,
-        targetId: target,
-        criteria: idx % 2 === 0 ? 'belajar' : 'bermain',
-        type: 'dislike',
-      });
-    });
-  }
-
-  return noms;
+// Seed nominations for all classes in current period
+export function generateSeedNominations(periodId: string = 'period-2026-s1'): SociometricNomination[] {
+  return generateAllNominations(periodId);
 }
 
-export function generateSeedBehavioralRatings(periodId: string): PeerBehavioralRating[] {
-  // Prosocial, Aggressive, Withdrawn, Victimization, Hyperactive (scale 1-10 or peer votes)
-  return [
-    { id: 'b-01', periodId, classId: 'cls-8a', studentId: 's-01', prosocial: 8, aggressive: 1, withdrawn: 2, victimization: 1, hyperactive: 2 },
-    // Budi Pratama: High victimization + withdrawn (Passive Victim / Rejected)
-    { id: 'b-02', periodId, classId: 'cls-8a', studentId: 's-02', prosocial: 2, aggressive: 3, withdrawn: 8, victimization: 9, hyperactive: 4 },
-    { id: 'b-03', periodId, classId: 'cls-8a', studentId: 's-03', prosocial: 7, aggressive: 1, withdrawn: 2, victimization: 1, hyperactive: 2 },
-    // Dimas Aditya: High prosocial (Popular-Prososial)
-    { id: 'b-04', periodId, classId: 'cls-8a', studentId: 's-04', prosocial: 9, aggressive: 1, withdrawn: 1, victimization: 0, hyperactive: 3 },
-    // Erna Susilowati: High withdrawn, very low social impact (Isolated / Neglected)
-    { id: 'b-05', periodId, classId: 'cls-8a', studentId: 's-05', prosocial: 3, aggressive: 1, withdrawn: 9, victimization: 3, hyperactive: 1 },
-    // Fajar Hidayatullah: High aggressive + moderate prosocial (Bistrategic / Controversial Leader)
-    { id: 'b-06', periodId, classId: 'cls-8a', studentId: 's-06', prosocial: 5, aggressive: 8, withdrawn: 1, victimization: 2, hyperactive: 8 },
-    { id: 'b-07', periodId, classId: 'cls-8a', studentId: 's-07', prosocial: 6, aggressive: 2, withdrawn: 3, victimization: 1, hyperactive: 2 },
-    { id: 'b-08', periodId, classId: 'cls-8a', studentId: 's-08', prosocial: 7, aggressive: 2, withdrawn: 2, victimization: 1, hyperactive: 3 },
-    { id: 'b-09', periodId, classId: 'cls-8a', studentId: 's-09', prosocial: 6, aggressive: 1, withdrawn: 3, victimization: 2, hyperactive: 2 },
-    { id: 'b-10', periodId, classId: 'cls-8a', studentId: 's-10', prosocial: 5, aggressive: 3, withdrawn: 2, victimization: 2, hyperactive: 4 },
-    { id: 'b-11', periodId, classId: 'cls-8a', studentId: 's-11', prosocial: 4, aggressive: 5, withdrawn: 2, victimization: 2, hyperactive: 5 },
-    { id: 'b-12', periodId, classId: 'cls-8a', studentId: 's-12', prosocial: 6, aggressive: 1, withdrawn: 3, victimization: 1, hyperactive: 2 },
-    { id: 'b-13', periodId, classId: 'cls-8a', studentId: 's-13', prosocial: 7, aggressive: 2, withdrawn: 2, victimization: 1, hyperactive: 3 },
-    { id: 'b-14', periodId, classId: 'cls-8a', studentId: 's-14', prosocial: 6, aggressive: 2, withdrawn: 2, victimization: 1, hyperactive: 3 },
-    { id: 'b-15', periodId, classId: 'cls-8a', studentId: 's-15', prosocial: 4, aggressive: 3, withdrawn: 4, victimization: 2, hyperactive: 3 },
-    { id: 'b-16', periodId, classId: 'cls-8a', studentId: 's-16', prosocial: 5, aggressive: 2, withdrawn: 3, victimization: 1, hyperactive: 2 },
-    { id: 'b-17', periodId, classId: 'cls-8a', studentId: 's-17', prosocial: 5, aggressive: 1, withdrawn: 4, victimization: 1, hyperactive: 2 },
-    { id: 'b-18', periodId, classId: 'cls-8a', studentId: 's-18', prosocial: 4, aggressive: 6, withdrawn: 2, victimization: 2, hyperactive: 6 },
-    { id: 'b-19', periodId, classId: 'cls-8a', studentId: 's-19', prosocial: 5, aggressive: 2, withdrawn: 3, victimization: 2, hyperactive: 3 },
-    { id: 'b-20', periodId, classId: 'cls-8a', studentId: 's-20', prosocial: 6, aggressive: 2, withdrawn: 2, victimization: 1, hyperactive: 3 },
-  ];
+export function generateSeedBehavioralRatings(periodId: string = 'period-2026-s1'): PeerBehavioralRating[] {
+  return generateAllBehavioralRatings(periodId);
 }
+
 
 export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
