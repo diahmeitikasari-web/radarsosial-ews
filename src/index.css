@@ -26,14 +26,27 @@
     margin: 10mm;
   }
 
-  body {
+  html, body {
     background: #ffffff !important;
     color: #0a2a4a !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
   }
 
-  /* Hide screen-only elements */
+  /* When a printable modal is active, hide entire app chrome, main dashboard, and footers */
+  body.has-printable-modal nav,
+  body.has-printable-modal header,
+  body.has-printable-modal main,
+  body.has-printable-modal footer,
+  body.has-printable-modal .offline-banner,
+  body.has-printable-modal .no-print {
+    display: none !important;
+  }
+
+  /* General screen-only elements */
   .no-print,
   button:not(.print-include),
   nav,
@@ -47,14 +60,53 @@
     display: block !important;
   }
 
-  /* Ensure page breaks don't tear tables or signatures */
-  .page-break-inside-avoid {
+  /* Ensure printable modal overlay flows normally across pages */
+  .printable-modal-overlay {
+    position: static !important;
+    overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    inset: auto !important;
+  }
+
+  .printable-modal-card {
+    position: static !important;
+    overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Page break utilities */
+  .page-break-inside-avoid,
+  .break-inside-avoid {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
-  .page-break-after {
+  .print-page-break-before,
+  .page-break-before,
+  .break-before-page {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  .print-page-break-after,
+  .page-break-after,
+  .break-after-page {
     page-break-after: always !important;
-    break-after: always !important;
+    break-after: page !important;
   }
 }

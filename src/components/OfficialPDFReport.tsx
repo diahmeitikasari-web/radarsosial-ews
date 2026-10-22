@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   School,
   SchoolClass,
@@ -33,9 +33,19 @@ export const OfficialPDFReport: React.FC<OfficialPDFReportProps> = ({
   counselorName,
   principalName,
 }) => {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('has-printable-modal');
+      return () => {
+        document.body.classList.remove('has-printable-modal');
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handlePrint = () => {
+    document.body.classList.add('has-printable-modal');
     window.print();
   };
 
@@ -66,9 +76,9 @@ export const OfficialPDFReport: React.FC<OfficialPDFReportProps> = ({
   const thematicClassData = generateThematicClassReport(classStudentNotes, activeClass.name);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible print:block print:h-auto printable-modal-overlay">
       {/* Container - Styled like A4 document in print mode */}
-      <div className="relative w-full max-w-4xl rounded-2xl bg-white text-slate-900 shadow-2xl my-auto print:shadow-none print:w-full print:max-w-none print:rounded-none overflow-hidden">
+      <div className="relative w-full max-w-4xl rounded-2xl bg-white text-slate-900 shadow-2xl my-auto print:my-0 print:shadow-none print:w-full print:max-w-none print:rounded-none overflow-hidden print:overflow-visible print:block print:h-auto printable-modal-card">
         {/* Floating Action Bar (Hidden in Print) */}
         <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-3 bg-slate-900 text-white border-b border-slate-800 print:hidden">
           <div className="flex items-center gap-2">

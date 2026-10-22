@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { School, SchoolClass, Period } from '../types';
-import { Printer, X, Download, ShieldCheck, CheckSquare, Sparkles, FileText } from 'lucide-react';
+import { Printer, X, Download, ShieldCheck, CheckSquare, Sparkles, FileText, Layers } from 'lucide-react';
 
 interface PrintableQuestionnaireA4Props {
   isOpen: boolean;
@@ -20,9 +20,20 @@ export const PrintableQuestionnaireA4: React.FC<PrintableQuestionnaireA4Props> =
   const [includeDislike, setIncludeDislike] = useState(true);
   const [includeBehavior, setIncludeBehavior] = useState(true);
 
+  // Manage print mode classes on body so the browser print engine isolates the document
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('has-printable-modal', 'has-printable-questionnaire');
+      return () => {
+        document.body.classList.remove('has-printable-modal', 'has-printable-questionnaire');
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handlePrint = () => {
+    document.body.classList.add('has-printable-modal', 'has-printable-questionnaire');
     window.print();
   };
 
@@ -44,8 +55,8 @@ export const PrintableQuestionnaireA4: React.FC<PrintableQuestionnaireA4Props> =
   const periodName = activePeriod?.name || 'Semester Ganjil 2026/2027';
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex justify-center p-2 sm:p-4 print:p-0 print:bg-white">
-      <div className="relative w-full max-w-4xl bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto print:my-0 print:shadow-none print:rounded-none print:w-full">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex justify-center p-2 sm:p-4 print:p-0 print:bg-white print:static print:overflow-visible print:block print:h-auto printable-modal-overlay">
+      <div className="relative w-full max-w-4xl bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto print:my-0 print:shadow-none print:rounded-none print:w-full print:max-w-none print:overflow-visible print:block print:h-auto printable-modal-card">
         {/* Modal Toolbar (Hidden when Printing) */}
         <div className="no-print bg-[#0a2a4a] text-white px-6 py-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#1a3f64]">
           <div className="flex items-center gap-3">
@@ -71,11 +82,11 @@ export const PrintableQuestionnaireA4: React.FC<PrintableQuestionnaireA4Props> =
               className="print-include flex items-center gap-2 px-4 py-2 rounded-xl bg-[#f0c040] hover:bg-[#f7d970] text-[#0a2a4a] text-xs font-bold shadow-lg transition duration-150 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>Cetak Sekarang (A4)</span>
+              <span>Cetak Sekarang (A4 / PDF)</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-[#1a3f64] hover:bg-[#0d3555] text-[#b0c4de] hover:text-white transition"
+              className="p-2 rounded-xl bg-[#1a3f64] hover:bg-[#0d3555] text-[#b0c4de] hover:text-white transition cursor-pointer"
               title="Tutup"
             >
               <X className="w-5 h-5" />
@@ -87,7 +98,7 @@ export const PrintableQuestionnaireA4: React.FC<PrintableQuestionnaireA4Props> =
         <div className="no-print bg-slate-100 px-6 py-2.5 border-b border-slate-200 text-xs text-slate-700 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <span className="font-semibold text-slate-900">Opsi Format Angket:</span>
-            <label className="flex items-center gap-1.5 cursor-pointer">
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={includeDislike}
@@ -96,18 +107,23 @@ export const PrintableQuestionnaireA4: React.FC<PrintableQuestionnaireA4Props> =
               />
               <span>Sertakan Pilihan Penolakan (Dislike) Rahasia</span>
             </label>
-            <label className="flex items-center gap-1.5 cursor-pointer">
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={includeBehavior}
                 onChange={(e) => setIncludeBehavior(e.target.checked)}
                 className="rounded text-[#0a2a4a] focus:ring-[#f0c040]"
               />
-              <span>Sertakan Evaluasi Perilaku Sebaya (5 Dimensi)</span>
+              <span className="font-medium text-slate-900">Sertakan Bagian C (Radar Perilaku 5 Dimensi)</span>
             </label>
           </div>
-          <div className="text-[11px] text-slate-500 italic">
-            *Ukuran standar A4 Portrait. Atur margin 'Default' atau '10mm' pada dialog printer.
+          <div className="flex items-center gap-2 text-[11px] text-slate-600 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+            <Layers className="w-3.5 h-3.5 text-[#0a2a4a]" />
+            <span>
+              {includeBehavior
+                ? 'Output: 2 Lembar A4 (Lembar 1: Bagian A & B • Lembar 2: Bagian C & TTD)'
+                : 'Output: 1 Lembar A4 Ringkas (Bagian A & B • TTD)'}
+            </span>
           </div>
         </div>
 
@@ -200,7 +216,7 @@ export const PrintableQuestionnaireA4: React.FC<PrintableQuestionnaireA4Props> =
           </div>
 
           {/* BAGIAN 1: SOSIO-INSTRUMENTAL (BELAJAR) */}
-          <div className="mb-4">
+          <div className="mb-4 page-break-inside-avoid">
             <div className="bg-[#0a2a4a] text-white px-3 py-1 font-bold text-xs uppercase tracking-wider rounded flex items-center justify-between">
               <span>Bagian A: Pilihan Teman Belajar (Sosio-Instrumental)</span>
               <span className="text-[10px] text-[#f7d970]">Kriteria I</span>
@@ -252,7 +268,7 @@ export const PrintableQuestionnaireA4: React.FC<PrintableQuestionnaireA4Props> =
           </div>
 
           {/* BAGIAN 2: SOSIO-AFEKTIF (BERMAIN & SOSIALISASI) */}
-          <div className="mb-4">
+          <div className="mb-4 page-break-inside-avoid">
             <div className="bg-[#1a3f64] text-white px-3 py-1 font-bold text-xs uppercase tracking-wider rounded flex items-center justify-between">
               <span>Bagian B: Pilihan Teman Bermain / Bergaul (Sosio-Afektif)</span>
               <span className="text-[10px] text-[#f7d970]">Kriteria II</span>
@@ -300,54 +316,66 @@ export const PrintableQuestionnaireA4: React.FC<PrintableQuestionnaireA4Props> =
 
           {/* BAGIAN 3: EVALUASI PERILAKU SEBAYA (5 DIMENSI) */}
           {includeBehavior && (
-            <div className="mb-4 page-break-inside-avoid">
-              <div className="bg-slate-800 text-white px-3 py-1 font-bold text-xs uppercase tracking-wider rounded flex items-center justify-between">
+            <div className="mb-4 print:page-break-before print:break-before-page break-before-page page-break-before page-break-inside-avoid">
+              {/* Kop Mini Khusus Lembar Lanjutan Halaman 2 */}
+              <div className="hidden print:flex items-center justify-between pb-2 mb-3 border-b border-slate-300 text-[10px] text-slate-600 font-medium">
+                <div>
+                  <span className="font-bold text-slate-800">{schoolName}</span> &bull; <span>Kuesioner Sosiometri (Lembar Lanjutan)</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span>Rombel: <strong>{className}</strong></span>
+                  <span>&bull;</span>
+                  <span>Nama Siswa: .................................................</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-800 text-white px-3 py-1 font-bold text-xs uppercase tracking-wider rounded flex items-center justify-between print:bg-slate-800 print:text-white">
                 <span>Bagian C: Evaluasi Karakter &amp; Perilaku Sebaya (Radar Perilaku)</span>
                 <span className="text-[10px] text-[#f7d970]">Moreno-Peer Rating</span>
               </div>
-              <div className="p-3 border border-slate-300 rounded-b mt-0 text-xs">
+              <div className="p-3 border border-slate-300 rounded-b mt-0 text-xs bg-white">
                 <p className="text-slate-700 mb-2">
                   Tuliskan <strong>1 atau 2 nama teman</strong> di kelas ini yang menurut pengamatan Anda paling mewakili ciri-ciri berikut:
                 </p>
-                <table className="w-full border-collapse border border-slate-300 text-[11px]">
+                <table className="w-full border-collapse border border-slate-400 text-[11px]">
                   <thead>
-                    <tr className="bg-slate-100 text-slate-800">
-                      <th className="border border-slate-300 p-1.5 text-center w-8">No</th>
-                      <th className="border border-slate-300 p-1.5 text-left w-56">Dimensi Karakter</th>
-                      <th className="border border-slate-300 p-1.5 text-left">Deskripsi Perilaku</th>
-                      <th className="border border-slate-300 p-1.5 text-left w-48">Nama Teman yang Dinominasikan</th>
+                    <tr className="bg-slate-100 text-slate-900 font-bold">
+                      <th className="border border-slate-400 p-1.5 text-center w-8">No</th>
+                      <th className="border border-slate-400 p-1.5 text-left w-56">Dimensi Karakter</th>
+                      <th className="border border-slate-400 p-1.5 text-left">Deskripsi Perilaku</th>
+                      <th className="border border-slate-400 p-1.5 text-left w-48">Nama Teman yang Dinominasikan</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="border border-slate-300 p-1.5 text-center font-bold">1</td>
-                      <td className="border border-slate-300 p-1.5 font-semibold text-emerald-800">Perilaku Prososial</td>
-                      <td className="border border-slate-300 p-1.5">Suka menolong, murah hati, senang berbagi ilmu atau alat tulis tanpa diminta.</td>
-                      <td className="border border-slate-300 p-1.5 font-mono text-slate-400">1. .....................................<br/>2. .....................................</td>
+                      <td className="border border-slate-400 p-1.5 text-center font-bold">1</td>
+                      <td className="border border-slate-400 p-1.5 font-semibold text-emerald-800">Perilaku Prososial</td>
+                      <td className="border border-slate-400 p-1.5">Suka menolong, murah hati, senang berbagi ilmu atau alat tulis tanpa diminta.</td>
+                      <td className="border border-slate-400 p-1.5 font-mono text-slate-400">1. .....................................<br/>2. .....................................</td>
                     </tr>
                     <tr>
-                      <td className="border border-slate-300 p-1.5 text-center font-bold">2</td>
-                      <td className="border border-slate-300 p-1.5 font-semibold text-blue-800">Regulasi Emosi</td>
-                      <td className="border border-slate-300 p-1.5">Sabar, tenang, tidak cepat marah saat diejek atau saat menghadapi masalah.</td>
-                      <td className="border border-slate-300 p-1.5 font-mono text-slate-400">1. .....................................<br/>2. .....................................</td>
+                      <td className="border border-slate-400 p-1.5 text-center font-bold">2</td>
+                      <td className="border border-slate-400 p-1.5 font-semibold text-blue-800">Regulasi Emosi</td>
+                      <td className="border border-slate-400 p-1.5">Sabar, tenang, tidak cepat marah saat diejek atau saat menghadapi masalah.</td>
+                      <td className="border border-slate-400 p-1.5 font-mono text-slate-400">1. .....................................<br/>2. .....................................</td>
                     </tr>
                     <tr>
-                      <td className="border border-slate-300 p-1.5 text-center font-bold">3</td>
-                      <td className="border border-slate-300 p-1.5 font-semibold text-purple-800">Keberanian Sosial</td>
-                      <td className="border border-slate-300 p-1.5">Berani membela teman yang dizalimi, bersikap adil, tidak takut menyuarakan kebenaran.</td>
-                      <td className="border border-slate-300 p-1.5 font-mono text-slate-400">1. .....................................<br/>2. .....................................</td>
+                      <td className="border border-slate-400 p-1.5 text-center font-bold">3</td>
+                      <td className="border border-slate-400 p-1.5 font-semibold text-purple-800">Keberanian Sosial</td>
+                      <td className="border border-slate-400 p-1.5">Berani membela teman yang dizalimi, bersikap adil, tidak takut menyuarakan kebenaran.</td>
+                      <td className="border border-slate-400 p-1.5 font-mono text-slate-400">1. .....................................<br/>2. .....................................</td>
                     </tr>
                     <tr>
-                      <td className="border border-slate-300 p-1.5 text-center font-bold">4</td>
-                      <td className="border border-slate-300 p-1.5 font-semibold text-cyan-800">Kontrol Diri</td>
-                      <td className="border border-slate-300 p-1.5">Tertib, mematuhi kesepakatan kelas, tidak berisik saat guru menerangkan pelajaran.</td>
-                      <td className="border border-slate-300 p-1.5 font-mono text-slate-400">1. .....................................<br/>2. .....................................</td>
+                      <td className="border border-slate-400 p-1.5 text-center font-bold">4</td>
+                      <td className="border border-slate-400 p-1.5 font-semibold text-cyan-800">Kontrol Diri</td>
+                      <td className="border border-slate-400 p-1.5">Tertib, mematuhi kesepakatan kelas, tidak berisik saat guru menerangkan pelajaran.</td>
+                      <td className="border border-slate-400 p-1.5 font-mono text-slate-400">1. .....................................<br/>2. .....................................</td>
                     </tr>
                     <tr>
-                      <td className="border border-slate-300 p-1.5 text-center font-bold">5</td>
-                      <td className="border border-slate-300 p-1.5 font-semibold text-amber-800">Proteksi Relasi Positif (Resolusi Konflik)</td>
-                      <td className="border border-slate-300 p-1.5">Teman yang sering menjadi penengah damai, melindungi rekan yang tersisih, dan mencegah pertengkaran di kelas.</td>
-                      <td className="border border-slate-300 p-1.5 font-mono text-slate-400">1. .....................................<br/>2. .....................................</td>
+                      <td className="border border-slate-400 p-1.5 text-center font-bold">5</td>
+                      <td className="border border-slate-400 p-1.5 font-semibold text-amber-800">Proteksi Relasi Positif (Resolusi Konflik)</td>
+                      <td className="border border-slate-400 p-1.5">Teman yang sering menjadi penengah damai, melindungi rekan yang tersisih, dan mencegah pertengkaran di kelas.</td>
+                      <td className="border border-slate-400 p-1.5 font-mono text-slate-400">1. .....................................<br/>2. .....................................</td>
                     </tr>
                   </tbody>
                 </table>
