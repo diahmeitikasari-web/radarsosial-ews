@@ -1000,13 +1000,13 @@ export const UserGuideBook: React.FC = () => {
                 <span>2. Alur Pengisian via Template Excel (Disarankan):</span>
               </h3>
               <ol className="list-decimal pl-5 space-y-1.5 text-xs text-[#e8edf5]">
-                <li>Di dashboard Guru BK, klik tombol <strong>"Unggah Excel Template"</strong>.</li>
-                <li>Klik tombol <strong>"Unduh Format Template Excel"</strong> yang sudah tersedia dengan baris contoh.</li>
-                <li>Buka file di Microsoft Excel atau Google Sheets. Isikan nama siswa pada kolom <code>nama</code>, rombel pada kolom <code>kelas</code>, dan jenis kelamin (<code>L</code> atau <code>P</code>).</li>
-                <li>Masukkan pilihan teman belajar di kolom <code>like_belajar</code> (pisahkan dengan koma/spasi, maksimal 3 nama).</li>
-                <li>Masukkan pilihan teman bermain di kolom <code>like_bermain</code>.</li>
-                <li>(Opsional namun dianjurkan) Masukkan nama teman yang cenderung dihindari pada kolom <code>dislike_belajar</code> dan <code>dislike_bermain</code>.</li>
-                <li>Simpan file dan seret (*drag-and-drop*) kembali ke kotak dialog unggah di aplikasi.</li>
+                <li>Di dashboard Guru BK, klik tombol <strong>"Unggah Excel"</strong>.</li>
+                <li>Klik tombol <strong>"Unduh Format Template .XLSX"</strong> yang sudah tersedia lengkap dengan baris contoh nyata.</li>
+                <li>Buka file di Microsoft Excel atau Google Sheets. Setiap baris mewakili 1 siswa (identitas: <code>NIS</code>, <code>Nama Lengkap</code>, dan <code>Jenis Kelamin</code>).</li>
+                <li><strong>Bagian A (Belajar):</strong> Masukkan nama teman belajar di kolom <code>[Belajar] Suka 1 (Nama)</code> s.d. <code>Suka 3</code>, dan teman yang dihindari di <code>[Belajar] Hindari 1 (Nama)</code> s.d. <code>Hindari 2</code> (dari Kuesioner Bagian A).</li>
+                <li><strong>Bagian B (Bermain):</strong> Masukkan nama teman bermain/bergaul di kolom <code>[Bermain] Suka 1 (Nama)</code> s.d. <code>Suka 3</code>, dan teman yang dihindari di <code>[Bermain] Hindari 1 (Nama)</code> s.d. <code>Hindari 2</code> (dari Kuesioner Bagian B).</li>
+                <li><strong>Bagian C (Radar Perilaku):</strong> Masukkan estimasi skor 1 s.d. 10 pada kolom <code>Skor Prososial</code>, <code>Agresif</code>, <code>Menarik Diri</code>, <code>Viktimisasi</code>, dan <code>Hiperaktif</code> (dari Kuesioner Bagian C).</li>
+                <li>Simpan file dan seret (*drag-and-drop*) kembali ke kotak dialog unggah di aplikasi. Sistem akan memproses seluruh relasi sosiometri kedua kriteria secara instan!</li>
               </ol>
             </div>
 

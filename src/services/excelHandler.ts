@@ -17,24 +17,51 @@ export interface ParsedExcelResult {
 }
 
 export function generateExcelTemplate(classStudents: Student[], className = 'Kelas 8A') {
-  // Build rows with sample or prefilled student names
-  const rows = classStudents.map((s) => ({
+  // If class has no students yet, provide realistic sample rows so enumerators see immediate examples
+  const sourceStudents =
+    classStudents.length > 0
+      ? classStudents
+      : [
+          { id: 'sample-1', nis: '20260001', name: 'Ahmad Fauzi', gender: 'L' as const, className, classId: '', schoolId: '' },
+          { id: 'sample-2', nis: '20260002', name: 'Annisa Putri', gender: 'P' as const, className, classId: '', schoolId: '' },
+          { id: 'sample-3', nis: '20260003', name: 'Bagas Saputra', gender: 'L' as const, className, classId: '', schoolId: '' },
+          { id: 'sample-4', nis: '20260004', name: 'Citra Lestari', gender: 'P' as const, className, classId: '', schoolId: '' },
+          { id: 'sample-5', nis: '20260005', name: 'Daffa Al Ghifari', gender: 'L' as const, className, classId: '', schoolId: '' },
+        ];
+
+  const isSample = classStudents.length === 0;
+
+  // Build rows directly matching Questionnaire Sections:
+  // - Identitas Siswa
+  // - Bagian A: Pilihan Teman Belajar (Sosio-Instrumental)
+  // - Bagian B: Pilihan Teman Bermain / Bergaul (Sosio-Afektif)
+  // - Bagian C: Evaluasi Karakter & Perilaku Sebaya (Radar Perilaku)
+  const rows = sourceStudents.map((s, idx) => ({
     'Kelas / Rombel': className,
     NIS: s.nis,
     'Nama Lengkap': s.name,
     'Jenis Kelamin (L/P)': s.gender,
-    'Pilihan Suka 1 (Nama)': '',
-    'Pilihan Suka 2 (Nama)': '',
-    'Pilihan Suka 3 (Nama)': '',
-    'Pilihan Tidak Suka 1 (Nama)': '',
-    'Pilihan Tidak Suka 2 (Nama)': '',
-    'Pilihan Tidak Suka 3 (Nama)': '',
-    'Skor Prososial (1-10)': 5,
-    'Skor Agresif (1-10)': 2,
-    'Skor Menarik Diri (1-10)': 2,
-    'Skor Viktimisasi (1-10)': 1,
-    'Skor Hiperaktif (1-10)': 2,
-    'Kriteria (Belajar/Bermain)': 'Belajar',
+
+    // BAGIAN A: TEMAN BELAJAR (SOSIO-INSTRUMENTAL) - Kuesioner Bagian A
+    '[Belajar] Suka 1 (Nama)': isSample ? (idx === 0 ? 'Annisa Putri' : idx === 1 ? 'Citra Lestari' : 'Ahmad Fauzi') : '',
+    '[Belajar] Suka 2 (Nama)': isSample ? (idx === 0 ? 'Bagas Saputra' : idx === 1 ? 'Ahmad Fauzi' : 'Annisa Putri') : '',
+    '[Belajar] Suka 3 (Nama)': isSample ? (idx === 0 ? 'Citra Lestari' : idx === 1 ? 'Bagas Saputra' : 'Daffa Al Ghifari') : '',
+    '[Belajar] Hindari 1 (Nama)': '',
+    '[Belajar] Hindari 2 (Nama)': '',
+
+    // BAGIAN B: TEMAN BERMAIN / BERGAUL (SOSIO-AFEKTIF) - Kuesioner Bagian B
+    '[Bermain] Suka 1 (Nama)': isSample ? (idx === 0 ? 'Bagas Saputra' : idx === 1 ? 'Citra Lestari' : 'Daffa Al Ghifari') : '',
+    '[Bermain] Suka 2 (Nama)': isSample ? (idx === 0 ? 'Daffa Al Ghifari' : idx === 1 ? 'Ahmad Fauzi' : 'Annisa Putri') : '',
+    '[Bermain] Suka 3 (Nama)': '',
+    '[Bermain] Hindari 1 (Nama)': '',
+    '[Bermain] Hindari 2 (Nama)': '',
+
+    // BAGIAN C: RADAR PERILAKU SEBAYA (Skala Skor 1 - 10) - Kuesioner Bagian C
+    'Skor Prososial (1-10)': isSample ? (idx === 0 ? 8 : 6) : 5,
+    'Skor Agresif (1-10)': isSample ? (idx === 0 ? 1 : 2) : 2,
+    'Skor Menarik Diri (1-10)': isSample ? (idx === 0 ? 2 : 1) : 2,
+    'Skor Viktimisasi (1-10)': isSample ? 1 : 1,
+    'Skor Hiperaktif (1-10)': isSample ? (idx === 0 ? 2 : 3) : 2,
   }));
 
   // Create workbook & worksheet
@@ -42,40 +69,45 @@ export function generateExcelTemplate(classStudents: Student[], className = 'Kel
 
   // Set column widths for readability
   worksheet['!cols'] = [
-    { wch: 16 }, // Kelas
+    { wch: 16 }, // Kelas / Rombel
     { wch: 12 }, // NIS
-    { wch: 26 }, // Nama
-    { wch: 18 }, // JK
-    { wch: 22 }, // Suka 1
-    { wch: 22 }, // Suka 2
-    { wch: 22 }, // Suka 3
-    { wch: 24 }, // Tidak Suka 1
-    { wch: 24 }, // Tidak Suka 2
-    { wch: 24 }, // Tidak Suka 3
-    { wch: 20 }, // Prososial
-    { wch: 18 }, // Agresif
-    { wch: 22 }, // Menarik Diri
-    { wch: 22 }, // Viktimisasi
-    { wch: 20 }, // Hiperaktif
-    { wch: 24 }, // Kriteria
+    { wch: 26 }, // Nama Lengkap
+    { wch: 18 }, // Jenis Kelamin
+    { wch: 24 }, // [Belajar] Suka 1
+    { wch: 24 }, // [Belajar] Suka 2
+    { wch: 24 }, // [Belajar] Suka 3
+    { wch: 26 }, // [Belajar] Hindari 1
+    { wch: 26 }, // [Belajar] Hindari 2
+    { wch: 24 }, // [Bermain] Suka 1
+    { wch: 24 }, // [Bermain] Suka 2
+    { wch: 24 }, // [Bermain] Suka 3
+    { wch: 26 }, // [Bermain] Hindari 1
+    { wch: 26 }, // [Bermain] Hindari 2
+    { wch: 20 }, // Skor Prososial
+    { wch: 18 }, // Skor Agresif
+    { wch: 22 }, // Skor Menarik Diri
+    { wch: 22 }, // Skor Viktimisasi
+    { wch: 20 }, // Skor Hiperaktif
   ];
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Input Sosiometri & Perilaku');
 
-  // Add Instruction Sheet
+  // Add Comprehensive Instruction Sheet for Enumerators
   const instructions = [
-    { Panduan: 'PANDUAN PENGISIAN TEMPLATE SOSIOMETRI & PERILAKU SISWA' },
-    { Panduan: '1. Jangan mengubah nama kolom pada baris pertama.' },
-    { Panduan: '2. Kolom Nama dan NIS adalah identitas siswa pengisi (nominator).' },
-    { Panduan: '3. Isi Pilihan Suka (maksimal 3 teman) dan Pilihan Tidak Suka (maksimal 3 teman).' },
-    { Panduan: '4. Siswa TIDAK boleh memilih dirinya sendiri (self-nomination ditolak sistem).' },
-    { Panduan: '5. Skor Perilaku diisi angka 1 sampai 10 berdasarkan hasil Peer Nomination atau observasi guru.' },
-    { Panduan: '6. Kolom Kriteria: isi "Belajar" (Socio-Instrumental) atau "Bermain" (Socio-Affective).' },
-    { Panduan: '7. Simpan file dalam format .xlsx atau .csv lalu unggah kembali ke aplikasi Radar Sosial.' },
+    { No: 'PANDUAN', Keterangan: 'PANDUAN PENGISIAN TEMPLATE EXCEL SOSIOMETRI & PERILAKU SISWA (RADAR SOSIAL)' },
+    { No: '1', Keterangan: 'Satu baris mewakili 1 orang siswa pengisi kuesioner (nominator).' },
+    { No: '2', Keterangan: 'Jangan menghapus atau mengubah nama kolom pada baris pertama.' },
+    { No: '3', Keterangan: 'Kolom "Nama Lengkap" dan "NIS" adalah identitas siswa pengisi.' },
+    { No: '4', Keterangan: 'BAGIAN A (BELAJAR): Salin jawaban Kuesioner Bagian A No. 1 ke kolom "[Belajar] Suka 1 s.d. 3", dan No. 2 ke "[Belajar] Hindari 1 s.d. 2" (kosongkan jika tidak ada).' },
+    { No: '5', Keterangan: 'BAGIAN B (BERMAIN): Salin jawaban Kuesioner Bagian B No. 3 ke kolom "[Bermain] Suka 1 s.d. 3", dan No. 4 ke "[Bermain] Hindari 1 s.d. 2" (kosongkan jika tidak ada).' },
+    { No: '6', Keterangan: 'BAGIAN C (PERILAKU SEBAYA): Masukkan estimasi skor 1 s.d 10 untuk masing-masing dimensi karakter (Nilai default: Prososial=5, Agresif=2, Menarik Diri=2, Viktimisasi=1, Hiperaktif=2).' },
+    { No: '7', Keterangan: 'LARANGAN: Siswa TIDAK boleh memilih namanya sendiri (self-nomination otomatis diabaikan sistem).' },
+    { No: '8', Keterangan: 'KONSISTENSI NAMA: Ejaan nama teman yang dipilih harus sama dengan daftar nama siswa di kelas agar sosiogram terhubung sempurna.' },
+    { No: '9', Keterangan: 'Simpan file dalam format .xlsx atau .csv lalu unggah kembali ke aplikasi Radar Sosial.' },
   ];
   const instructionSheet = XLSX.utils.json_to_sheet(instructions);
-  instructionSheet['!cols'] = [{ wch: 80 }];
+  instructionSheet['!cols'] = [{ wch: 10 }, { wch: 90 }];
   XLSX.utils.book_append_sheet(workbook, instructionSheet, 'Petunjuk Pengisian');
 
   // Trigger download
@@ -166,78 +198,203 @@ export async function parseUploadedExcel(
 
     let nomIdCounter = 1;
 
+    // Helper to register a nomination cleanly
+    const addNomination = (
+      nominator: Student,
+      rawTargetName: string,
+      criteria: RelationCriteria,
+      type: 'like' | 'dislike'
+    ) => {
+      if (!rawTargetName) return;
+      // Support comma-separated names in a single cell
+      const targetNames = rawTargetName.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+
+      targetNames.forEach((targetName) => {
+        const target = nameMap.get(targetName.toLowerCase());
+        if (!target) {
+          warnings.push(
+            `Pilihan ${type === 'like' ? 'suka' : 'hindari'} (${criteria}) "${targetName}" oleh ${nominator.name} tidak ditemukan dalam daftar siswa.`
+          );
+          return;
+        }
+
+        // Prevent self nomination
+        if (target.id === nominator.id) {
+          warnings.push(
+            `Siswa ${nominator.name} memilih/menolak dirinya sendiri pada kriteria ${criteria} (self-nomination otomatis diabaikan).`
+          );
+          return;
+        }
+
+        // Check duplicate within same student, criteria, and type
+        const isDuplicate = nominations.some(
+          (n) =>
+            n.studentId === nominator.id &&
+            n.targetId === target.id &&
+            n.criteria === criteria &&
+            n.type === type
+        );
+        if (isDuplicate) return;
+
+        nominations.push({
+          id: `nom-up-${Date.now()}-${nomIdCounter++}`,
+          periodId,
+          classId,
+          studentId: nominator.id,
+          targetId: target.id,
+          criteria,
+          type,
+        });
+      });
+    };
+
     // Step 2: Parse nominations and behavioral scores
     rawJson.forEach((row) => {
       const nominatorName = (row['Nama Lengkap'] || row['Nama'] || '').toString().trim();
       const nominator = nameMap.get(nominatorName.toLowerCase());
       if (!nominator) return;
 
-      const criteriaRaw = (row['Kriteria (Belajar/Bermain)'] || 'Belajar').toString().toLowerCase();
-      const criteria: RelationCriteria = criteriaRaw.includes('main') ? 'bermain' : 'belajar';
+      // Define possible keys for Belajar Likes & Dislikes
+      const belajarLikeKeys = [
+        '[Belajar] Suka 1 (Nama)',
+        '[Belajar] Suka 2 (Nama)',
+        '[Belajar] Suka 3 (Nama)',
+        '[Belajar] Suka 1',
+        '[Belajar] Suka 2',
+        '[Belajar] Suka 3',
+        '[Belajar] Pilihan Suka 1',
+        '[Belajar] Pilihan Suka 2',
+        '[Belajar] Pilihan Suka 3',
+        'Suka Belajar 1',
+        'Suka Belajar 2',
+        'Suka Belajar 3',
+        'Belajar Suka 1',
+        'Belajar Suka 2',
+        'Belajar Suka 3',
+        'like_belajar',
+        'like_belajar_1',
+        'like_belajar_2',
+        'like_belajar_3',
+      ];
 
-      // Parse likes (up to 3)
-      const likeKeys = ['Pilihan Suka 1 (Nama)', 'Pilihan Suka 2 (Nama)', 'Pilihan Suka 3 (Nama)', 'Suka 1', 'Suka 2', 'Suka 3'];
-      likeKeys.forEach((k) => {
-        const targetName = (row[k] || '').toString().trim();
-        if (!targetName) return;
+      const belajarDislikeKeys = [
+        '[Belajar] Hindari 1 (Nama)',
+        '[Belajar] Hindari 2 (Nama)',
+        '[Belajar] Hindari 1',
+        '[Belajar] Hindari 2',
+        '[Belajar] Pilihan Hindari 1',
+        '[Belajar] Pilihan Hindari 2',
+        '[Belajar] Tidak Suka 1',
+        '[Belajar] Tidak Suka 2',
+        '[Belajar] Pilihan Tidak Suka 1',
+        '[Belajar] Pilihan Tidak Suka 2',
+        'Tidak Suka Belajar 1',
+        'Tidak Suka Belajar 2',
+        'Hindari Belajar 1',
+        'Hindari Belajar 2',
+        'dislike_belajar',
+        'dislike_belajar_1',
+        'dislike_belajar_2',
+      ];
 
-        const target = nameMap.get(targetName.toLowerCase());
-        if (!target) {
-          warnings.push(`Pilihan suka "${targetName}" oleh ${nominator.name} tidak ditemukan dalam daftar siswa.`);
-          return;
-        }
+      // Define possible keys for Bermain Likes & Dislikes
+      const bermainLikeKeys = [
+        '[Bermain] Suka 1 (Nama)',
+        '[Bermain] Suka 2 (Nama)',
+        '[Bermain] Suka 3 (Nama)',
+        '[Bermain] Suka 1',
+        '[Bermain] Suka 2',
+        '[Bermain] Suka 3',
+        '[Bermain] Pilihan Suka 1',
+        '[Bermain] Pilihan Suka 2',
+        '[Bermain] Pilihan Suka 3',
+        'Suka Bermain 1',
+        'Suka Bermain 2',
+        'Suka Bermain 3',
+        'Bermain Suka 1',
+        'Bermain Suka 2',
+        'Bermain Suka 3',
+        'like_bermain',
+        'like_bermain_1',
+        'like_bermain_2',
+        'like_bermain_3',
+      ];
 
-        // Prevent self nomination
-        if (target.id === nominator.id) {
-          warnings.push(`Siswa ${nominator.name} memilih dirinya sendiri (self-nomination otomatis diabaikan).`);
-          return;
-        }
+      const bermainDislikeKeys = [
+        '[Bermain] Hindari 1 (Nama)',
+        '[Bermain] Hindari 2 (Nama)',
+        '[Bermain] Hindari 1',
+        '[Bermain] Hindari 2',
+        '[Bermain] Pilihan Hindari 1',
+        '[Bermain] Pilihan Hindari 2',
+        '[Bermain] Tidak Suka 1',
+        '[Bermain] Tidak Suka 2',
+        '[Bermain] Pilihan Tidak Suka 1',
+        '[Bermain] Pilihan Tidak Suka 2',
+        'Tidak Suka Bermain 1',
+        'Tidak Suka Bermain 2',
+        'Hindari Bermain 1',
+        'Hindari Bermain 2',
+        'dislike_bermain',
+        'dislike_bermain_1',
+        'dislike_bermain_2',
+      ];
 
-        nominations.push({
-          id: `nom-up-${Date.now()}-${nomIdCounter++}`,
-          periodId,
-          classId,
-          studentId: nominator.id,
-          targetId: target.id,
-          criteria,
-          type: 'like',
+      // Check if row contains explicit Belajar or Bermain column keys
+      const hasExplicitBelajar = belajarLikeKeys.some((k) => row[k] !== undefined);
+      const hasExplicitBermain = bermainLikeKeys.some((k) => row[k] !== undefined);
+
+      if (hasExplicitBelajar || hasExplicitBermain) {
+        // Mode 1: Simultaneous Belajar & Bermain in single row
+        belajarLikeKeys.forEach((k) => {
+          if (row[k]) addNomination(nominator, String(row[k]).trim(), 'belajar', 'like');
         });
-      });
-
-      // Parse dislikes (up to 3)
-      const dislikeKeys = ['Pilihan Tidak Suka 1 (Nama)', 'Pilihan Tidak Suka 2 (Nama)', 'Pilihan Tidak Suka 3 (Nama)', 'Tidak Suka 1', 'Tidak Suka 2', 'Tidak Suka 3'];
-      dislikeKeys.forEach((k) => {
-        const targetName = (row[k] || '').toString().trim();
-        if (!targetName) return;
-
-        const target = nameMap.get(targetName.toLowerCase());
-        if (!target) {
-          warnings.push(`Pilihan tidak suka "${targetName}" oleh ${nominator.name} tidak ditemukan dalam daftar siswa.`);
-          return;
-        }
-
-        if (target.id === nominator.id) {
-          warnings.push(`Siswa ${nominator.name} menolak dirinya sendiri (diabaikan).`);
-          return;
-        }
-
-        nominations.push({
-          id: `nom-up-${Date.now()}-${nomIdCounter++}`,
-          periodId,
-          classId,
-          studentId: nominator.id,
-          targetId: target.id,
-          criteria,
-          type: 'dislike',
+        belajarDislikeKeys.forEach((k) => {
+          if (row[k]) addNomination(nominator, String(row[k]).trim(), 'belajar', 'dislike');
         });
-      });
 
-      // Parse behavioral scores
-      const prosocial = Number(row['Skor Prososial (1-10)']) || 5;
-      const aggressive = Number(row['Skor Agresif (1-10)']) || 2;
-      const withdrawn = Number(row['Skor Menarik Diri (1-10)']) || 2;
-      const victimization = Number(row['Skor Viktimisasi (1-10)']) || 1;
-      const hyperactive = Number(row['Skor Hiperaktif (1-10)']) || 2;
+        bermainLikeKeys.forEach((k) => {
+          if (row[k]) addNomination(nominator, String(row[k]).trim(), 'bermain', 'like');
+        });
+        bermainDislikeKeys.forEach((k) => {
+          if (row[k]) addNomination(nominator, String(row[k]).trim(), 'bermain', 'dislike');
+        });
+      } else {
+        // Mode 2: Legacy single-criteria column format (backward compatibility)
+        const criteriaRaw = (row['Kriteria (Belajar/Bermain)'] || 'Belajar').toString().toLowerCase();
+        const criteria: RelationCriteria = criteriaRaw.includes('main') ? 'bermain' : 'belajar';
+
+        const legacyLikeKeys = [
+          'Pilihan Suka 1 (Nama)',
+          'Pilihan Suka 2 (Nama)',
+          'Pilihan Suka 3 (Nama)',
+          'Suka 1',
+          'Suka 2',
+          'Suka 3',
+        ];
+        legacyLikeKeys.forEach((k) => {
+          if (row[k]) addNomination(nominator, String(row[k]).trim(), criteria, 'like');
+        });
+
+        const legacyDislikeKeys = [
+          'Pilihan Tidak Suka 1 (Nama)',
+          'Pilihan Tidak Suka 2 (Nama)',
+          'Pilihan Tidak Suka 3 (Nama)',
+          'Tidak Suka 1',
+          'Tidak Suka 2',
+          'Tidak Suka 3',
+        ];
+        legacyDislikeKeys.forEach((k) => {
+          if (row[k]) addNomination(nominator, String(row[k]).trim(), criteria, 'dislike');
+        });
+      }
+
+      // Parse behavioral scores with rich alias support
+      const prosocial = Number(row['Skor Prososial (1-10)'] || row['Prososial'] || row['prosocial']) || 5;
+      const aggressive = Number(row['Skor Agresif (1-10)'] || row['Agresif'] || row['aggressive']) || 2;
+      const withdrawn = Number(row['Skor Menarik Diri (1-10)'] || row['Menarik Diri'] || row['withdrawn']) || 2;
+      const victimization = Number(row['Skor Viktimisasi (1-10)'] || row['Viktimisasi'] || row['victimization']) || 1;
+      const hyperactive = Number(row['Skor Hiperaktif (1-10)'] || row['Hiperaktif'] || row['hyperactive']) || 2;
 
       behavioralRatings.push({
         id: `br-up-${nominator.id}`,

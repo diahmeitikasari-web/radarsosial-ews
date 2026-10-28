@@ -242,19 +242,43 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
           <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                Langkah 1: Unduh Format Khusus
+                Langkah 1: Unduh Format Khusus (Siap Belajar &amp; Bermain)
               </h4>
               <p className="text-xs text-slate-400 mt-0.5">
-                Gunakan template standar agar nama siswa, pilihan Like/Dislike, dan skor perilaku terpetakan otomatis.
+                Template memuat kolom terpisah untuk <strong>[Belajar]</strong>, <strong>[Bermain]</strong>, dan <strong>[Perilaku]</strong> dalam 1 baris siswa.
               </p>
             </div>
             <button
               onClick={handleDownloadTemplate}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold border border-slate-700 transition shrink-0"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold border border-slate-700 transition shrink-0 cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Unduh Template .XLSX</span>
             </button>
+          </div>
+
+          {/* Quick Guide for Enumerator */}
+          <div className="p-3 bg-cyan-950/30 border border-cyan-800/40 rounded-xl text-xs space-y-1.5 text-slate-300">
+            <div className="font-semibold text-cyan-300 flex items-center gap-1.5 text-[11px] uppercase tracking-wide">
+              <span>📋 Panduan Pemetaan Kolom untuk Enumerator:</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-slate-300 pt-0.5">
+              <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
+                <span className="font-bold text-emerald-400 block mb-0.5">1. Bagian A (Belajar)</span>
+                Isi kolom <code>[Belajar] Suka 1-3</code> &amp; <code>Hindari 1-2</code> dari Kuesioner Bagian A.
+              </div>
+              <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
+                <span className="font-bold text-blue-400 block mb-0.5">2. Bagian B (Bermain)</span>
+                Isi kolom <code>[Bermain] Suka 1-3</code> &amp; <code>Hindari 1-2</code> dari Kuesioner Bagian B.
+              </div>
+              <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
+                <span className="font-bold text-amber-400 block mb-0.5">3. Bagian C (Perilaku)</span>
+                Isi estimasi skor 1 s.d. 10 (Prososial, Agresif, Menarik Diri, Viktimisasi, Hiperaktif).
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400 italic">
+              *Tips: Ejaan nama teman harus sama dengan daftar siswa. Kolom "Hindari" boleh dikosongkan jika siswa tidak mengisi.
+            </p>
           </div>
 
           {/* Step 2: Drag and drop upload zone */}
