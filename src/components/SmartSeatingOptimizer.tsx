@@ -141,6 +141,22 @@ export const SmartSeatingOptimizer: React.FC<SmartSeatingOptimizerProps> = ({
     return Array.from(map.entries()).sort((a, b) => a[0] - b[0]);
   }, [seatingState.desks]);
 
+  if (nominations.length === 0 || metrics.length === 0) {
+    return (
+      <div className="p-12 rounded-2xl bg-[#0d3555]/60 border border-[#1a3f64] text-center flex flex-col items-center justify-center space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-xl shadow-amber-500/5">
+          <LayoutGrid className="w-8 h-8" />
+        </div>
+        <div className="max-w-md">
+          <h3 className="text-lg font-bold text-white">Data Sosiometri Rombel Belum Terisi</h3>
+          <p className="text-xs text-[#b0c4de] mt-2 leading-relaxed">
+            Penyusunan denah duduk intervensi (Smart Seating) dan kelompok kooperatif memerlukan data preferensi pilihan teman (suka &amp; tidak suka). Denah tidak disusun secara semu sebelum survei dilaksanakan.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Header Card */}

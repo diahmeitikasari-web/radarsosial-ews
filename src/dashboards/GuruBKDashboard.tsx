@@ -873,7 +873,18 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto rounded-xl border border-[#1a3f64]">
+          {metrics.length === 0 ? (
+            <div className="p-12 text-center text-[#b0c4de] space-y-3 bg-[#0a2a4a]/40 rounded-xl border border-[#1a3f64]">
+              <div className="w-12 h-12 mx-auto rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <Table className="w-6 h-6" />
+              </div>
+              <h4 className="text-base font-bold text-white">Data Sosiometri Rombel Belum Terisi</h4>
+              <p className="text-xs max-w-md mx-auto">
+                Belum ada respons kuesioner sosiometri yang diinput untuk rombel {activeClass.name}. Tabel matriks dan status Coie-Dodge tidak menghitung status palsu hingga kuesioner diisi.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-[#1a3f64]">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-[#0a2a4a] text-[#b0c4de] border-b border-[#1a3f64]">
@@ -992,6 +1003,7 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
               </tbody>
             </table>
           </div>
+          )}
         </div>
       )}
 

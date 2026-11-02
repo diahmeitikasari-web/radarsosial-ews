@@ -62,12 +62,25 @@ const MainApp: React.FC = () => {
   });
 
   const [activeClassId, setActiveClassId] = useState<string>(() => {
+    const stored = dataStorage.getActiveClass();
+    if (stored?.id) {
+      if (!currentUser?.schoolId) return stored.id;
+      const userClasses = dataStorage.getClasses(currentUser.schoolId);
+      if (userClasses.some((c) => c.id === stored.id)) return stored.id;
+    }
     if (currentUser?.schoolId) {
       const userClasses = dataStorage.getClasses(currentUser.schoolId);
+      const has3B = userClasses.find((c) => c.id === 'cls-3b');
+      if (has3B) return has3B.id;
       if (userClasses.length > 0) return userClasses[0].id;
     }
-    return classes[0]?.id || 'cls-8a';
+    return 'cls-3b';
   });
+
+  const handleSelectClass = (classId: string) => {
+    setActiveClassId(classId);
+    dataStorage.setActiveClassId(classId);
+  };
 
   // Keep activeClass in sync with tenant scoped classes whenever currentUser or their school changes
   useEffect(() => {
@@ -78,7 +91,10 @@ const MainApp: React.FC = () => {
         const allSystemClasses = dataStorage.getClasses();
         const existsInSystem = allSystemClasses.some((c) => c.id === activeClassId);
         if (!existsInSystem) {
-          setActiveClassId(classes[0].id);
+          const has3B = classes.find((c) => c.id === 'cls-3b');
+          const fallback = has3B ? has3B.id : classes[0].id;
+          setActiveClassId(fallback);
+          dataStorage.setActiveClassId(fallback);
         }
       }
     }
@@ -199,7 +215,7 @@ const MainApp: React.FC = () => {
         onChangePeriod={setActivePeriodId}
         classes={classes}
         activeClass={activeClass}
-        onChangeClass={setActiveClassId}
+        onChangeClass={handleSelectClass}
         onOpenReportModal={() => setIsReportModalOpen(true)}
         onOpenGuideModal={() => setIsGuideModalOpen(true)}
         onOpenQuestionnaireModal={() => setIsQuestionnaireModalOpen(true)}
@@ -231,7 +247,7 @@ const MainApp: React.FC = () => {
                 metrics={metrics}
                 aggregate={aggregate}
                 classes={classes}
-                onSelectClass={setActiveClassId}
+                onSelectClass={handleSelectClass}
                 onOpenExcelModal={() => setIsExcelModalOpen(true)}
                 onOpenReportModal={() => setIsReportModalOpen(true)}
                 onRefreshData={refresh}
@@ -248,7 +264,7 @@ const MainApp: React.FC = () => {
                 metrics={metrics}
                 aggregate={aggregate}
                 onOpenReportModal={() => setIsReportModalOpen(true)}
-                onChangeClass={setActiveClassId}
+                onChangeClass={handleSelectClass}
               />
             )}
 
@@ -275,7 +291,7 @@ const MainApp: React.FC = () => {
         existingStudents={students}
         classes={classes}
         onSwitchClass={(cid) => {
-          setActiveClassId(cid);
+          handleSelectClass(cid);
           refresh();
         }}
         onUploadSuccess={() => refresh()}

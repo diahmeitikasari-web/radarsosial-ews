@@ -47,7 +47,8 @@ const STORAGE_KEYS = {
 
 function getStoredOr<T>(key: string, fallback: T): T {
   try {
-    const item = localStorage.getItem(key);
+    if (typeof window === 'undefined' || !window.localStorage) return fallback;
+    const item = window.localStorage.getItem(key);
     return item ? JSON.parse(item) : fallback;
   } catch {
     return fallback;
@@ -56,7 +57,8 @@ function getStoredOr<T>(key: string, fallback: T): T {
 
 function setStored<T>(key: string, value: T): void {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    window.localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     console.error('Storage quota or parse error:', e);
   }
@@ -116,9 +118,10 @@ export class DataStorageService {
       return u;
     });
 
-    // Multi-tenant migration check: ensure SMPN 1 Mendo Barat, Kelas 3B, and full relations exist
-    const SEED_VERSION_KEY = 'radar_sosial_seed_v2026_restore_relations_v13';
+    // Multi-tenant migration check: ensure multi-tenancy schools, classes, students, and 3B exist
+    const SEED_VERSION_KEY = 'radar_sosial_seed_v2026_restore_relations_v16';
     const hasSeed = typeof window !== 'undefined' ? localStorage.getItem(SEED_VERSION_KEY) : null;
+
     const needsMigration =
       !hasSeed ||
       !this.schools.some((s) => s.id === 'sch-smpn1-mendobarat') ||
@@ -180,12 +183,12 @@ export class DataStorageService {
         userName: 'Liengga Brian Darea, S.Sos.,Gr',
         userRole: 'guru_bk',
         action: 'Sinkronisasi Data Sosiometri',
-        details: 'Data Kelas 8A Semester 1 2026/2027 berhasil dianalisis.',
+        details: 'Data Kelas 3B Semester 1 2026/2027 berhasil dianalisis.',
       },
     ]);
 
     this.activePeriodId = getStoredOr(STORAGE_KEYS.ACTIVE_PERIOD_ID, 'period-2026-s1');
-    this.activeClassId = getStoredOr(STORAGE_KEYS.ACTIVE_CLASS_ID, 'cls-8a');
+    this.activeClassId = getStoredOr(STORAGE_KEYS.ACTIVE_CLASS_ID, 'cls-3b');
     this.passwordRequests = getStoredOr(STORAGE_KEYS.PASSWORD_REQUESTS, INITIAL_PASSWORD_REQUESTS);
     const loadedNotes = getStoredOr<StudentQualitativeNote[]>(STORAGE_KEYS.STUDENT_NOTES, []);
     this.studentNotes = loadedNotes && loadedNotes.length >= 8 ? loadedNotes : [...INITIAL_STUDENT_NOTES];
@@ -568,11 +571,15 @@ export class DataStorageService {
 
   // Nominations & Behaviors
   public getNominations(periodId?: string, classId?: string): SociometricNomination[] {
-    const pId = periodId || this.activePeriodId;
-    if (classId === 'ALL' || classId === undefined) {
-      return this.nominations.filter((n) => n.periodId === pId);
+    const pId = periodId || this.activePeriodId || 'period-2026-s1';
+    let filtered = this.nominations;
+    if (pId) {
+      filtered = filtered.filter((n) => n.periodId === pId);
     }
-    return this.nominations.filter((n) => n.periodId === pId && n.classId === classId);
+    if (classId && classId !== 'ALL') {
+      filtered = filtered.filter((n) => n.classId === classId);
+    }
+    return filtered;
   }
 
   public setNominations(periodId: string, classId: string, newNoms: SociometricNomination[]): void {
@@ -585,11 +592,15 @@ export class DataStorageService {
   }
 
   public getBehaviors(periodId?: string, classId?: string): PeerBehavioralRating[] {
-    const pId = periodId || this.activePeriodId;
-    if (classId === 'ALL' || classId === undefined) {
-      return this.behaviors.filter((b) => b.periodId === pId);
+    const pId = periodId || this.activePeriodId || 'period-2026-s1';
+    let filtered = this.behaviors;
+    if (pId) {
+      filtered = filtered.filter((b) => b.periodId === pId);
     }
-    return this.behaviors.filter((b) => b.periodId === pId && b.classId === classId);
+    if (classId && classId !== 'ALL') {
+      filtered = filtered.filter((b) => b.classId === classId);
+    }
+    return filtered;
   }
 
   public setBehaviors(periodId: string, classId: string, newBehaviors: PeerBehavioralRating[]): void {

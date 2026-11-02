@@ -81,10 +81,16 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ## 2. Lembar Anotasi Kode Ground-Truth (Ground-Truth Code Anchors)
 
 ### Anotasi #A-01: Standarisasi Skor Z & Klasifikasi Coie & Dodge (1982)
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 79–98
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 90–109 (dengan penjagaan data kosong di baris 30–35)
 - **Fungsi / Variabel**: `calculateSNAMetrics()`, variabel `zL`, `zD`, `zSP`, `zSI`, dan `status`
 - **Cuplikan Kode**:
   ```typescript
+  // Perlindungan Survei Kosong: Jika kuesioner sosiometri belum terisi (0 nominasi),
+  // jangan lakukan kalkulasi semu yang menetapkan semua siswa sebagai 'Average'.
+  if (nominations.length === 0 || (criteriaFilter && activeNoms.length === 0 && nominations.length === 0)) {
+    return [];
+  }
+
   const zL = (L - meanLikes) / stdLikes;
   const zD = (D - meanDislikes) / stdDislikes;
 
@@ -106,14 +112,14 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
     status = 'Average';
   }
   ```
-- **Tinjauan AI**: AI menyatakan bahwa Coie-Dodge dapat diterapkan hanya dengan membandingkan selisih nilai mentah suka dan tidak suka ($L - D$).
-- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI**. Pendekatan selisih mentah cacat metodologis karena tidak memperhitungkan varians sebaran kelas. Menggunakan skor Z yang dibakukan terhadap $\mu$ dan $\sigma$ kelas menjamin komparabilitas antar-rombel dengan jumlah siswa yang berbeda ($N = 25$ vs $N = 36$).
+- **Tinjauan AI**: AI menyatakan bahwa Coie-Dodge dapat diterapkan hanya dengan membandingkan selisih nilai mentah suka dan tidak suka ($L - D$). Selain itu AI awalnya membiarkan kelas kosong (0 like dan 0 dislike) dihitung sebagai populasi aktif, sehingga seluruh siswa otomatis menjadi *Average* semu.
+- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI**. Pendekatan selisih mentah cacat metodologis karena tidak memperhitungkan varians sebaran kelas. Menggunakan skor Z yang dibakukan terhadap $\mu$ dan $\sigma$ kelas menjamin komparabilitas antar-rombel. Yang paling krusial: jika kuesioner belum diisi, sosiogram wajib dikosongkan tanpa nama siswa agar laporan tidak membaca iklim kelas sebagai normal/kondusif padahal instrumen belum terlaksana.
 - **Zona**: `✓ Konvergen (Telah Terverifikasi Penuh Sesuai Coie, Dodge, & Coppotelli 1982)`
 
 ---
 
 ### Anotasi #A-02: Matriks Silang Perilaku Sebaya (Moreno x PEI x Hawley)
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 109–128
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 119–138
 - **Fungsi / Variabel**: Penentuan `behavioralStatus`
 - **Cuplikan Kode**:
   ```typescript
@@ -137,7 +143,7 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ---
 
 ### Anotasi #A-03: Algoritma Brandes untuk Deteksi Siswa Broker Sosial
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 437–505
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 479–547
 - **Fungsi / Variabel**: `detectCommunitiesAndBrokers()`, variabel `betweenness`
 - **Cuplikan Kode**:
   ```typescript
@@ -153,7 +159,7 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ---
 
 ### Anotasi #A-04: Deteksi Klik Komunitas & Indeks Eksklusivitas
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 506–648
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 548–670
 - **Fungsi / Variabel**: `detectCommunitiesAndBrokers()`, penghitungan `exclusivityIndex`
 - **Cuplikan Kode**:
   ```typescript
@@ -189,10 +195,25 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ---
 
 ### Anotasi #A-06: Evaluasi Iklim Sosial Kelas & Peringatan Dini Kebijakan TPPK
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 305–366
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 268–365
 - **Fungsi / Variabel**: `calculateClassAggregate()`, variabel `climateScore`, `climateIndex`, `kepsekPolicyAdvice`
 - **Cuplikan Kode**:
   ```typescript
+  // Perlindungan Data Kosong: Jika instrumen belum diisi (0 nominasi),
+  // jangan keluarkan skor iklim semu 'Kondusif' (Skor 65)
+  if (totalStudents === 0 || nominations.length === 0 || metrics.length === 0) {
+    return {
+      classId, className, periodId, periodName, totalStudents,
+      density: 0, reciprocityRate: 0,
+      statusCounts: { Popular: 0, Rejected: 0, Neglected: 0, Controversial: 0, Average: 0 },
+      riskSummary: { highRiskCount: 0, mediumRiskCount: 0, lowRiskCount: 0 },
+      climateIndex: 'Belum Terisi',
+      climateScore: 0,
+      dssStrategicAdvice: [`Data sosiometri rombel ${className} belum diisi untuk ${periodName}...`],
+      kepsekPolicyAdvice: [`Asesmen sosiometri rombel ${className} belum terlaksana pada periode ini...`],
+    };
+  }
+
   const rejectionPenalty = statusCounts.Rejected * 12;
   const neglectedPenalty = statusCounts.Neglected * 6;
   const densityBonus = density * 120;
@@ -201,9 +222,9 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
   let rawClimate = 65 + densityBonus + reciprocityBonus - rejectionPenalty - neglectedPenalty;
   rawClimate = Math.min(100, Math.max(10, Math.round(rawClimate)));
   ```
-- **Tinjauan AI**: Mengukur iklim hanya dari rasio siswa yang mengisi kuisioner.
-- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI**. Iklim sosial kelas ditentukan oleh struktur relasional: kohesi jaringan (densitas & resiprositas) sebagai faktor pelindung, serta jumlah siswa *Rejected* dan *Neglected* sebagai faktor risiko. Jika terdeteksi status Kritis, sistem memicu otomatis klausul kebijakan pencegahan sesuai Permendikbudristek No. 46/2023.
-- **Zona**: `✓ Konvergen`
+- **Tinjauan AI**: Mengukur iklim hanya dari rasio siswa yang mengisi kuisioner atau menetapkan nilai *default* 65 (Kondusif) meskipun belum ada data yang terisi.
+- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI (Koreksi Mutlak)**. Iklim sosial kelas ditentukan oleh struktur relasional: kohesi jaringan (densitas & resiprositas) sebagai faktor pelindung, serta jumlah siswa *Rejected* dan *Neglected* sebagai faktor risiko. Jika data kuesioner belum diisi, status iklim wajib ditetapkan sebagai `Belum Terisi` (Skor 0) dan tidak boleh melabeli kelas sebagai 'Kondusif', agar kepala sekolah dan TPPK tidak salah mengira bahwa kelas yang belum disurvei sudah aman.
+- **Zona**: `✓ Konvergen (Telah Diperbaiki & Diuji)`
 
 ---
 

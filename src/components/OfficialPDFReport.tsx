@@ -218,27 +218,35 @@ export const OfficialPDFReport: React.FC<OfficialPDFReportProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3 rounded-lg border border-slate-300 bg-slate-50 text-center">
                 <div className="text-[10px] text-slate-500 uppercase font-semibold">Kepadatan Jaringan (Density)</div>
-                <div className="text-lg font-bold text-slate-900 mt-0.5">{aggregate.density}</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Rentang ideal: 0.25 - 0.45</div>
+                <div className="text-lg font-bold text-slate-900 mt-0.5">{aggregate.climateIndex === 'Belum Terisi' ? '-' : aggregate.density}</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">{aggregate.climateIndex === 'Belum Terisi' ? 'Belum ada data' : 'Rentang ideal: 0.25 - 0.45'}</div>
               </div>
               <div className="p-3 rounded-lg border border-slate-300 bg-slate-50 text-center">
                 <div className="text-[10px] text-slate-500 uppercase font-semibold">Tingkat Resiprositas</div>
-                <div className="text-lg font-bold text-slate-900 mt-0.5">{aggregate.reciprocityRate}%</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Pilihan saling menyukai</div>
+                <div className="text-lg font-bold text-slate-900 mt-0.5">{aggregate.climateIndex === 'Belum Terisi' ? '-' : `${aggregate.reciprocityRate}%`}</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">{aggregate.climateIndex === 'Belum Terisi' ? 'Belum ada relasi' : 'Pilihan saling menyukai'}</div>
               </div>
               <div className="p-3 rounded-lg border border-slate-300 bg-slate-50 text-center">
                 <div className="text-[10px] text-slate-500 uppercase font-semibold">Indeks Iklim Sosial</div>
-                <div className="text-lg font-bold text-slate-900 mt-0.5">{aggregate.climateScore} / 100</div>
-                <div className="text-[10px] font-bold text-amber-700 mt-0.5">Kategori: {aggregate.climateIndex}</div>
+                <div className="text-lg font-bold text-slate-900 mt-0.5">{aggregate.climateIndex === 'Belum Terisi' ? '-' : `${aggregate.climateScore} / 100`}</div>
+                <div className={`text-[10px] font-bold mt-0.5 ${aggregate.climateIndex === 'Belum Terisi' ? 'text-slate-500' : 'text-amber-700'}`}>
+                  Kategori: {aggregate.climateIndex}
+                </div>
               </div>
               <div className="p-3 rounded-lg border border-slate-300 bg-slate-50 text-center">
                 <div className="text-[10px] text-slate-500 uppercase font-semibold">Distribusi Status</div>
-                <div className="text-[11px] font-medium text-slate-700 mt-0.5">
-                  Pop: {aggregate.statusCounts.Popular} | Rej: {aggregate.statusCounts.Rejected} | Neg: {aggregate.statusCounts.Neglected}
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  Contr: {aggregate.statusCounts.Controversial} | Avg: {aggregate.statusCounts.Average}
-                </div>
+                {aggregate.climateIndex === 'Belum Terisi' ? (
+                  <div className="text-[11px] text-slate-500 mt-1 italic">Kuesioner belum diinput</div>
+                ) : (
+                  <>
+                    <div className="text-[11px] font-medium text-slate-700 mt-0.5">
+                      Pop: {aggregate.statusCounts.Popular} | Rej: {aggregate.statusCounts.Rejected} | Neg: {aggregate.statusCounts.Neglected}
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      Contr: {aggregate.statusCounts.Controversial} | Avg: {aggregate.statusCounts.Average}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -249,6 +257,16 @@ export const OfficialPDFReport: React.FC<OfficialPDFReportProps> = ({
               <span className="w-2 h-2 rounded-full bg-slate-700" />
               IV. TABEL PROFIL SOSIOMETRI & KLASIFIKASI STATUS SISWA (COIE & DODGE, 1982)
             </div>
+            {metrics.length === 0 ? (
+              <div className="p-6 text-center bg-slate-50 border border-slate-300 rounded-lg text-slate-500">
+                <div className="font-bold text-slate-700 text-sm mb-1">
+                  Data Asesmen Sosiometri Belum Terisi
+                </div>
+                <p className="text-xs max-w-md mx-auto leading-relaxed">
+                  Kuesioner sosiometri (pilihan teman disukai &amp; tidak disukai) untuk rombel {activeClass.name} belum diinput ke dalam sistem. Tabel status individual dan skor Z Coie-Dodge tidak ditampilkan sebelum instrumen diisi agar tidak memunculkan data semu.
+                </p>
+              </div>
+            ) : (
             <div className="overflow-x-auto print:overflow-visible border border-slate-300 rounded-lg">
               <table className="w-full text-left text-[11px] border-collapse">
                 <thead>
@@ -311,6 +329,7 @@ export const OfficialPDFReport: React.FC<OfficialPDFReportProps> = ({
                 </tbody>
               </table>
             </div>
+            )}
           </div>
 
           {/* 6. Kesimpulan & Analisis Psikososial */}

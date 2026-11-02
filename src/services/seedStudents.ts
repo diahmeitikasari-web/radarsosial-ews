@@ -882,6 +882,11 @@ export function generateAllNominations(periodId: string = 'period-2026-s1'): Soc
       return;
     }
 
+    // Kelas 7A dibiarkan kosong tanpa nominasi sebagai representasi rombel yang belum mengisi kuesioner sosiometri
+    if (classId === 'cls-7a') {
+      return;
+    }
+
     const classStudents = allStudents.filter((s) => s.classId === classId);
     if (classStudents.length < 20) return;
 
@@ -999,6 +1004,11 @@ export function generateAllBehavioralRatings(periodId: string = 'period-2026-s1'
           hyperactive: 2,
         });
       });
+      return;
+    }
+
+    // Kelas 7A dibiarkan kosong tanpa rating perilaku
+    if (classId === 'cls-7a') {
       return;
     }
 

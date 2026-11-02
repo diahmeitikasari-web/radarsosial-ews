@@ -35,6 +35,8 @@ import {
   GitFork,
   UserCheck,
   CheckCircle2,
+  AlertCircle,
+  Upload,
 } from 'lucide-react';
 
 interface SNAVisualizerProps {
@@ -177,8 +179,13 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
     const height = 520;
     const cx = width / 2;
     const cy = height / 2;
-
     const newMap = new Map<string, NodeSimulation>();
+
+    // Jika data nominasi kosong (kuesioner belum diisi), kosongkan sosiogram tanpa nama siswa
+    if (nominations.length === 0) {
+      nodesRef.current = newMap;
+      return;
+    }
 
     students.forEach((s, idx) => {
       const m = metricMap.get(s.id) || {
@@ -935,17 +942,54 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
       </div>
 
       {/* Main Interactive Canvas Area */}
-      <div className="relative flex-1 min-h-[500px] bg-[#061c30] overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          width={900}
-          height={520}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          className="w-full h-full block cursor-grab active:cursor-grabbing"
-        />
+      <div className="relative flex-1 min-h-[500px] bg-[#061c30] overflow-hidden flex items-center justify-center">
+        {nominations.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-8 text-center max-w-lg z-10 space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-xl shadow-amber-500/5">
+              <AlertCircle className="w-8 h-8" />
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-white">
+                Data Sosiometri Rombel Ini Belum Terisi
+              </h3>
+              <p className="text-xs sm:text-sm text-[#b0c4de] mt-2 leading-relaxed">
+                Belum ada data respons kuesioner sosiometri (pilihan suka &amp; tidak suka) yang diinput atau diunggah untuk kelas ini. Sosiogram dikosongkan tanpa nama siswa agar rumus tidak menghitung klasifikasi semu (semua menjadi 'Average' dan iklim terbaca 'Kondusif').
+              </p>
+            </div>
+            <div className="p-3.5 rounded-xl bg-[#0a2a4a]/80 border border-[#1a3f64] text-xs text-[#f7d970] text-left space-y-1.5 w-full">
+              <div className="font-bold flex items-center gap-1.5 text-white">
+                <Info className="w-4 h-4 text-[#f0c040]" />
+                <span>Petunjuk Guru BK / Enumerator:</span>
+              </div>
+              <p className="text-[11px] text-[#b0c4de] leading-normal">
+                1. Bagikan instrumen atau cetak kuesioner siswa (A4) melalui bilah menu atas.<br/>
+                2. Input pilihan teman (belajar &amp; bermain) ke dalam berkas Excel.<br/>
+                3. Unggah berkas Excel untuk menampilkan sosiogram interaktif dan analisis iklim kelas.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                const uploadBtn = document.getElementById('btn-upload-excel');
+                if (uploadBtn) uploadBtn.click();
+              }}
+              className="mt-2 px-4 py-2 rounded-xl bg-[#f0c040] hover:bg-[#f7d970] text-[#0a2a4a] text-xs font-bold transition shadow-lg flex items-center gap-2 cursor-pointer"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Unggah Data Kuesioner (Excel)</span>
+            </button>
+          </div>
+        ) : (
+          <canvas
+            ref={canvasRef}
+            width={900}
+            height={520}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            className="w-full h-full block cursor-grab active:cursor-grabbing"
+          />
+        )}
 
         {/* Zoom & Pan Controls Widget */}
         <div className="absolute bottom-4 right-4 flex flex-col gap-1.5 bg-[#0a2a4a]/90 border border-[#1a3f64] p-1.5 rounded-xl backdrop-blur-md shadow-xl">

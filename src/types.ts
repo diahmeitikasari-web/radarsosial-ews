@@ -254,7 +254,7 @@ export interface ClassMetricsAggregate {
     mediumRiskCount: number;
     lowRiskCount: number;
   };
-  climateIndex: 'Kondusif' | 'Waspada' | 'Kritis';
+  climateIndex: 'Kondusif' | 'Waspada' | 'Kritis' | 'Belum Terisi';
   climateScore: number; // 0 - 100
   dssStrategicAdvice: string[];
   kepsekPolicyAdvice: string[];

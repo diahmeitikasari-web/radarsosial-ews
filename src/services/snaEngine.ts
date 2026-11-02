@@ -15,7 +15,7 @@ import {
 export function calculateSNAMetrics(
   students: Student[],
   nominations: SociometricNomination[],
-  behavioralRatings: PeerBehavioralRating[],
+  behavioralRatings: PeerBehavioralRating[] = [],
   criteriaFilter?: RelationCriteria
 ): StudentCalculatedMetrics[] {
   const n = students.length;
@@ -25,6 +25,13 @@ export function calculateSNAMetrics(
   const activeNoms = criteriaFilter
     ? nominations.filter((nom) => nom.criteria === criteriaFilter)
     : nominations;
+
+  // Domain Rule: Jika data kuesioner sosiometri belum terisi (0 nominasi),
+  // jangan lakukan kalkulasi semu yang menetapkan semua siswa sebagai 'Average'.
+  // Siswa pada kelas yang belum diisi kuesionernya berstatus unassessed (kosongkan sosiometrinya).
+  if (nominations.length === 0 || (criteriaFilter && activeNoms.length === 0 && nominations.length === 0)) {
+    return [];
+  }
 
   // Initialize counts
   const rawLikes: Record<string, number> = {};
@@ -66,7 +73,7 @@ export function calculateSNAMetrics(
 
   // Behavior map
   const behaviorMap: Record<string, PeerBehavioralRating> = {};
-  behavioralRatings.forEach((b) => {
+  (behavioralRatings || []).forEach((b) => {
     behaviorMap[b.studentId] = b;
   });
 
@@ -259,6 +266,41 @@ export function calculateClassAggregate(
   metrics: StudentCalculatedMetrics[]
 ): ClassMetricsAggregate {
   const totalStudents = students.length;
+
+  // Domain Rule: Jika data kuesioner sosiometri kosong (0 nominasi),
+  // jangan tampilkan iklim semu 'Kondusif' atau skor rata-rata palsu.
+  if (totalStudents === 0 || nominations.length === 0 || metrics.length === 0) {
+    return {
+      classId,
+      className,
+      periodId,
+      periodName,
+      totalStudents,
+      density: 0,
+      reciprocityRate: 0,
+      statusCounts: {
+        Popular: 0,
+        Rejected: 0,
+        Neglected: 0,
+        Controversial: 0,
+        Average: 0,
+      },
+      riskSummary: {
+        highRiskCount: 0,
+        mediumRiskCount: 0,
+        lowRiskCount: 0,
+      },
+      climateIndex: 'Belum Terisi',
+      climateScore: 0,
+      dssStrategicAdvice: [
+        `Data sosiometri rombel ${className} belum diisi untuk ${periodName}. Silakan unggah berkas Excel hasil kuesioner atau entri data pilihan relasi siswa untuk mengaktifkan analisis SNA dan deteksi iklim kelas.`
+      ],
+      kepsekPolicyAdvice: [
+        `Asesmen sosiometri rombel ${className} belum terlaksana pada periode ini. Belum ada skor iklim sosial atau evaluasi risiko relasional yang dapat dilaporkan ke TPPK.`
+      ],
+    };
+  }
+
   const maxPossibleEdges = totalStudents * (totalStudents - 1) || 1;
 
   // Count positive edges
