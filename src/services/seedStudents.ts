@@ -6,6 +6,7 @@ import {
   SociometricNomination,
   PeerBehavioralRating,
 } from '../types';
+import seedData3B from './seedData3B.json';
 
 // ==========================================
 // DAFTAR SEKOLAH (MULTI-TENANT)
@@ -814,6 +815,22 @@ export function generateAllStudents(): Student[] {
   const result: Student[] = [];
 
   Object.entries(CLASS_TEMPLATES).forEach(([classId, meta]) => {
+    if (classId === 'cls-3b' && seedData3B.students && seedData3B.students.length > 0) {
+      seedData3B.students.forEach((s) => {
+        result.push({
+          id: s.id,
+          nis: s.nis,
+          nisn: `0091234${s.nis.slice(-3)}`,
+          name: s.name,
+          gender: s.gender as 'L' | 'P',
+          classId: 'cls-3b',
+          className: 'Kelas 3B',
+          schoolId: 'sch-mtsn2-bangka',
+        });
+      });
+      return;
+    }
+
     meta.students.forEach((s, idx) => {
       const num = String(idx + 1).padStart(2, '0');
       // For cls-8a, keep original IDs s-01..s-20 for total compatibility with previous fixtures
@@ -854,6 +871,17 @@ export function generateAllNominations(periodId: string = 'period-2026-s1'): Soc
   const classes = Object.keys(CLASS_TEMPLATES);
 
   classes.forEach((classId) => {
+    if (classId === 'cls-3b' && seedData3B.nominations && seedData3B.nominations.length > 0) {
+      seedData3B.nominations.forEach((nom) => {
+        result.push({
+          ...nom,
+          id: `nom-${periodId}-${classId}-${nomCount++}`,
+          periodId,
+        } as SociometricNomination);
+      });
+      return;
+    }
+
     const classStudents = allStudents.filter((s) => s.classId === classId);
     if (classStudents.length < 20) return;
 
@@ -956,6 +984,23 @@ export function generateAllBehavioralRatings(periodId: string = 'period-2026-s1'
   classes.forEach((classId) => {
     const classStudents = allStudents.filter((s) => s.classId === classId);
     if (classStudents.length < 20) return;
+
+    if (classId === 'cls-3b') {
+      classStudents.forEach((student) => {
+        result.push({
+          id: `pbr-${periodId}-${classId}-${bCount++}`,
+          periodId,
+          classId,
+          studentId: student.id,
+          prosocial: 5,
+          aggressive: 2,
+          withdrawn: 2,
+          victimization: 1,
+          hyperactive: 2,
+        });
+      });
+      return;
+    }
 
     classStudents.forEach((student, idx) => {
       // Role-based behavioral dimensions:

@@ -316,7 +316,7 @@ export const PrintableQuestionnaireA4: React.FC<PrintableQuestionnaireA4Props> =
 
           {/* BAGIAN 3: EVALUASI PERILAKU SEBAYA (5 DIMENSI) */}
           {includeBehavior && (
-            <div className="mb-4 print:page-break-before print:break-before-page break-before-page page-break-before page-break-inside-avoid">
+            <div className="mb-4 print:page-break-before print:break-before-page break-before-page page-break-before">
               {/* Kop Mini Khusus Lembar Lanjutan Halaman 2 */}
               <div className="hidden print:flex items-center justify-between pb-2 mb-3 border-b border-slate-300 text-[10px] text-slate-600 font-medium">
                 <div>

@@ -117,7 +117,7 @@ export class DataStorageService {
     });
 
     // Multi-tenant migration check: ensure SMPN 1 Mendo Barat, Kelas 3B, and full relations exist
-    const SEED_VERSION_KEY = 'radar_sosial_seed_v2026_restore_relations_v12';
+    const SEED_VERSION_KEY = 'radar_sosial_seed_v2026_restore_relations_v13';
     const hasSeed = typeof window !== 'undefined' ? localStorage.getItem(SEED_VERSION_KEY) : null;
     const needsMigration =
       !hasSeed ||

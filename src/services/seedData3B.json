@@ -1,0 +1,3399 @@
+{
+  "students": [
+    {
+      "id": "s-3b-01",
+      "nis": "2515045",
+      "name": "AMALIA RISKY",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-02",
+      "nis": "2515042",
+      "name": "CICA SATRI",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-03",
+      "nis": "2515035",
+      "name": "DEA AULIA",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-04",
+      "nis": "2515051",
+      "name": "DEA AYU ANGGRAINI",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-05",
+      "nis": "2515053",
+      "name": "DINA",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-06",
+      "nis": "2515040",
+      "name": "DIRA ELVIRA",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-07",
+      "nis": "2515032",
+      "name": "FALIHAH",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-08",
+      "nis": "2515037",
+      "name": "FARISA DEWI MORIN",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-09",
+      "nis": "2515044",
+      "name": "FAWWAZ ANUGRAH",
+      "gender": "L",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-10",
+      "nis": "2515043",
+      "name": "FELLICIA ARDIANTI",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-11",
+      "nis": "2515047",
+      "name": "KAZAMI ADIATA",
+      "gender": "L",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-12",
+      "nis": "2515059",
+      "name": "MEGITA NATASYA",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-13",
+      "nis": "2515054",
+      "name": "MUHAMMAD HAYKAL ALFARIZY",
+      "gender": "L",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-14",
+      "nis": "2515052",
+      "name": "MUHAMMAD RAFLI",
+      "gender": "L",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-15",
+      "nis": "2515056",
+      "name": "MUKARROMAH AL RIFANI",
+      "gender": "L",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-16",
+      "nis": "2515050",
+      "name": "NADIRA USWATUN HASANAH",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-17",
+      "nis": "2515036",
+      "name": "RAISAH FARIN RAJABAN",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-18",
+      "nis": "2515058",
+      "name": "REPA",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-19",
+      "nis": "2515049",
+      "name": "REZAM",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-20",
+      "nis": "2515033",
+      "name": "RINTAN MARADETA",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-21",
+      "nis": "2515061",
+      "name": "SALWA SASKIA IZZATI",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-22",
+      "nis": "2515041",
+      "name": "SELVIANI SAGITA",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-23",
+      "nis": "2515046",
+      "name": "SITI AZIZAH",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-24",
+      "nis": "2515034",
+      "name": "SYASI SYACHIRA AULIA",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-25",
+      "nis": "2515060",
+      "name": "VAREL DWI KURNIAWAN",
+      "gender": "L",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-26",
+      "nis": "2515055",
+      "name": "WENI TANIA",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-27",
+      "nis": "2515038",
+      "name": "ZAHROTUL JANNAH",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-28",
+      "nis": "2515057",
+      "name": "ZASKIA",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    },
+    {
+      "id": "s-3b-29",
+      "nis": "2515048",
+      "name": "ZIA AROFA",
+      "gender": "P",
+      "classId": "cls-3b",
+      "className": "Kelas 3B",
+      "schoolId": "sch-mtsn2-bangka"
+    }
+  ],
+  "nominations": [
+    {
+      "id": "nom-3b-1",
+      "studentId": "s-3b-01",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-2",
+      "studentId": "s-3b-01",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-3",
+      "studentId": "s-3b-01",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-4",
+      "studentId": "s-3b-01",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-5",
+      "studentId": "s-3b-01",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-6",
+      "studentId": "s-3b-01",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-7",
+      "studentId": "s-3b-01",
+      "targetId": "s-3b-24",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-8",
+      "studentId": "s-3b-01",
+      "targetId": "s-3b-14",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-9",
+      "studentId": "s-3b-01",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-10",
+      "studentId": "s-3b-01",
+      "targetId": "s-3b-09",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-11",
+      "studentId": "s-3b-01",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-12",
+      "studentId": "s-3b-01",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-13",
+      "studentId": "s-3b-02",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-14",
+      "studentId": "s-3b-02",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-15",
+      "studentId": "s-3b-02",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-16",
+      "studentId": "s-3b-02",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-17",
+      "studentId": "s-3b-02",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-18",
+      "studentId": "s-3b-02",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-19",
+      "studentId": "s-3b-02",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-20",
+      "studentId": "s-3b-02",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-21",
+      "studentId": "s-3b-02",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-22",
+      "studentId": "s-3b-02",
+      "targetId": "s-3b-09",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-23",
+      "studentId": "s-3b-02",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-24",
+      "studentId": "s-3b-02",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-25",
+      "studentId": "s-3b-03",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-26",
+      "studentId": "s-3b-03",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-27",
+      "studentId": "s-3b-03",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-28",
+      "studentId": "s-3b-03",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-29",
+      "studentId": "s-3b-03",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-30",
+      "studentId": "s-3b-03",
+      "targetId": "s-3b-22",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-31",
+      "studentId": "s-3b-03",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-32",
+      "studentId": "s-3b-03",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-33",
+      "studentId": "s-3b-03",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-34",
+      "studentId": "s-3b-03",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-35",
+      "studentId": "s-3b-03",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-36",
+      "studentId": "s-3b-03",
+      "targetId": "s-3b-09",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-37",
+      "studentId": "s-3b-04",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-38",
+      "studentId": "s-3b-04",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-39",
+      "studentId": "s-3b-04",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-40",
+      "studentId": "s-3b-04",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-41",
+      "studentId": "s-3b-04",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-42",
+      "studentId": "s-3b-04",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-43",
+      "studentId": "s-3b-04",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-44",
+      "studentId": "s-3b-04",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-45",
+      "studentId": "s-3b-04",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-46",
+      "studentId": "s-3b-04",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-47",
+      "studentId": "s-3b-04",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-48",
+      "studentId": "s-3b-04",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-49",
+      "studentId": "s-3b-05",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-50",
+      "studentId": "s-3b-05",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-51",
+      "studentId": "s-3b-05",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-52",
+      "studentId": "s-3b-05",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-53",
+      "studentId": "s-3b-05",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-54",
+      "studentId": "s-3b-05",
+      "targetId": "s-3b-22",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-55",
+      "studentId": "s-3b-05",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-56",
+      "studentId": "s-3b-05",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-57",
+      "studentId": "s-3b-05",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-58",
+      "studentId": "s-3b-05",
+      "targetId": "s-3b-01",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-59",
+      "studentId": "s-3b-05",
+      "targetId": "s-3b-14",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-60",
+      "studentId": "s-3b-05",
+      "targetId": "s-3b-24",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-61",
+      "studentId": "s-3b-06",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-62",
+      "studentId": "s-3b-06",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-63",
+      "studentId": "s-3b-06",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-64",
+      "studentId": "s-3b-06",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-65",
+      "studentId": "s-3b-06",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-66",
+      "studentId": "s-3b-06",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-67",
+      "studentId": "s-3b-06",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-68",
+      "studentId": "s-3b-06",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-69",
+      "studentId": "s-3b-06",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-70",
+      "studentId": "s-3b-06",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-71",
+      "studentId": "s-3b-06",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-72",
+      "studentId": "s-3b-06",
+      "targetId": "s-3b-09",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-73",
+      "studentId": "s-3b-07",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-74",
+      "studentId": "s-3b-07",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-75",
+      "studentId": "s-3b-07",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-76",
+      "studentId": "s-3b-07",
+      "targetId": "s-3b-12",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-77",
+      "studentId": "s-3b-07",
+      "targetId": "s-3b-14",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-78",
+      "studentId": "s-3b-07",
+      "targetId": "s-3b-24",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-79",
+      "studentId": "s-3b-07",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-80",
+      "studentId": "s-3b-07",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-81",
+      "studentId": "s-3b-07",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-82",
+      "studentId": "s-3b-07",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-83",
+      "studentId": "s-3b-07",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-84",
+      "studentId": "s-3b-07",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-85",
+      "studentId": "s-3b-08",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-86",
+      "studentId": "s-3b-08",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-87",
+      "studentId": "s-3b-08",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-88",
+      "studentId": "s-3b-08",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-89",
+      "studentId": "s-3b-08",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-90",
+      "studentId": "s-3b-08",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-91",
+      "studentId": "s-3b-08",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-92",
+      "studentId": "s-3b-08",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-93",
+      "studentId": "s-3b-08",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-94",
+      "studentId": "s-3b-08",
+      "targetId": "s-3b-01",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-95",
+      "studentId": "s-3b-08",
+      "targetId": "s-3b-14",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-96",
+      "studentId": "s-3b-08",
+      "targetId": "s-3b-24",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-97",
+      "studentId": "s-3b-09",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-98",
+      "studentId": "s-3b-09",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-99",
+      "studentId": "s-3b-09",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-100",
+      "studentId": "s-3b-09",
+      "targetId": "s-3b-12",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-101",
+      "studentId": "s-3b-09",
+      "targetId": "s-3b-14",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-102",
+      "studentId": "s-3b-09",
+      "targetId": "s-3b-24",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-103",
+      "studentId": "s-3b-09",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-104",
+      "studentId": "s-3b-09",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-105",
+      "studentId": "s-3b-09",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-106",
+      "studentId": "s-3b-09",
+      "targetId": "s-3b-01",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-107",
+      "studentId": "s-3b-09",
+      "targetId": "s-3b-14",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-108",
+      "studentId": "s-3b-09",
+      "targetId": "s-3b-24",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-109",
+      "studentId": "s-3b-10",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-110",
+      "studentId": "s-3b-10",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-111",
+      "studentId": "s-3b-10",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-112",
+      "studentId": "s-3b-10",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-113",
+      "studentId": "s-3b-10",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-114",
+      "studentId": "s-3b-10",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-115",
+      "studentId": "s-3b-10",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-116",
+      "studentId": "s-3b-10",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-117",
+      "studentId": "s-3b-10",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-118",
+      "studentId": "s-3b-10",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-119",
+      "studentId": "s-3b-10",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-120",
+      "studentId": "s-3b-10",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-121",
+      "studentId": "s-3b-11",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-122",
+      "studentId": "s-3b-11",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-123",
+      "studentId": "s-3b-11",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-124",
+      "studentId": "s-3b-11",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-125",
+      "studentId": "s-3b-11",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-126",
+      "studentId": "s-3b-11",
+      "targetId": "s-3b-22",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-127",
+      "studentId": "s-3b-11",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-128",
+      "studentId": "s-3b-11",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-129",
+      "studentId": "s-3b-11",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-130",
+      "studentId": "s-3b-11",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-131",
+      "studentId": "s-3b-11",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-132",
+      "studentId": "s-3b-11",
+      "targetId": "s-3b-09",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-133",
+      "studentId": "s-3b-12",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-134",
+      "studentId": "s-3b-12",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-135",
+      "studentId": "s-3b-12",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-136",
+      "studentId": "s-3b-12",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-137",
+      "studentId": "s-3b-12",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-138",
+      "studentId": "s-3b-12",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-139",
+      "studentId": "s-3b-12",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-140",
+      "studentId": "s-3b-12",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-141",
+      "studentId": "s-3b-12",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-142",
+      "studentId": "s-3b-12",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-143",
+      "studentId": "s-3b-12",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-144",
+      "studentId": "s-3b-12",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-145",
+      "studentId": "s-3b-13",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-146",
+      "studentId": "s-3b-13",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-147",
+      "studentId": "s-3b-13",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-148",
+      "studentId": "s-3b-13",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-149",
+      "studentId": "s-3b-13",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-150",
+      "studentId": "s-3b-13",
+      "targetId": "s-3b-22",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-151",
+      "studentId": "s-3b-13",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-152",
+      "studentId": "s-3b-13",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-153",
+      "studentId": "s-3b-13",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-154",
+      "studentId": "s-3b-13",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-155",
+      "studentId": "s-3b-13",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-156",
+      "studentId": "s-3b-13",
+      "targetId": "s-3b-09",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-157",
+      "studentId": "s-3b-14",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-158",
+      "studentId": "s-3b-14",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-159",
+      "studentId": "s-3b-14",
+      "targetId": "s-3b-12",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-160",
+      "studentId": "s-3b-14",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-161",
+      "studentId": "s-3b-14",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-162",
+      "studentId": "s-3b-14",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-163",
+      "studentId": "s-3b-14",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-164",
+      "studentId": "s-3b-14",
+      "targetId": "s-3b-01",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-165",
+      "studentId": "s-3b-14",
+      "targetId": "s-3b-24",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-166",
+      "studentId": "s-3b-14",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-167",
+      "studentId": "s-3b-14",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-168",
+      "studentId": "s-3b-14",
+      "targetId": "s-3b-09",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-169",
+      "studentId": "s-3b-15",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-170",
+      "studentId": "s-3b-15",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-171",
+      "studentId": "s-3b-15",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-172",
+      "studentId": "s-3b-15",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-173",
+      "studentId": "s-3b-15",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-174",
+      "studentId": "s-3b-15",
+      "targetId": "s-3b-22",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-175",
+      "studentId": "s-3b-15",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-176",
+      "studentId": "s-3b-15",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-177",
+      "studentId": "s-3b-15",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-178",
+      "studentId": "s-3b-15",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-179",
+      "studentId": "s-3b-15",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-180",
+      "studentId": "s-3b-15",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-181",
+      "studentId": "s-3b-16",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-182",
+      "studentId": "s-3b-16",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-183",
+      "studentId": "s-3b-16",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-184",
+      "studentId": "s-3b-16",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-185",
+      "studentId": "s-3b-16",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-186",
+      "studentId": "s-3b-16",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-187",
+      "studentId": "s-3b-16",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-188",
+      "studentId": "s-3b-16",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-189",
+      "studentId": "s-3b-16",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-190",
+      "studentId": "s-3b-16",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-191",
+      "studentId": "s-3b-16",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-192",
+      "studentId": "s-3b-16",
+      "targetId": "s-3b-09",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-193",
+      "studentId": "s-3b-17",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-194",
+      "studentId": "s-3b-17",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-195",
+      "studentId": "s-3b-17",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-196",
+      "studentId": "s-3b-17",
+      "targetId": "s-3b-12",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-197",
+      "studentId": "s-3b-17",
+      "targetId": "s-3b-14",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-198",
+      "studentId": "s-3b-17",
+      "targetId": "s-3b-24",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-199",
+      "studentId": "s-3b-17",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-200",
+      "studentId": "s-3b-17",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-201",
+      "studentId": "s-3b-17",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-202",
+      "studentId": "s-3b-17",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-203",
+      "studentId": "s-3b-17",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-204",
+      "studentId": "s-3b-17",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-205",
+      "studentId": "s-3b-18",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-206",
+      "studentId": "s-3b-18",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-207",
+      "studentId": "s-3b-18",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-208",
+      "studentId": "s-3b-18",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-209",
+      "studentId": "s-3b-18",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-210",
+      "studentId": "s-3b-18",
+      "targetId": "s-3b-22",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-211",
+      "studentId": "s-3b-18",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-212",
+      "studentId": "s-3b-18",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-213",
+      "studentId": "s-3b-18",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-214",
+      "studentId": "s-3b-18",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-215",
+      "studentId": "s-3b-18",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-216",
+      "studentId": "s-3b-18",
+      "targetId": "s-3b-09",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-217",
+      "studentId": "s-3b-19",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-218",
+      "studentId": "s-3b-19",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-219",
+      "studentId": "s-3b-19",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-220",
+      "studentId": "s-3b-19",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-221",
+      "studentId": "s-3b-19",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-222",
+      "studentId": "s-3b-19",
+      "targetId": "s-3b-22",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-223",
+      "studentId": "s-3b-19",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-224",
+      "studentId": "s-3b-19",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-225",
+      "studentId": "s-3b-19",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-226",
+      "studentId": "s-3b-19",
+      "targetId": "s-3b-01",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-227",
+      "studentId": "s-3b-19",
+      "targetId": "s-3b-14",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-228",
+      "studentId": "s-3b-19",
+      "targetId": "s-3b-24",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-229",
+      "studentId": "s-3b-20",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-230",
+      "studentId": "s-3b-20",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-231",
+      "studentId": "s-3b-20",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-232",
+      "studentId": "s-3b-20",
+      "targetId": "s-3b-12",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-233",
+      "studentId": "s-3b-20",
+      "targetId": "s-3b-14",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-234",
+      "studentId": "s-3b-20",
+      "targetId": "s-3b-24",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-235",
+      "studentId": "s-3b-20",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-236",
+      "studentId": "s-3b-20",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-237",
+      "studentId": "s-3b-20",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-238",
+      "studentId": "s-3b-20",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-239",
+      "studentId": "s-3b-20",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-240",
+      "studentId": "s-3b-20",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-241",
+      "studentId": "s-3b-21",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-242",
+      "studentId": "s-3b-21",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-243",
+      "studentId": "s-3b-21",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-244",
+      "studentId": "s-3b-21",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-245",
+      "studentId": "s-3b-21",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-246",
+      "studentId": "s-3b-21",
+      "targetId": "s-3b-22",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-247",
+      "studentId": "s-3b-21",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-248",
+      "studentId": "s-3b-21",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-249",
+      "studentId": "s-3b-21",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-250",
+      "studentId": "s-3b-21",
+      "targetId": "s-3b-01",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-251",
+      "studentId": "s-3b-21",
+      "targetId": "s-3b-14",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-252",
+      "studentId": "s-3b-21",
+      "targetId": "s-3b-24",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-253",
+      "studentId": "s-3b-22",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-254",
+      "studentId": "s-3b-22",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-255",
+      "studentId": "s-3b-22",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-256",
+      "studentId": "s-3b-22",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-257",
+      "studentId": "s-3b-22",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-258",
+      "studentId": "s-3b-22",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-259",
+      "studentId": "s-3b-22",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-260",
+      "studentId": "s-3b-22",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-261",
+      "studentId": "s-3b-22",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-262",
+      "studentId": "s-3b-22",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-263",
+      "studentId": "s-3b-22",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-264",
+      "studentId": "s-3b-22",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-265",
+      "studentId": "s-3b-23",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-266",
+      "studentId": "s-3b-23",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-267",
+      "studentId": "s-3b-23",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-268",
+      "studentId": "s-3b-23",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-269",
+      "studentId": "s-3b-23",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-270",
+      "studentId": "s-3b-23",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-271",
+      "studentId": "s-3b-23",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-272",
+      "studentId": "s-3b-23",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-273",
+      "studentId": "s-3b-23",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-274",
+      "studentId": "s-3b-23",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-275",
+      "studentId": "s-3b-23",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-276",
+      "studentId": "s-3b-23",
+      "targetId": "s-3b-09",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-277",
+      "studentId": "s-3b-24",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-278",
+      "studentId": "s-3b-24",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-279",
+      "studentId": "s-3b-24",
+      "targetId": "s-3b-12",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-280",
+      "studentId": "s-3b-24",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-281",
+      "studentId": "s-3b-24",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-282",
+      "studentId": "s-3b-24",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-283",
+      "studentId": "s-3b-24",
+      "targetId": "s-3b-01",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-284",
+      "studentId": "s-3b-24",
+      "targetId": "s-3b-14",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-285",
+      "studentId": "s-3b-24",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-286",
+      "studentId": "s-3b-24",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-287",
+      "studentId": "s-3b-24",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-288",
+      "studentId": "s-3b-24",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-289",
+      "studentId": "s-3b-25",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-290",
+      "studentId": "s-3b-25",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-291",
+      "studentId": "s-3b-25",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-292",
+      "studentId": "s-3b-25",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-293",
+      "studentId": "s-3b-25",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-294",
+      "studentId": "s-3b-25",
+      "targetId": "s-3b-22",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-295",
+      "studentId": "s-3b-25",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-296",
+      "studentId": "s-3b-25",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-297",
+      "studentId": "s-3b-25",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-298",
+      "studentId": "s-3b-25",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-299",
+      "studentId": "s-3b-25",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-300",
+      "studentId": "s-3b-25",
+      "targetId": "s-3b-09",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-301",
+      "studentId": "s-3b-26",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-302",
+      "studentId": "s-3b-26",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-303",
+      "studentId": "s-3b-26",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-304",
+      "studentId": "s-3b-26",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-305",
+      "studentId": "s-3b-26",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-306",
+      "studentId": "s-3b-26",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-307",
+      "studentId": "s-3b-26",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-308",
+      "studentId": "s-3b-26",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-309",
+      "studentId": "s-3b-26",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-310",
+      "studentId": "s-3b-26",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-311",
+      "studentId": "s-3b-26",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-312",
+      "studentId": "s-3b-26",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-313",
+      "studentId": "s-3b-27",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-314",
+      "studentId": "s-3b-27",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-315",
+      "studentId": "s-3b-27",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-316",
+      "studentId": "s-3b-27",
+      "targetId": "s-3b-12",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-317",
+      "studentId": "s-3b-27",
+      "targetId": "s-3b-14",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-318",
+      "studentId": "s-3b-27",
+      "targetId": "s-3b-24",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-319",
+      "studentId": "s-3b-27",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-320",
+      "studentId": "s-3b-27",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-321",
+      "studentId": "s-3b-27",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-322",
+      "studentId": "s-3b-27",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-323",
+      "studentId": "s-3b-27",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-324",
+      "studentId": "s-3b-27",
+      "targetId": "s-3b-09",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-325",
+      "studentId": "s-3b-28",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-326",
+      "studentId": "s-3b-28",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-327",
+      "studentId": "s-3b-28",
+      "targetId": "s-3b-11",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-328",
+      "studentId": "s-3b-28",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-329",
+      "studentId": "s-3b-28",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-330",
+      "studentId": "s-3b-28",
+      "targetId": "s-3b-21",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-331",
+      "studentId": "s-3b-28",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-332",
+      "studentId": "s-3b-28",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-333",
+      "studentId": "s-3b-28",
+      "targetId": "s-3b-29",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-334",
+      "studentId": "s-3b-28",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-335",
+      "studentId": "s-3b-28",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-336",
+      "studentId": "s-3b-28",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-337",
+      "studentId": "s-3b-29",
+      "targetId": "s-3b-23",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-338",
+      "studentId": "s-3b-29",
+      "targetId": "s-3b-26",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-339",
+      "studentId": "s-3b-29",
+      "targetId": "s-3b-28",
+      "criteria": "academic",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-340",
+      "studentId": "s-3b-29",
+      "targetId": "s-3b-09",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-341",
+      "studentId": "s-3b-29",
+      "targetId": "s-3b-19",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-342",
+      "studentId": "s-3b-29",
+      "targetId": "s-3b-22",
+      "criteria": "academic",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-343",
+      "studentId": "s-3b-29",
+      "targetId": "s-3b-17",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-344",
+      "studentId": "s-3b-29",
+      "targetId": "s-3b-27",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-345",
+      "studentId": "s-3b-29",
+      "targetId": "s-3b-25",
+      "criteria": "play",
+      "type": "like",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-346",
+      "studentId": "s-3b-29",
+      "targetId": "s-3b-08",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-347",
+      "studentId": "s-3b-29",
+      "targetId": "s-3b-05",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    },
+    {
+      "id": "nom-3b-348",
+      "studentId": "s-3b-29",
+      "targetId": "s-3b-19",
+      "criteria": "play",
+      "type": "dislike",
+      "periodId": "period-2026-s1",
+      "classId": "cls-3b"
+    }
+  ]
+}

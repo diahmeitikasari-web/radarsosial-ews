@@ -249,7 +249,7 @@ export const OfficialPDFReport: React.FC<OfficialPDFReportProps> = ({
               <span className="w-2 h-2 rounded-full bg-slate-700" />
               IV. TABEL PROFIL SOSIOMETRI & KLASIFIKASI STATUS SISWA (COIE & DODGE, 1982)
             </div>
-            <div className="overflow-x-auto border border-slate-300 rounded-lg">
+            <div className="overflow-x-auto print:overflow-visible border border-slate-300 rounded-lg">
               <table className="w-full text-left text-[11px] border-collapse">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-300 text-slate-700">
@@ -394,7 +394,7 @@ export const OfficialPDFReport: React.FC<OfficialPDFReportProps> = ({
           </div>
 
           {/* 8. Tanda Tangan Resmi Dokumen */}
-          <div className="pt-6 border-t border-slate-300 text-xs">
+          <div className="pt-6 border-t border-slate-300 text-xs page-break-inside-avoid break-inside-avoid">
             <div className="flex justify-between items-start text-center">
               <div className="w-64">
                 <div className="text-slate-600">Mengetahui,</div>

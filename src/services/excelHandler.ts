@@ -209,6 +209,33 @@ export async function parseUploadedExcel(
         .replace(/[^a-z0-9]/g, '');
     };
 
+    const normalizePhonetic = (s: any): string => {
+      return cleanAlpha(s)
+        .replace(/y/g, 'i')
+        .replace(/v/g, 'f')
+        .replace(/sh/g, 's')
+        .replace(/sy/g, 's')
+        .replace(/dh/g, 'd')
+        .replace(/(.)\1+/g, '$1');
+    };
+
+    const calcLevenshtein = (a: string, b: string): number => {
+      const m = a.length, n = b.length;
+      const d: number[][] = [];
+      for (let i = 0; i <= m; i++) d[i] = [i];
+      for (let j = 0; j <= n; j++) d[0][j] = j;
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          d[i][j] = Math.min(
+            d[i - 1][j] + 1,
+            d[i][j - 1] + 1,
+            d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+          );
+        }
+      }
+      return d[m][n];
+    };
+
     // Helper to get case-insensitive / space-trimmed values from a row object
     const getRowValue = (row: Record<string, any>, possibleKeys: string[]): string => {
       const rowKeys = Object.keys(row);
@@ -379,7 +406,7 @@ export async function parseUploadedExcel(
       };
     }
 
-    // Flexible student resolver (resolves name, NIS, student row/absen index, or bullet-prefixed strings)
+    // Flexible student resolver (resolves name, NIS, student row/absen index, phonetic spelling, word tokens, or bullet-prefixed strings)
     const resolveStudent = (queryRaw: string, nominatorId: string): Student | null => {
       const q = cleanStr(queryRaw);
       if (!q) return null;
@@ -428,7 +455,46 @@ export async function parseUploadedExcel(
         }
       }
 
-      // 7. Fuzzy / Substring match (e.g. first name when unique)
+      // 7. Phonetic match (handles Indonesian 'i' vs 'y', 'f' vs 'v', double consonants)
+      const qPhon = normalizePhonetic(q);
+      if (qPhon.length >= 3) {
+        const phoneticCandidates = students.filter(
+          (s) => normalizePhonetic(s.name) === qPhon && s.id !== nominatorId
+        );
+        if (phoneticCandidates.length === 1) return phoneticCandidates[0];
+      }
+
+      // 8. Word token overlap match (e.g. "Muhammad Rafly" vs "MUHAMMAD RAFLI", or unique first/last names)
+      const qTokens = cleanStr(q).toLowerCase().split(/\s+/).filter((t) => t.length >= 3);
+      if (qTokens.length > 0) {
+        const tokenCandidates = students.filter((s) => {
+          if (s.id === nominatorId) return false;
+          const sTokens = cleanStr(s.name).toLowerCase().split(/\s+/).filter((t) => t.length >= 3);
+          return qTokens.every((qt) => {
+            const qtPhon = normalizePhonetic(qt);
+            return sTokens.some((st) => {
+              const stPhon = normalizePhonetic(st);
+              return stPhon === qtPhon || calcLevenshtein(qtPhon, stPhon) <= 1;
+            });
+          });
+        });
+        if (tokenCandidates.length === 1) return tokenCandidates[0];
+      }
+
+      // 9. Fuzzy Levenshtein match on full string or phonetic normalized string
+      if (a.length >= 4) {
+        const levCandidates = students.filter((s) => {
+          if (s.id === nominatorId) return false;
+          const sAlpha = cleanAlpha(s.name);
+          const sPhon = normalizePhonetic(s.name);
+          const dist1 = calcLevenshtein(a, sAlpha);
+          const dist2 = calcLevenshtein(qPhon, sPhon);
+          return dist1 <= 2 || dist2 <= 2;
+        });
+        if (levCandidates.length === 1) return levCandidates[0];
+      }
+
+      // 10. Substring match fallback (e.g. first name when unique)
       if (a.length >= 3) {
         const candidates = students.filter((s) => {
           const sAlpha = cleanAlpha(s.name);
