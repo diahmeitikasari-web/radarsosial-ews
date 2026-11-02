@@ -128,14 +128,10 @@ export async function parseUploadedExcel(
     const data = await file.arrayBuffer();
     const workbook = XLSX.read(data, { type: 'array' });
 
-    const firstSheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheetName];
-    const rawJson = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet);
-
-    if (!rawJson || rawJson.length === 0) {
+    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
       return {
         success: false,
-        message: 'File Excel kosong atau tidak memiliki data yang valid.',
+        message: 'Berkas Excel tidak memiliki sheet yang dapat dibaca.',
         students: [],
         nominations: [],
         behavioralRatings: [],
@@ -143,77 +139,337 @@ export async function parseUploadedExcel(
       };
     }
 
-    const students: Student[] = [];
-    const nominations: SociometricNomination[] = [];
-    const behavioralRatings: PeerBehavioralRating[] = [];
+    // 1. Detect the data worksheet (prefer sheet containing student headers, skip pure instruction sheets)
+    let targetSheet = workbook.Sheets[workbook.SheetNames[0]];
+    let chosenSheetName = workbook.SheetNames[0];
+    let bestHeaderRowIndex = 0;
+    let maxHeaderScore = -1;
 
-    // Detect class name from file columns if present
+    for (const sName of workbook.SheetNames) {
+      if (sName.toLowerCase().includes('petunjuk') || sName.toLowerCase().includes('panduan')) {
+        continue;
+      }
+      const ws = workbook.Sheets[sName];
+      if (ws) {
+        const testRows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, range: 0, blankrows: false });
+        if (testRows && testRows.length > 0) {
+          // Check top 15 rows for student identification headers
+          for (let r = 0; r < Math.min(15, testRows.length); r++) {
+            const rowArr = testRows[r] || [];
+            let score = 0;
+            const rowStr = rowArr.map((cell) => String(cell || '').toLowerCase()).join(' ');
+            if (rowStr.includes('nama') || rowStr.includes('name') || rowStr.includes('siswa')) score += 4;
+            if (rowStr.includes('nis')) score += 2;
+            if (rowStr.includes('kelas') || rowStr.includes('rombel')) score += 2;
+            if (rowStr.includes('suka') || rowStr.includes('pilihan') || rowStr.includes('teman')) score += 3;
+            if (rowStr.includes('belajar') || rowStr.includes('bermain')) score += 3;
+            if (rowStr.includes('hindari') || rowStr.includes('tidak suka') || rowStr.includes('ditolak')) score += 2;
+            if (rowStr.includes('jk') || rowStr.includes('gender') || rowStr.includes('jenis kelamin')) score += 1;
+
+            if (score > maxHeaderScore) {
+              maxHeaderScore = score;
+              targetSheet = ws;
+              chosenSheetName = sName;
+              bestHeaderRowIndex = r;
+            }
+          }
+        }
+      }
+    }
+
+    // Parse starting from bestHeaderRowIndex with defval: ''
+    const rawJson = XLSX.utils.sheet_to_json<Record<string, any>>(targetSheet, {
+      range: bestHeaderRowIndex,
+      defval: '',
+    });
+
+    if (!rawJson || rawJson.length === 0) {
+      return {
+        success: false,
+        message: `Sheet '${chosenSheetName}' pada berkas Excel kosong atau tidak memiliki baris data siswa.`,
+        students: [],
+        nominations: [],
+        behavioralRatings: [],
+        warnings: [],
+      };
+    }
+
+    // Helper: Normalize string for fuzzy name matching
+    const cleanStr = (s: any): string => {
+      if (s === null || s === undefined) return '';
+      return String(s)
+        .replace(/[\u00a0\r\n\t]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    const cleanAlpha = (s: any): string => {
+      return cleanStr(s)
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+    };
+
+    // Helper to get case-insensitive / space-trimmed values from a row object
+    const getRowValue = (row: Record<string, any>, possibleKeys: string[]): string => {
+      const rowKeys = Object.keys(row);
+      // 1. Exact match
+      for (const pk of possibleKeys) {
+        if (row[pk] !== undefined && row[pk] !== null && String(row[pk]).trim() !== '') {
+          return cleanStr(row[pk]);
+        }
+      }
+      // 2. Normalized alphanumeric match
+      const normMap = new Map<string, string>();
+      for (const k of rowKeys) {
+        normMap.set(cleanAlpha(k), k);
+      }
+      for (const pk of possibleKeys) {
+        const pkAlpha = cleanAlpha(pk);
+        const matchedKey = normMap.get(pkAlpha);
+        if (
+          matchedKey &&
+          row[matchedKey] !== undefined &&
+          row[matchedKey] !== null &&
+          String(row[matchedKey]).trim() !== ''
+        ) {
+          return cleanStr(row[matchedKey]);
+        }
+      }
+      return '';
+    };
+
+    // Detect class name from file columns or sheet name if present
     let detectedClassName: string | undefined;
     for (const row of rawJson) {
-      const cVal = row['Kelas / Rombel'] || row['Kelas'] || row['Rombel'] || row['Class'];
-      if (cVal && String(cVal).trim()) {
-        detectedClassName = String(cVal).trim();
+      const cVal = getRowValue(row, [
+        'Kelas / Rombel',
+        'Kelas/Rombel',
+        'Kelas',
+        'Rombel',
+        'Class',
+        'Tingkat/Kelas',
+        'Tingkat',
+      ]);
+      if (cVal) {
+        detectedClassName = cVal;
         break;
       }
     }
 
-    // Target effective class name
+    // If no explicit class column, check sheet name (e.g. "3B", "Kelas 3B", "IX B")
+    if (!detectedClassName && chosenSheetName) {
+      const sTrim = cleanStr(chosenSheetName);
+      if (
+        !sTrim.toLowerCase().startsWith('sheet') &&
+        !sTrim.toLowerCase().includes('panduan') &&
+        !sTrim.toLowerCase().includes('petunjuk') &&
+        !sTrim.toLowerCase().includes('template')
+      ) {
+        detectedClassName = sTrim;
+      }
+    }
+
     const effectiveClassName = detectedClassName || className;
 
-    // Helper map for existing or parsed students
-    const nameMap = new Map<string, Student>();
+    // Student Lookup Tables
+    const exactNameMap = new Map<string, Student>();
+    const alphaNameMap = new Map<string, Student>();
     const nisMap = new Map<string, Student>();
+    const indexMap = new Map<string, Student>();
+    const students: Student[] = [];
 
-    // Index existing students first
+    // Pre-populate with existing students if any
     existingStudents.forEach((s) => {
-      nameMap.set(s.name.toLowerCase().trim(), s);
-      nisMap.set(s.nis.trim(), s);
+      const cName = cleanStr(s.name).toLowerCase();
+      exactNameMap.set(cName, s);
+      alphaNameMap.set(cleanAlpha(s.name), s);
+      if (s.nis) nisMap.set(cleanStr(s.nis), s);
+      if (s.nisn) nisMap.set(cleanStr(s.nisn), s);
     });
 
-    // Step 1: Register all students in the file
+    // Step 1: Register all students in the Excel file
     rawJson.forEach((row, index) => {
-      const name = (row['Nama Lengkap'] || row['Nama'] || row['name'] || '').toString().trim();
-      const nis = (row['NIS'] || row['nis'] || `2026${String(index + 1).padStart(4, '0')}`).toString().trim();
-      const genderRaw = (row['Jenis Kelamin (L/P)'] || row['JK'] || row['gender'] || 'L').toString().toUpperCase().trim();
-      const gender: 'L' | 'P' = genderRaw.startsWith('P') ? 'P' : 'L';
+      const name = getRowValue(row, [
+        'Nama Lengkap',
+        'Nama Siswa',
+        'Nama Murid',
+        'Nama Peserta Didik',
+        'Nama Anak',
+        'Nama',
+        'name',
+        'Student Name',
+        'Siswa',
+      ]);
+      const explicitNo = getRowValue(row, ['No', 'No.', 'Nomor', 'No Absen', 'Absen', 'No Urut']);
+      const nis =
+        getRowValue(row, ['NIS', 'nis', 'Nomor Induk', 'NISN', 'No Induk']) ||
+        `2026${String(index + 1).padStart(4, '0')}`;
+      const genderRaw = getRowValue(row, [
+        'Jenis Kelamin (L/P)',
+        'Jenis Kelamin',
+        'JK',
+        'Gender',
+        'L/P',
+        'Kelamin',
+      ]).toUpperCase();
+      const gender: 'L' | 'P' =
+        genderRaw.startsWith('P') || genderRaw === 'PEREMPUAN' || genderRaw === 'FEMALE' ? 'P' : 'L';
 
       if (!name) return;
 
-      let studentObj = nameMap.get(name.toLowerCase()) || nisMap.get(nis);
+      const normName = cleanStr(name).toLowerCase();
+      const alphaKey = cleanAlpha(name);
+      const cleanNis = cleanStr(nis);
+
+      let studentObj =
+        exactNameMap.get(normName) ||
+        alphaNameMap.get(alphaKey) ||
+        (cleanNis ? nisMap.get(cleanNis) : undefined);
+
       if (!studentObj) {
         studentObj = {
           id: `s-imp-${Date.now()}-${index}`,
-          nis,
-          name,
+          nis: cleanNis,
+          name: cleanStr(name),
           gender,
           classId,
           className: effectiveClassName,
           schoolId,
         };
-        nameMap.set(name.toLowerCase(), studentObj);
-        nisMap.set(nis, studentObj);
+      } else {
+        studentObj = {
+          ...studentObj,
+          name: cleanStr(name) || studentObj.name,
+          gender: gender || studentObj.gender,
+          nis: cleanNis || studentObj.nis,
+          classId,
+          className: effectiveClassName,
+        };
       }
+
+      // Register student across all lookup maps
+      exactNameMap.set(normName, studentObj);
+      alphaNameMap.set(alphaKey, studentObj);
+      if (cleanNis) nisMap.set(cleanNis, studentObj);
+
+      // Register index map by row number (e.g. "1", "01")
+      indexMap.set(String(index + 1), studentObj);
+      indexMap.set(String(index + 1).padStart(2, '0'), studentObj);
+
+      // Register index map by explicit No column if present
+      if (explicitNo) {
+        const cleanNo = explicitNo.replace(/[^0-9]/g, '');
+        if (cleanNo) {
+          indexMap.set(cleanNo, studentObj);
+          indexMap.set(String(parseInt(cleanNo, 10)), studentObj);
+        }
+      }
+
       students.push(studentObj);
     });
 
+    if (students.length === 0) {
+      return {
+        success: false,
+        message: 'Tidak ditemukan baris data siswa yang valid pada kolom "Nama Lengkap" atau "Nama Siswa".',
+        students: [],
+        nominations: [],
+        behavioralRatings: [],
+        warnings: [],
+      };
+    }
+
+    // Flexible student resolver (resolves name, NIS, student row/absen index, or bullet-prefixed strings)
+    const resolveStudent = (queryRaw: string, nominatorId: string): Student | null => {
+      const q = cleanStr(queryRaw);
+      if (!q) return null;
+
+      // 1. Direct name match
+      const low = q.toLowerCase();
+      if (exactNameMap.has(low)) return exactNameMap.get(low)!;
+
+      // 2. Alpha-clean match
+      const a = cleanAlpha(q);
+      if (alphaNameMap.has(a)) return alphaNameMap.get(a)!;
+
+      // 3. NIS match
+      if (nisMap.has(q)) return nisMap.get(q)!;
+
+      // 4. Number / Absen index match (e.g. "1", "01", "#1", "No 1", "No. 1")
+      const numMatch = q.match(/^(?:no\.?|#)?\s*(\d+)$/i);
+      if (numMatch) {
+        const numStr = String(parseInt(numMatch[1], 10));
+        if (indexMap.has(numStr)) return indexMap.get(numStr)!;
+      }
+
+      // 5. Number prefix match (e.g. "1. Bima Sakti", "02 - Citra", "1 Bima", "(1) Bima")
+      const prefixMatch = q.match(/^(?:no\.?|#)?\s*(\d+)[\.\-\)\:\s]+(.*)$/i);
+      if (prefixMatch) {
+        const numPart = String(parseInt(prefixMatch[1], 10));
+        const namePart = cleanStr(prefixMatch[2]);
+        if (indexMap.has(numPart)) return indexMap.get(numPart)!;
+        if (namePart) {
+          const directName =
+            exactNameMap.get(namePart.toLowerCase()) || alphaNameMap.get(cleanAlpha(namePart));
+          if (directName) return directName;
+        }
+      }
+
+      // 6. Number suffix match (e.g. "Bima Sakti (1)", "Citra #2", "Daffa [3]")
+      const suffixMatch = q.match(/^(.*?)\s*[\(\[\#\-\:]\s*(?:no\.?)?\s*(\d+)\s*[\)\]]?$/i);
+      if (suffixMatch) {
+        const namePart = cleanStr(suffixMatch[1]);
+        const numPart = String(parseInt(suffixMatch[2], 10));
+        if (indexMap.has(numPart)) return indexMap.get(numPart)!;
+        if (namePart) {
+          const directName =
+            exactNameMap.get(namePart.toLowerCase()) || alphaNameMap.get(cleanAlpha(namePart));
+          if (directName) return directName;
+        }
+      }
+
+      // 7. Fuzzy / Substring match (e.g. first name when unique)
+      if (a.length >= 3) {
+        const candidates = students.filter((s) => {
+          const sAlpha = cleanAlpha(s.name);
+          return sAlpha.includes(a) || a.includes(sAlpha);
+        });
+        if (candidates.length === 1 && candidates[0].id !== nominatorId) {
+          return candidates[0];
+        }
+      }
+
+      return null;
+    };
+
+    const nominations: SociometricNomination[] = [];
+    const behavioralRatings: PeerBehavioralRating[] = [];
     let nomIdCounter = 1;
 
-    // Helper to register a nomination cleanly
+    // Helper to register nominations safely without duplicates or self-selection
     const addNomination = (
       nominator: Student,
-      rawTargetName: string,
+      rawTargetStr: string,
       criteria: RelationCriteria,
       type: 'like' | 'dislike'
     ) => {
-      if (!rawTargetName) return;
-      // Support comma-separated names in a single cell
-      const targetNames = rawTargetName.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+      if (!rawTargetStr) return;
+      // Split on comma, semicolon, newline, slash, or " dan "
+      let rawTargets = rawTargetStr
+        .split(/[,;\n/]+|\s+dan\s+/i)
+        .map((s) => cleanStr(s))
+        .filter(Boolean);
 
-      targetNames.forEach((targetName) => {
-        const target = nameMap.get(targetName.toLowerCase());
+      // If token is space-separated numbers like "1 4 7" or "01 04 07"
+      if (rawTargets.length === 1 && /^\d+(\s+\d+)+$/.test(rawTargets[0])) {
+        rawTargets = rawTargets[0].split(/\s+/).map((s) => cleanStr(s)).filter(Boolean);
+      }
+
+      rawTargets.forEach((targetStr) => {
+        const target = resolveStudent(targetStr, nominator.id);
         if (!target) {
           warnings.push(
-            `Pilihan ${type === 'like' ? 'suka' : 'hindari'} (${criteria}) "${targetName}" oleh ${nominator.name} tidak ditemukan dalam daftar siswa.`
+            `Pilihan ${type === 'like' ? 'suka' : 'hindari'} (${criteria}) "${targetStr}" oleh ${nominator.name} tidak ditemukan dalam daftar siswa.`
           );
           return;
         }
@@ -248,164 +504,228 @@ export async function parseUploadedExcel(
       });
     };
 
-    // Step 2: Parse nominations and behavioral scores
-    rawJson.forEach((row) => {
-      const nominatorName = (row['Nama Lengkap'] || row['Nama'] || '').toString().trim();
-      const nominator = nameMap.get(nominatorName.toLowerCase());
+    // Analyze sheet column headers dynamically
+    const allRowKeys = Object.keys(rawJson[0] || {});
+    const isDualCriteria = allRowKeys.some((k) => {
+      const l = k.toLowerCase();
+      return l.includes('belajar') || l.includes('bermain');
+    });
+
+    // Classify all columns dynamically:
+    const belajarLikeCols: string[] = [];
+    const belajarDislikeCols: string[] = [];
+    const bermainLikeCols: string[] = [];
+    const bermainDislikeCols: string[] = [];
+    const generalLikeCols: string[] = [];
+    const generalDislikeCols: string[] = [];
+    const matrixCols: { key: string; targetStudent: Student }[] = [];
+
+    allRowKeys.forEach((k) => {
+      const low = k.toLowerCase();
+      const alpha = cleanAlpha(k);
+
+      // Skip identity and behavioral columns
+      if (
+        low.includes('nama') ||
+        low.includes('nis') ||
+        low.includes('kelas') ||
+        low.includes('rombel') ||
+        low.includes('gender') ||
+        low.includes('jenis kelamin') ||
+        low.includes('prososial') ||
+        low.includes('agresif') ||
+        low.includes('menarik diri') ||
+        low.includes('viktimisasi') ||
+        low.includes('hiperaktif') ||
+        low.includes('no') && !low.includes('pilihan') && !low.includes('suka') && low.length <= 4
+      ) {
+        // Check if column is a numeric matrix column matching a student index
+        const cleanDigits = k.replace(/[^0-9]/g, '');
+        if (cleanDigits && indexMap.has(cleanDigits)) {
+          matrixCols.push({ key: k, targetStudent: indexMap.get(cleanDigits)! });
+        }
+        return;
+      }
+
+      // Check if column header matches an exact student name in matrix format
+      const studentMatch = exactNameMap.get(low) || alphaNameMap.get(alpha);
+      if (studentMatch) {
+        matrixCols.push({ key: k, targetStudent: studentMatch });
+        return;
+      }
+
+      const isDislike =
+        low.includes('hindari') ||
+        low.includes('tidak suka') ||
+        low.includes('tolak') ||
+        low.includes('negatif') ||
+        low.includes('(-)') ||
+        low.includes('dislike');
+
+      if (low.includes('belajar')) {
+        if (isDislike) {
+          belajarDislikeCols.push(k);
+        } else {
+          belajarLikeCols.push(k);
+        }
+      } else if (low.includes('bermain') || low.includes('main') || low.includes('bergaul') || low.includes('gaul')) {
+        if (isDislike) {
+          bermainDislikeCols.push(k);
+        } else {
+          bermainLikeCols.push(k);
+        }
+      } else if (
+        low.includes('pilihan') ||
+        low.includes('suka') ||
+        low.includes('teman') ||
+        low.includes('choice') ||
+        low.includes('nominasi') ||
+        isDislike
+      ) {
+        if (isDislike) {
+          generalDislikeCols.push(k);
+        } else {
+          generalLikeCols.push(k);
+        }
+      }
+    });
+
+    // Step 2: Parse nominations and behavioral scores for each row
+    rawJson.forEach((row, rowIndex) => {
+      const nominatorName = getRowValue(row, [
+        'Nama Lengkap',
+        'Nama Siswa',
+        'Nama Murid',
+        'Nama Peserta Didik',
+        'Nama Anak',
+        'Nama',
+        'name',
+        'Student Name',
+        'Siswa',
+      ]);
+      if (!nominatorName) return;
+
+      const nominator =
+        exactNameMap.get(cleanStr(nominatorName).toLowerCase()) ||
+        alphaNameMap.get(cleanAlpha(nominatorName)) ||
+        students[rowIndex];
       if (!nominator) return;
 
-      // Define possible keys for Belajar Likes & Dislikes
-      const belajarLikeKeys = [
-        '[Belajar] Suka 1 (Nama)',
-        '[Belajar] Suka 2 (Nama)',
-        '[Belajar] Suka 3 (Nama)',
-        '[Belajar] Suka 1',
-        '[Belajar] Suka 2',
-        '[Belajar] Suka 3',
-        '[Belajar] Pilihan Suka 1',
-        '[Belajar] Pilihan Suka 2',
-        '[Belajar] Pilihan Suka 3',
-        'Suka Belajar 1',
-        'Suka Belajar 2',
-        'Suka Belajar 3',
-        'Belajar Suka 1',
-        'Belajar Suka 2',
-        'Belajar Suka 3',
-        'like_belajar',
-        'like_belajar_1',
-        'like_belajar_2',
-        'like_belajar_3',
-      ];
-
-      const belajarDislikeKeys = [
-        '[Belajar] Hindari 1 (Nama)',
-        '[Belajar] Hindari 2 (Nama)',
-        '[Belajar] Hindari 1',
-        '[Belajar] Hindari 2',
-        '[Belajar] Pilihan Hindari 1',
-        '[Belajar] Pilihan Hindari 2',
-        '[Belajar] Tidak Suka 1',
-        '[Belajar] Tidak Suka 2',
-        '[Belajar] Pilihan Tidak Suka 1',
-        '[Belajar] Pilihan Tidak Suka 2',
-        'Tidak Suka Belajar 1',
-        'Tidak Suka Belajar 2',
-        'Hindari Belajar 1',
-        'Hindari Belajar 2',
-        'dislike_belajar',
-        'dislike_belajar_1',
-        'dislike_belajar_2',
-      ];
-
-      // Define possible keys for Bermain Likes & Dislikes
-      const bermainLikeKeys = [
-        '[Bermain] Suka 1 (Nama)',
-        '[Bermain] Suka 2 (Nama)',
-        '[Bermain] Suka 3 (Nama)',
-        '[Bermain] Suka 1',
-        '[Bermain] Suka 2',
-        '[Bermain] Suka 3',
-        '[Bermain] Pilihan Suka 1',
-        '[Bermain] Pilihan Suka 2',
-        '[Bermain] Pilihan Suka 3',
-        'Suka Bermain 1',
-        'Suka Bermain 2',
-        'Suka Bermain 3',
-        'Bermain Suka 1',
-        'Bermain Suka 2',
-        'Bermain Suka 3',
-        'like_bermain',
-        'like_bermain_1',
-        'like_bermain_2',
-        'like_bermain_3',
-      ];
-
-      const bermainDislikeKeys = [
-        '[Bermain] Hindari 1 (Nama)',
-        '[Bermain] Hindari 2 (Nama)',
-        '[Bermain] Hindari 1',
-        '[Bermain] Hindari 2',
-        '[Bermain] Pilihan Hindari 1',
-        '[Bermain] Pilihan Hindari 2',
-        '[Bermain] Tidak Suka 1',
-        '[Bermain] Tidak Suka 2',
-        '[Bermain] Pilihan Tidak Suka 1',
-        '[Bermain] Pilihan Tidak Suka 2',
-        'Tidak Suka Bermain 1',
-        'Tidak Suka Bermain 2',
-        'Hindari Bermain 1',
-        'Hindari Bermain 2',
-        'dislike_bermain',
-        'dislike_bermain_1',
-        'dislike_bermain_2',
-      ];
-
-      // Check if row contains explicit Belajar or Bermain column keys
-      const hasExplicitBelajar = belajarLikeKeys.some((k) => row[k] !== undefined);
-      const hasExplicitBermain = bermainLikeKeys.some((k) => row[k] !== undefined);
-
-      if (hasExplicitBelajar || hasExplicitBermain) {
-        // Mode 1: Simultaneous Belajar & Bermain in single row
-        belajarLikeKeys.forEach((k) => {
-          if (row[k]) addNomination(nominator, String(row[k]).trim(), 'belajar', 'like');
+      // 1. Process Belajar Columns
+      if (belajarLikeCols.length > 0) {
+        belajarLikeCols.forEach((colKey) => {
+          const val = cleanStr(row[colKey]);
+          if (val) addNomination(nominator, val, 'belajar', 'like');
         });
-        belajarDislikeKeys.forEach((k) => {
-          if (row[k]) addNomination(nominator, String(row[k]).trim(), 'belajar', 'dislike');
-        });
-
-        bermainLikeKeys.forEach((k) => {
-          if (row[k]) addNomination(nominator, String(row[k]).trim(), 'bermain', 'like');
-        });
-        bermainDislikeKeys.forEach((k) => {
-          if (row[k]) addNomination(nominator, String(row[k]).trim(), 'bermain', 'dislike');
-        });
-      } else {
-        // Mode 2: Legacy single-criteria column format (backward compatibility)
-        const criteriaRaw = (row['Kriteria (Belajar/Bermain)'] || 'Belajar').toString().toLowerCase();
-        const criteria: RelationCriteria = criteriaRaw.includes('main') ? 'bermain' : 'belajar';
-
-        const legacyLikeKeys = [
-          'Pilihan Suka 1 (Nama)',
-          'Pilihan Suka 2 (Nama)',
-          'Pilihan Suka 3 (Nama)',
-          'Suka 1',
-          'Suka 2',
-          'Suka 3',
-        ];
-        legacyLikeKeys.forEach((k) => {
-          if (row[k]) addNomination(nominator, String(row[k]).trim(), criteria, 'like');
-        });
-
-        const legacyDislikeKeys = [
-          'Pilihan Tidak Suka 1 (Nama)',
-          'Pilihan Tidak Suka 2 (Nama)',
-          'Pilihan Tidak Suka 3 (Nama)',
-          'Tidak Suka 1',
-          'Tidak Suka 2',
-          'Tidak Suka 3',
-        ];
-        legacyDislikeKeys.forEach((k) => {
-          if (row[k]) addNomination(nominator, String(row[k]).trim(), criteria, 'dislike');
+      }
+      if (belajarDislikeCols.length > 0) {
+        belajarDislikeCols.forEach((colKey) => {
+          const val = cleanStr(row[colKey]);
+          if (val) addNomination(nominator, val, 'belajar', 'dislike');
         });
       }
 
-      // Parse behavioral scores with rich alias support
-      const prosocial = Number(row['Skor Prososial (1-10)'] || row['Prososial'] || row['prosocial']) || 5;
-      const aggressive = Number(row['Skor Agresif (1-10)'] || row['Agresif'] || row['aggressive']) || 2;
-      const withdrawn = Number(row['Skor Menarik Diri (1-10)'] || row['Menarik Diri'] || row['withdrawn']) || 2;
-      const victimization = Number(row['Skor Viktimisasi (1-10)'] || row['Viktimisasi'] || row['victimization']) || 1;
-      const hyperactive = Number(row['Skor Hiperaktif (1-10)'] || row['Hiperaktif'] || row['hyperactive']) || 2;
+      // 2. Process Bermain Columns
+      if (bermainLikeCols.length > 0) {
+        bermainLikeCols.forEach((colKey) => {
+          const val = cleanStr(row[colKey]);
+          if (val) addNomination(nominator, val, 'bermain', 'like');
+        });
+      }
+      if (bermainDislikeCols.length > 0) {
+        bermainDislikeCols.forEach((colKey) => {
+          const val = cleanStr(row[colKey]);
+          if (val) addNomination(nominator, val, 'bermain', 'dislike');
+        });
+      }
+
+      // 3. Process General Columns (e.g. "Pilihan 1, 2, 3" without Belajar/Bermain separation)
+      if (!isDualCriteria && (generalLikeCols.length > 0 || generalDislikeCols.length > 0)) {
+        const criteriaRaw = getRowValue(row, ['Kriteria (Belajar/Bermain)', 'Kriteria', 'Criteria']).toLowerCase();
+        const explicitCriteria: RelationCriteria | null = criteriaRaw.includes('main')
+          ? 'bermain'
+          : criteriaRaw.includes('ajar')
+          ? 'belajar'
+          : null;
+
+        generalLikeCols.forEach((colKey) => {
+          const val = cleanStr(row[colKey]);
+          if (val) {
+            if (explicitCriteria) {
+              addNomination(nominator, val, explicitCriteria, 'like');
+            } else {
+              // Register for both criteria so both sosiograms are populated
+              addNomination(nominator, val, 'belajar', 'like');
+              addNomination(nominator, val, 'bermain', 'like');
+            }
+          }
+        });
+
+        generalDislikeCols.forEach((colKey) => {
+          const val = cleanStr(row[colKey]);
+          if (val) {
+            if (explicitCriteria) {
+              addNomination(nominator, val, explicitCriteria, 'dislike');
+            } else {
+              addNomination(nominator, val, 'belajar', 'dislike');
+              addNomination(nominator, val, 'bermain', 'dislike');
+            }
+          }
+        });
+      }
+
+      // 4. Process Sociometric Matrix format if matrix columns detected
+      if (matrixCols.length >= 3) {
+        matrixCols.forEach(({ key, targetStudent }) => {
+          if (targetStudent.id === nominator.id) return;
+          const cellVal = cleanStr(row[key]).toLowerCase();
+          if (cellVal === '1' || cellVal === '+' || cellVal === 'v' || cellVal === 'x' || cellVal === 'ya') {
+            addNomination(nominator, targetStudent.name, 'belajar', 'like');
+            addNomination(nominator, targetStudent.name, 'bermain', 'like');
+          } else if (cellVal === '-1' || cellVal === '-' || cellVal === 'tidak') {
+            addNomination(nominator, targetStudent.name, 'belajar', 'dislike');
+            addNomination(nominator, targetStudent.name, 'bermain', 'dislike');
+          }
+        });
+      }
+
+      // === BEHAVIORAL SCORES (SCALE 1-10) ===
+      const parseNum = (val: string, fallback: number): number => {
+        const n = parseFloat(val);
+        return isNaN(n) ? fallback : Math.max(1, Math.min(10, Math.round(n)));
+      };
+
+      const prosocial = parseNum(
+        getRowValue(row, ['Skor Prososial (1-10)', 'Skor Prososial', 'Prososial', 'prosocial']),
+        5
+      );
+      const aggressive = parseNum(
+        getRowValue(row, ['Skor Agresif (1-10)', 'Skor Agresif', 'Agresif', 'aggressive']),
+        2
+      );
+      const withdrawn = parseNum(
+        getRowValue(row, ['Skor Menarik Diri (1-10)', 'Skor Menarik Diri', 'Menarik Diri', 'withdrawn']),
+        2
+      );
+      const victimization = parseNum(
+        getRowValue(row, ['Skor Viktimisasi (1-10)', 'Skor Viktimisasi', 'Viktimisasi', 'victimization']),
+        1
+      );
+      const hyperactive = parseNum(
+        getRowValue(row, ['Skor Hiperaktif (1-10)', 'Skor Hiperaktif', 'Hiperaktif', 'hyperactive']),
+        2
+      );
 
       behavioralRatings.push({
         id: `br-up-${nominator.id}`,
         periodId,
         classId,
         studentId: nominator.id,
-        prosocial: Math.max(1, Math.min(10, prosocial)),
-        aggressive: Math.max(1, Math.min(10, aggressive)),
-        withdrawn: Math.max(1, Math.min(10, withdrawn)),
-        victimization: Math.max(1, Math.min(10, victimization)),
-        hyperactive: Math.max(1, Math.min(10, hyperactive)),
+        prosocial,
+        aggressive,
+        withdrawn,
+        victimization,
+        hyperactive,
       });
     });
 

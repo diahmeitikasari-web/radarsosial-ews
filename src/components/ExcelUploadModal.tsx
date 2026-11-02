@@ -98,14 +98,20 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
 
     // Check if detected class is a brand new class that needs creation
     if (parsedResult.detectedClassName && autoCreateNewClass) {
+      const detectedNorm = parsedResult.detectedClassName.toLowerCase().replace(/[^a-z0-9]/g, '');
       const existing = classes.find(
-        (c) => c.name.toLowerCase() === parsedResult.detectedClassName?.toLowerCase()
+        (c) =>
+          c.name.toLowerCase() === parsedResult.detectedClassName?.toLowerCase() ||
+          c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === detectedNorm ||
+          c.name.toLowerCase().replace(/[^a-z0-9]/g, '').includes(detectedNorm) ||
+          c.id.toLowerCase() === parsedResult.detectedClassName?.toLowerCase() ||
+          c.id.toLowerCase() === `cls-${detectedNorm}`
       );
       if (!existing) {
         const created = dataStorage.addClass({
           name: parsedResult.detectedClassName,
           schoolId: activeClass.schoolId,
-          grade: '8',
+          grade: '9',
           academicYear: activePeriod.academicYear || '2026/2027',
           homeroomTeacher: 'Wali Kelas Terdaftar',
           counselorName: activeClass.counselorName,
@@ -124,16 +130,37 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
       }
     }
 
+    // CRITICAL FIX: Explicitly remap classId, className, and periodId across all entities
+    const targetSchoolId = activeClass.schoolId || classes[0]?.schoolId || 'sch-mtsn2-bangka';
+    const finalStudents = parsedResult.students.map((s) => ({
+      ...s,
+      classId: finalClassId,
+      className: finalClassName,
+      schoolId: targetSchoolId,
+    }));
+
+    const finalNominations = parsedResult.nominations.map((n) => ({
+      ...n,
+      classId: finalClassId,
+      periodId: activePeriod.id,
+    }));
+
+    const finalBehaviors = parsedResult.behavioralRatings.map((b) => ({
+      ...b,
+      classId: finalClassId,
+      periodId: activePeriod.id,
+    }));
+
     // Save into centralized data storage for that target class
-    dataStorage.setStudentsForClass(finalClassId, parsedResult.students);
-    dataStorage.setNominations(activePeriod.id, finalClassId, parsedResult.nominations);
-    dataStorage.setBehaviors(activePeriod.id, finalClassId, parsedResult.behavioralRatings);
+    dataStorage.setStudentsForClass(finalClassId, finalStudents);
+    dataStorage.setNominations(activePeriod.id, finalClassId, finalNominations);
+    dataStorage.setBehaviors(activePeriod.id, finalClassId, finalBehaviors);
     dataStorage.setActiveClassId(finalClassId);
 
     // Trigger Notification for system users
     dataStorage.addNotification({
       title: `Sinkronisasi Excel: ${finalClassName} Berhasil`,
-      message: `Telah diimpor ${parsedResult.students.length} siswa dan ${parsedResult.nominations.length} relasi sosiometri untuk ${activePeriod.name}. Analisis sosiogram langsung diperbarui.`,
+      message: `Telah diimpor ${finalStudents.length} siswa dan ${finalNominations.length} relasi sosiometri untuk ${activePeriod.name}. Analisis sosiogram langsung diperbarui.`,
       type: 'success',
       read: false,
       targetRoles: ['guru_bk', 'kepala_sekolah', 'admin'],
@@ -145,13 +172,18 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
       'Guru BK',
       'guru_bk',
       'Unggah Berkas Excel Sosiometri',
-      `File ${selectedFile?.name || 'Excel'} berhasil diintegrasikan ke ${finalClassName}`
+      `File ${selectedFile?.name || 'Excel'} berhasil diintegrasikan ke ${finalClassName} (${finalStudents.length} siswa, ${finalNominations.length} nominasi)`
     );
 
     if (onSwitchClass) {
       onSwitchClass(finalClassId);
     }
-    onUploadSuccess(parsedResult);
+    onUploadSuccess({
+      ...parsedResult,
+      students: finalStudents,
+      nominations: finalNominations,
+      behavioralRatings: finalBehaviors,
+    });
     onClose();
   };
 

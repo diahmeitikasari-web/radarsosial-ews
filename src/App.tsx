@@ -74,7 +74,12 @@ const MainApp: React.FC = () => {
     if (classes.length > 0) {
       const hasActiveClass = classes.some((c) => c.id === activeClassId);
       if (!hasActiveClass) {
-        setActiveClassId(classes[0].id);
+        // Prevent race condition: check if class was recently added in dataStorage
+        const allSystemClasses = dataStorage.getClasses();
+        const existsInSystem = allSystemClasses.some((c) => c.id === activeClassId);
+        if (!existsInSystem) {
+          setActiveClassId(classes[0].id);
+        }
       }
     }
   }, [currentUser?.id, currentUser?.schoolId, classes, activeClassId]);

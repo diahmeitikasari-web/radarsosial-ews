@@ -116,13 +116,14 @@ export class DataStorageService {
       return u;
     });
 
-    // Multi-tenant migration check: ensure SMPN 1 Mendo Barat and differentiated student names exist
-    const SEED_VERSION_KEY = 'radar_sosial_seed_v2026_tenant_fix_v6';
+    // Multi-tenant migration check: ensure SMPN 1 Mendo Barat, Kelas 3B, and full relations exist
+    const SEED_VERSION_KEY = 'radar_sosial_seed_v2026_restore_relations_v12';
     const hasSeed = typeof window !== 'undefined' ? localStorage.getItem(SEED_VERSION_KEY) : null;
     const needsMigration =
       !hasSeed ||
       !this.schools.some((s) => s.id === 'sch-smpn1-mendobarat') ||
       !this.classes.some((c) => c.schoolId === 'sch-smpn1-mendobarat') ||
+      !this.classes.some((c) => c.id === 'cls-3b') ||
       !this.users.some((u) => u.email === 'gurubk-1@radarsosial.id') ||
       this.students.length < 240;
 
@@ -550,8 +551,8 @@ export class DataStorageService {
   }
 
   public getStudentsForClass(classId?: string): Student[] {
-    const targetClass = classId || this.activeClassId;
-    return this.students.filter((s) => s.classId === targetClass);
+    const targetClassId = classId || this.activeClassId;
+    return this.students.filter((s) => s.classId === targetClassId);
   }
 
   public getAllStudents(): Student[] {
