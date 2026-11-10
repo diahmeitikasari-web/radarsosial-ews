@@ -14,6 +14,7 @@ export interface ParsedExcelResult {
   behavioralRatings: PeerBehavioralRating[];
   warnings: string[];
   detectedClassName?: string;
+  duplicatesResolvedCount?: number;
 }
 
 export function generateExcelTemplate(classStudents: Student[], className = 'Kelas 8A') {
@@ -123,6 +124,7 @@ export async function parseUploadedExcel(
   existingStudents: Student[]
 ): Promise<ParsedExcelResult> {
   const warnings: string[] = [];
+  let duplicatesResolvedCount = 0;
 
   try {
     const data = await file.arrayBuffer();
@@ -392,6 +394,23 @@ export async function parseUploadedExcel(
         }
       }
 
+      // Deteksi & Cegah Baris Siswa Dobel di dalam Berkas Excel
+      const existingInBatch = students.find(
+        (s) =>
+          s.id === studentObj.id ||
+          (cleanNis && s.nis && s.nis === cleanNis) ||
+          cleanAlpha(s.name) === alphaKey
+      );
+
+      if (existingInBatch) {
+        duplicatesResolvedCount++;
+        warnings.push(
+          `Baris ke-${index + 1}: Siswa "${name}" (NIS: ${cleanNis || '-'}) terdeteksi ganda di dalam file Excel. Sistem otomatis mendeduplikasi data siswa ini agar tidak dobel.`
+        );
+        indexMap.set(String(index + 1), existingInBatch);
+        return;
+      }
+
       students.push(studentObj);
     });
 
@@ -542,8 +561,9 @@ export async function parseUploadedExcel(
 
         // Prevent self nomination
         if (target.id === nominator.id) {
+          duplicatesResolvedCount++;
           warnings.push(
-            `Siswa ${nominator.name} memilih/menolak dirinya sendiri pada kriteria ${criteria} (self-nomination otomatis diabaikan).`
+            `Self-nomination diabaikan: Siswa ${nominator.name} memilih/menolak dirinya sendiri pada kriteria ${criteria} (pilihan sendiri otomatis dieliminasi sesuai standar Moreno).`
           );
           return;
         }
@@ -556,7 +576,13 @@ export async function parseUploadedExcel(
             n.criteria === criteria &&
             n.type === type
         );
-        if (isDuplicate) return;
+        if (isDuplicate) {
+          duplicatesResolvedCount++;
+          warnings.push(
+            `Pilihan ganda diabaikan: Siswa ${nominator.name} memilih "${target.name}" lebih dari 1 kali pada kriteria ${criteria} (${type === 'like' ? 'suka' : 'hindari'}). Sistem mencatatnya 1 kali secara adil.`
+          );
+          return;
+        }
 
         nominations.push({
           id: `nom-up-${Date.now()}-${nomIdCounter++}`,
@@ -890,12 +916,15 @@ export async function parseUploadedExcel(
 
     return {
       success: true,
-      message: `Berhasil memproses ${students.length} siswa, ${nominations.length} relasi sosiometri, dan ${behavioralRatings.length} profil perilaku.`,
+      message: `Berhasil memproses ${students.length} siswa, ${nominations.length} relasi sosiometri, dan ${behavioralRatings.length} profil perilaku.${
+        duplicatesResolvedCount > 0 ? ` (${duplicatesResolvedCount} data ganda/dobel berhasil dideduplikasi otomatis)` : ''
+      }`,
       students,
       nominations,
       behavioralRatings,
       warnings,
       detectedClassName,
+      duplicatesResolvedCount,
     };
   } catch (err: any) {
     return {

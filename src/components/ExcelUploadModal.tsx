@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Student, SchoolClass, Period } from '../types';
 import { generateExcelTemplate, parseUploadedExcel, ParsedExcelResult } from '../services/excelHandler';
 import { dataStorage } from '../services/dataStorage';
-import { FileSpreadsheet, Download, Upload, CheckCircle2, AlertTriangle, X, FileText, Loader2 } from 'lucide-react';
+import { FileSpreadsheet, Download, Upload, CheckCircle2, AlertTriangle, X, FileText, Loader2, ShieldCheck, RefreshCw } from 'lucide-react';
 
 interface ExcelUploadModalProps {
   isOpen: boolean;
@@ -62,6 +62,8 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
 
     // Target class to pass
     const effectiveTargetClass = classes.find((c) => c.id === selectedClassId) || activeClass;
+    const targetClassStudents = dataStorage.getStudents(effectiveTargetClass.id);
+    const existingToPass = targetClassStudents.length > 0 ? targetClassStudents : existingStudents;
 
     const result = await parseUploadedExcel(
       file,
@@ -69,7 +71,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
       effectiveTargetClass.id,
       effectiveTargetClass.name,
       effectiveTargetClass.schoolId,
-      existingStudents
+      existingToPass
     );
 
     setIsProcessing(false);
@@ -186,6 +188,11 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
     });
     onClose();
   };
+
+  const targetClassObj = classes.find((c) => c.id === selectedClassId) || activeClass;
+  const existingClassStudents = dataStorage.getStudents(targetClassObj.id);
+  const existingClassNominations = dataStorage.getNominations(activePeriod.id, targetClassObj.id);
+  const hasExistingData = existingClassNominations.length > 0 || existingClassStudents.length > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
@@ -381,16 +388,47 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
                 </div>
               </div>
 
+              {/* Status Deteksi Anti-Duplikasi Otomatis */}
+              {parsedResult.duplicatesResolvedCount !== undefined && parsedResult.duplicatesResolvedCount > 0 && (
+                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg flex items-start gap-2 text-emerald-300 text-[11px]">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Proteksi Anti-Duplikasi Aktif:</span> Ditemukan dan berhasil dibersihkan{' '}
+                    <strong>{parsedResult.duplicatesResolvedCount} entri duplikat</strong> (baris siswa ganda / pilihan teman berulang / self-nomination) di dalam berkas.
+                  </div>
+                </div>
+              )}
+
+              {/* Status Deteksi Data Lama (Pemberitahuan Timpa Data Aman) */}
+              {hasExistingData && (
+                <div className="p-3 bg-cyan-950/40 border border-cyan-500/30 rounded-xl space-y-1 text-xs text-slate-300">
+                  <div className="flex items-center gap-1.5 font-bold text-cyan-300">
+                    <RefreshCw className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span>Pembaruan Data Rombel (Timpa Bersih)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    Rombel <strong className="text-white">{targetClassObj.name}</strong> pada <strong className="text-white">{activePeriod.name}</strong> sudah memiliki <span className="text-cyan-400 font-semibold">{existingClassStudents.length} siswa</span> dan <span className="text-cyan-400 font-semibold">{existingClassNominations.length} relasi</span> tersimpan.
+                  </p>
+                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium pt-0.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Mengunggah berkas ini akan <strong>menimpa & memperbarui data lama secara bersih (clean overwrite)</strong> sehingga tidak terjadi data dobel atau relasi ganda.</span>
+                  </div>
+                </div>
+              )}
+
               {parsedResult.warnings.length > 0 && (
                 <div className="p-2.5 bg-amber-500/10 rounded-lg text-[11px] text-amber-300 border border-amber-500/20 space-y-1">
                   <div className="font-bold flex items-center gap-1">
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>Catatan Validasi ({parsedResult.warnings.length}):</span>
+                    <span>Catatan Validasi & Penyesuaian ({parsedResult.warnings.length}):</span>
                   </div>
                   <ul className="list-disc list-inside space-y-0.5 text-slate-300 max-h-24 overflow-y-auto">
-                    {parsedResult.warnings.slice(0, 5).map((w, idx) => (
+                    {parsedResult.warnings.slice(0, 6).map((w, idx) => (
                       <li key={idx}>{w}</li>
                     ))}
+                    {parsedResult.warnings.length > 6 && (
+                      <li className="text-slate-400 italic">...dan {parsedResult.warnings.length - 6} catatan lainnya.</li>
+                    )}
                   </ul>
                 </div>
               )}
@@ -412,7 +450,11 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
             className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:pointer-events-none text-xs font-bold text-white transition flex items-center gap-2 shadow-lg shadow-cyan-900/30"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>Simpan & Integrasikan ke Sistem Pusat</span>
+            <span>
+              {hasExistingData
+                ? `Perbarui & Timpa Data Rombel (${parsedResult.students.length} Siswa, ${parsedResult.nominations.length} Relasi)`
+                : `Simpan & Integrasikan ke Sistem Pusat (${parsedResult.students.length} Siswa, ${parsedResult.nominations.length} Relasi)`}
+            </span>
           </button>
         </div>
       </div>
