@@ -146,15 +146,15 @@ export async function parseUploadedExcel(
     let maxHeaderScore = -1;
 
     for (const sName of workbook.SheetNames) {
-      if (sName.toLowerCase().includes('petunjuk') || sName.toLowerCase().includes('panduan')) {
+      if (workbook.SheetNames.length > 1 && (sName.toLowerCase().includes('petunjuk') || sName.toLowerCase().includes('panduan'))) {
         continue;
       }
       const ws = workbook.Sheets[sName];
       if (ws) {
-        const testRows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, range: 0, blankrows: false });
+        const testRows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, range: 0, blankrows: true });
         if (testRows && testRows.length > 0) {
-          // Check top 15 rows for student identification headers
-          for (let r = 0; r < Math.min(15, testRows.length); r++) {
+          // Check top 25 rows for student identification headers
+          for (let r = 0; r < Math.min(25, testRows.length); r++) {
             const rowArr = testRows[r] || [];
             let score = 0;
             const rowStr = rowArr.map((cell) => String(cell || '').toLowerCase()).join(' ');
@@ -520,9 +520,9 @@ export async function parseUploadedExcel(
       type: 'like' | 'dislike'
     ) => {
       if (!rawTargetStr) return;
-      // Split on comma, semicolon, newline, slash, or " dan "
+      // Split on comma, semicolon, newline, slash, '&', '+', or " dan "
       let rawTargets = rawTargetStr
-        .split(/[,;\n/]+|\s+dan\s+/i)
+        .split(/[,;\n/&+]+|\s+dan\s+/i)
         .map((s) => cleanStr(s))
         .filter(Boolean);
 
@@ -570,10 +570,84 @@ export async function parseUploadedExcel(
       });
     };
 
+    // Helper to identify nomination signals in column names
+    const isNominationSignal = (str: string): boolean => {
+      const low = str.toLowerCase();
+      return (
+        low.includes('suka') ||
+        low.includes('disukai') ||
+        low.includes('hindari') ||
+        low.includes('dihindari') ||
+        low.includes('tolak') ||
+        low.includes('ditolak') ||
+        low.includes('tidak suka') ||
+        low.includes('tidak disukai') ||
+        low.includes('kurang suka') ||
+        low.includes('dijauhi') ||
+        low.includes('benci') ||
+        low.includes('enggan') ||
+        low.includes('pilihan') ||
+        low.includes('pilih') ||
+        low.includes('teman') ||
+        low.includes('kawan') ||
+        low.includes('sahabat') ||
+        low.includes('choice') ||
+        low.includes('nominasi') ||
+        low.includes('nominate') ||
+        low.includes('dislike') ||
+        low.includes('like') ||
+        low.includes('preferensi') ||
+        low.includes('belajar') ||
+        low.includes('bermain') ||
+        low.includes('bergaul') ||
+        low.includes('main') ||
+        low.includes('ajar') ||
+        low.includes('akademik') ||
+        low.includes('sosial')
+      );
+    };
+
+    // Helper to identify behavioral score columns
+    const isBehavioralCol = (str: string): boolean => {
+      const low = str.toLowerCase();
+      return (
+        low.includes('prososial') ||
+        low.includes('agresif') ||
+        low.includes('menarik diri') ||
+        low.includes('viktimisasi') ||
+        low.includes('hiperaktif')
+      );
+    };
+
+    // Helper to identify nominator's identity columns (own student record)
+    const isIdentityCol = (str: string): boolean => {
+      const low = str.toLowerCase();
+      // Crucial: if it has nomination keywords (like "[Belajar] Suka 1 (Nama)"), it is NOT an identity column!
+      if (isNominationSignal(low)) return false;
+
+      return (
+        low.includes('nama') ||
+        low.includes('nis') ||
+        low.includes('kelas') ||
+        low.includes('rombel') ||
+        low.includes('gender') ||
+        low.includes('jenis kelamin') ||
+        low.includes('kelamin') ||
+        low.includes('jk') ||
+        low.includes('l/p') ||
+        low.includes('absen') ||
+        low === 'no' ||
+        low === 'no.' ||
+        low === 'nomor' ||
+        low === 'no urut' ||
+        (low.startsWith('no') && low.length <= 5)
+      );
+    };
+
     // Analyze sheet column headers dynamically
-    const allRowKeys = Object.keys(rawJson[0] || {});
+    const allRowKeys = Array.from(new Set(rawJson.flatMap((r) => Object.keys(r))));
     const isDualCriteria = allRowKeys.some((k) => {
-      const l = k.toLowerCase();
+      const l = cleanStr(k).toLowerCase();
       return l.includes('belajar') || l.includes('bermain');
     });
 
@@ -587,54 +661,70 @@ export async function parseUploadedExcel(
     const matrixCols: { key: string; targetStudent: Student }[] = [];
 
     allRowKeys.forEach((k) => {
-      const low = k.toLowerCase();
+      const low = cleanStr(k).toLowerCase();
       const alpha = cleanAlpha(k);
 
-      // Skip identity and behavioral columns
-      if (
-        low.includes('nama') ||
-        low.includes('nis') ||
-        low.includes('kelas') ||
-        low.includes('rombel') ||
-        low.includes('gender') ||
-        low.includes('jenis kelamin') ||
-        low.includes('prososial') ||
-        low.includes('agresif') ||
-        low.includes('menarik diri') ||
-        low.includes('viktimisasi') ||
-        low.includes('hiperaktif') ||
-        low.includes('no') && !low.includes('pilihan') && !low.includes('suka') && low.length <= 4
-      ) {
-        // Check if column is a numeric matrix column matching a student index
-        const cleanDigits = k.replace(/[^0-9]/g, '');
-        if (cleanDigits && indexMap.has(cleanDigits)) {
-          matrixCols.push({ key: k, targetStudent: indexMap.get(cleanDigits)! });
-        }
+      // 1. Skip behavioral columns
+      if (isBehavioralCol(low)) {
         return;
       }
 
-      // Check if column header matches an exact student name in matrix format
+      // 2. Skip student identity columns
+      if (isIdentityCol(low)) {
+        return;
+      }
+
+      // 3. Matrix format: Check if column header is a student absen index (e.g. "1", "2", "3")
+      const cleanDigits = k.replace(/[^0-9]/g, '');
+      if (cleanDigits && indexMap.has(cleanDigits) && !isNominationSignal(low)) {
+        matrixCols.push({ key: k, targetStudent: indexMap.get(cleanDigits)! });
+        return;
+      }
+
+      // 4. Matrix format: Check if column header matches an exact student name
       const studentMatch = exactNameMap.get(low) || alphaNameMap.get(alpha);
-      if (studentMatch) {
+      if (studentMatch && !isNominationSignal(low)) {
         matrixCols.push({ key: k, targetStudent: studentMatch });
         return;
       }
 
+      // 5. Sociometric Nomination Columns
       const isDislike =
         low.includes('hindari') ||
+        low.includes('dihindari') ||
         low.includes('tidak suka') ||
+        low.includes('tidak disukai') ||
+        low.includes('kurang suka') ||
+        low.includes('dijauhi') ||
         low.includes('tolak') ||
+        low.includes('ditolak') ||
         low.includes('negatif') ||
         low.includes('(-)') ||
+        low.includes('benci') ||
+        low.includes('enggan') ||
         low.includes('dislike');
 
-      if (low.includes('belajar')) {
+      const isBelajar =
+        low.includes('belajar') ||
+        low.includes('ajar') ||
+        low.includes('akademik') ||
+        low.includes('tugas');
+
+      const isBermain =
+        low.includes('bermain') ||
+        low.includes('main') ||
+        low.includes('bergaul') ||
+        low.includes('gaul') ||
+        low.includes('istirahat') ||
+        low.includes('sosial');
+
+      if (isBelajar) {
         if (isDislike) {
           belajarDislikeCols.push(k);
         } else {
           belajarLikeCols.push(k);
         }
-      } else if (low.includes('bermain') || low.includes('main') || low.includes('bergaul') || low.includes('gaul')) {
+      } else if (isBermain) {
         if (isDislike) {
           bermainDislikeCols.push(k);
         } else {
@@ -642,8 +732,11 @@ export async function parseUploadedExcel(
         }
       } else if (
         low.includes('pilihan') ||
+        low.includes('pilih') ||
         low.includes('suka') ||
         low.includes('teman') ||
+        low.includes('kawan') ||
+        low.includes('sahabat') ||
         low.includes('choice') ||
         low.includes('nominasi') ||
         isDislike
@@ -706,7 +799,7 @@ export async function parseUploadedExcel(
       }
 
       // 3. Process General Columns (e.g. "Pilihan 1, 2, 3" without Belajar/Bermain separation)
-      if (!isDualCriteria && (generalLikeCols.length > 0 || generalDislikeCols.length > 0)) {
+      if (generalLikeCols.length > 0 || generalDislikeCols.length > 0) {
         const criteriaRaw = getRowValue(row, ['Kriteria (Belajar/Bermain)', 'Kriteria', 'Criteria']).toLowerCase();
         const explicitCriteria: RelationCriteria | null = criteriaRaw.includes('main')
           ? 'bermain'
