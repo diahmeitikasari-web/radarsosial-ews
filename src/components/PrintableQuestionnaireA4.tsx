@@ -38,19 +38,13 @@ export const PrintableQuestionnaireA4: React.FC<PrintableQuestionnaireA4Props> =
   };
 
   const isMadrasah = school?.type === 'Madrasah' || school?.name?.includes('MTs');
-  const schoolName = school?.name || (school?.id === 'sch-smpn1-mendobarat' ? 'SMP Negeri 1 Mendo Barat' : 'MTs Negeri 2 Bangka');
+  const schoolName = school?.name || 'Satuan Pendidikan';
   const counselorName =
     activeClass?.counselorName ||
     school?.counselorName ||
-    (school?.id === 'sch-smpn1-mendobarat' ? 'Rahmat Hidayat, S.Pd., Kons.' : 'Liengga Brian Darea, S.Sos.,Gr');
-  const counselorNip =
-    school?.id === 'sch-smpn1-mendobarat' ? '19870512 201402 1 003' : '19880914 201503 1 002';
-  const cityLocation =
-    school?.id === 'sch-smpn1-mendobarat'
-      ? 'Mendo Barat, Bangka'
-      : school?.city
-      ? `${school.city}, Bangka`
-      : 'Sungailiat, Bangka';
+    ('BK ' + (school?.name || 'Sekolah'));
+  const counselorNip = '-';
+  const cityLocation = school?.city ? `${school.city}, Bangka Belitung` : 'Bangka Belitung';
   const className = activeClass?.name || 'Kelas VIII-A';
   const periodName = activePeriod?.name || 'Semester Ganjil 2026/2027';
 

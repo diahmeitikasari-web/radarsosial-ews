@@ -316,19 +316,121 @@ export async function parseUploadedExcel(
       if (s.nisn) nisMap.set(cleanStr(s.nisn), s);
     });
 
-    // Step 1: Register all students in the Excel file
-    rawJson.forEach((row, index) => {
-      const name = getRowValue(row, [
+    // Helper to identify nomination signals in column names
+    const isNominationSignal = (str: string): boolean => {
+      const low = str.toLowerCase();
+      return (
+        low.includes('suka') ||
+        low.includes('disukai') ||
+        low.includes('hindari') ||
+        low.includes('dihindari') ||
+        low.includes('tolak') ||
+        low.includes('ditolak') ||
+        low.includes('tidak suka') ||
+        low.includes('tidak disukai') ||
+        low.includes('kurang suka') ||
+        low.includes('dijauhi') ||
+        low.includes('benci') ||
+        low.includes('enggan') ||
+        low.includes('pilihan') ||
+        low.includes('pilih') ||
+        low.includes('teman') ||
+        low.includes('kawan') ||
+        low.includes('sahabat') ||
+        low.includes('choice') ||
+        low.includes('nominasi') ||
+        low.includes('nominate') ||
+        low.includes('dislike') ||
+        low.includes('like') ||
+        low.includes('preferensi') ||
+        low.includes('belajar') ||
+        low.includes('bermain') ||
+        low.includes('bergaul') ||
+        low.includes('main') ||
+        low.includes('ajar') ||
+        low.includes('akademik') ||
+        low.includes('sosial')
+      );
+    };
+
+    // Helper to identify behavioral score columns
+    const isBehavioralCol = (str: string): boolean => {
+      const low = str.toLowerCase();
+      return (
+        low.includes('prososial') ||
+        low.includes('agresif') ||
+        low.includes('menarik diri') ||
+        low.includes('viktimisasi') ||
+        low.includes('hiperaktif')
+      );
+    };
+
+    // Helper to extract student/respondent name from any row across field data variations
+    const extractStudentNameFromRow = (row: Record<string, any>): string => {
+      // 1. Direct match on known field column names (including Madrasah Santri & Sekolah Keolahragaan Atlet)
+      const direct = getRowValue(row, [
         'Nama Lengkap',
         'Nama Siswa',
+        'Nama Santri',
+        'Nama Santriwati',
+        'Nama Atlet',
+        'Nama Siswa Atlet',
         'Nama Murid',
         'Nama Peserta Didik',
         'Nama Anak',
+        'Nama Lengkap Siswa',
+        'Nama Responden',
+        'Responden',
         'Nama',
         'name',
         'Student Name',
+        'Full Name',
         'Siswa',
+        'Santri',
+        'Atlet',
       ]);
+      if (direct) return direct;
+
+      // 2. Dynamic scan: check all row keys for name/santri/atlet indicators that are NOT nomination or parent columns
+      for (const k of Object.keys(row)) {
+        const val = cleanStr(row[k]);
+        if (!val) continue;
+        const lowKey = k.toLowerCase().trim();
+        // Skip nomination columns, behavior columns, parent columns, school/class columns
+        if (
+          isNominationSignal(lowKey) ||
+          isBehavioralCol(lowKey) ||
+          lowKey.includes('wali') ||
+          lowKey.includes('ayah') ||
+          lowKey.includes('ibu') ||
+          lowKey.includes('sekolah') ||
+          lowKey.includes('kelas') ||
+          lowKey.includes('rombel') ||
+          lowKey.includes('guru') ||
+          lowKey.includes('skor') ||
+          lowKey.includes('nilai')
+        ) {
+          continue;
+        }
+
+        if (
+          lowKey.includes('nama') ||
+          lowKey.includes('santri') ||
+          lowKey.includes('atlet') ||
+          lowKey.includes('siswa') ||
+          lowKey.includes('murid') ||
+          lowKey.includes('responden')
+        ) {
+          return val;
+        }
+      }
+
+      return '';
+    };
+
+    // Step 1: Register all students in the Excel file
+    rawJson.forEach((row, index) => {
+      const name = extractStudentNameFromRow(row);
       const explicitNo = getRowValue(row, ['No', 'No.', 'Nomor', 'No Absen', 'Absen', 'No Urut']);
       const nis =
         getRowValue(row, ['NIS', 'nis', 'Nomor Induk', 'NISN', 'No Induk']) ||
@@ -596,55 +698,6 @@ export async function parseUploadedExcel(
       });
     };
 
-    // Helper to identify nomination signals in column names
-    const isNominationSignal = (str: string): boolean => {
-      const low = str.toLowerCase();
-      return (
-        low.includes('suka') ||
-        low.includes('disukai') ||
-        low.includes('hindari') ||
-        low.includes('dihindari') ||
-        low.includes('tolak') ||
-        low.includes('ditolak') ||
-        low.includes('tidak suka') ||
-        low.includes('tidak disukai') ||
-        low.includes('kurang suka') ||
-        low.includes('dijauhi') ||
-        low.includes('benci') ||
-        low.includes('enggan') ||
-        low.includes('pilihan') ||
-        low.includes('pilih') ||
-        low.includes('teman') ||
-        low.includes('kawan') ||
-        low.includes('sahabat') ||
-        low.includes('choice') ||
-        low.includes('nominasi') ||
-        low.includes('nominate') ||
-        low.includes('dislike') ||
-        low.includes('like') ||
-        low.includes('preferensi') ||
-        low.includes('belajar') ||
-        low.includes('bermain') ||
-        low.includes('bergaul') ||
-        low.includes('main') ||
-        low.includes('ajar') ||
-        low.includes('akademik') ||
-        low.includes('sosial')
-      );
-    };
-
-    // Helper to identify behavioral score columns
-    const isBehavioralCol = (str: string): boolean => {
-      const low = str.toLowerCase();
-      return (
-        low.includes('prososial') ||
-        low.includes('agresif') ||
-        low.includes('menarik diri') ||
-        low.includes('viktimisasi') ||
-        low.includes('hiperaktif')
-      );
-    };
-
     // Helper to identify nominator's identity columns (own student record)
     const isIdentityCol = (str: string): boolean => {
       const low = str.toLowerCase();
@@ -777,17 +830,7 @@ export async function parseUploadedExcel(
 
     // Step 2: Parse nominations and behavioral scores for each row
     rawJson.forEach((row, rowIndex) => {
-      const nominatorName = getRowValue(row, [
-        'Nama Lengkap',
-        'Nama Siswa',
-        'Nama Murid',
-        'Nama Peserta Didik',
-        'Nama Anak',
-        'Nama',
-        'name',
-        'Student Name',
-        'Siswa',
-      ]);
+      const nominatorName = extractStudentNameFromRow(row);
       if (!nominatorName) return;
 
       const nominator =

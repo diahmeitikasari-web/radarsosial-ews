@@ -308,11 +308,11 @@ const MainApp: React.FC = () => {
         counselorName={
           activeClass?.counselorName ||
           activeSchool?.counselorName ||
-          (activeSchool?.id === 'sch-smpn1-mendobarat' ? 'Rahmat Hidayat, S.Pd., Kons.' : 'Liengga Brian Darea, S.Sos.,Gr')
+          ('BK ' + (activeSchool?.name || 'Sekolah'))
         }
         principalName={
           activeSchool?.principalName ||
-          (activeSchool?.id === 'sch-smpn1-mendobarat' ? 'Drs. Hermansyah, M.Pd.' : 'Drs. H. Ahmad Fauzi, M.Ag.')
+          ('Kepala ' + (activeSchool?.name || 'Sekolah'))
         }
       />
 

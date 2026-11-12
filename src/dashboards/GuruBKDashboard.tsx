@@ -126,7 +126,7 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
   const [newAcademicYear, setNewAcademicYear] = useState('2026/2027');
   const [newHomeroomTeacher, setNewHomeroomTeacher] = useState('');
   const [newCounselorName, setNewCounselorName] = useState(
-    currentUser?.name || activeClass.counselorName || 'Liengga Brian Darea, S.Sos.,Gr'
+    currentUser?.name || activeClass.counselorName || ('BK ' + (school?.name || 'Sekolah'))
   );
   const [newTargetCount, setNewTargetCount] = useState(30);
 
@@ -415,9 +415,7 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
                     {currentUser?.name ||
                       activeClass.counselorName ||
                       school?.counselorName ||
-                      (school?.id === 'sch-smpn1-mendobarat'
-                        ? 'Rahmat Hidayat, S.Pd., Kons.'
-                        : 'Liengga Brian Darea, S.Sos.,Gr')}
+                      ('BK ' + (school?.name || 'Sekolah'))}
                   </strong>
                 </span>
 
@@ -808,9 +806,9 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
             activeClass.counselorName ||
             school?.counselorName ||
             currentUser?.name ||
-            (school?.id === 'sch-smpn1-mendobarat' ? 'Rahmat Hidayat, S.Pd., Kons.' : 'Liengga Brian Darea, S.Sos.,Gr')
+            ('BK ' + (school?.name || 'Sekolah'))
           }
-          schoolName={school?.name || (school?.id === 'sch-smpn1-mendobarat' ? 'SMP Negeri 1 Mendo Barat' : 'MTs Negeri 2 Bangka')}
+          schoolName={school?.name || 'Satuan Pendidikan'}
         />
       )}
 

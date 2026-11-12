@@ -99,7 +99,7 @@ export class DataStorageService {
     this.schools = getStoredOr(STORAGE_KEYS.SCHOOLS, INITIAL_SCHOOLS);
     this.classes = getStoredOr(STORAGE_KEYS.CLASSES, INITIAL_CLASSES).map((c) => ({
       ...c,
-      counselorName: c.counselorName || 'Liengga Brian Darea, S.Sos.,Gr',
+      counselorName: c.counselorName || ('BK ' + (INITIAL_SCHOOLS.find((s) => s.id === c.schoolId)?.name || 'Sekolah')),
     }));
     this.students = getStoredOr(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
 
@@ -118,17 +118,18 @@ export class DataStorageService {
       return u;
     });
 
-    // Multi-tenant migration check: ensure multi-tenancy schools, classes, students, and 3B exist
-    const SEED_VERSION_KEY = 'radar_sosial_seed_v2026_restore_relations_v16';
+    // Multi-tenant migration check: ensure the 6 field schools, classes, and users are active
+    const SEED_VERSION_KEY = 'radar_sosial_seed_v2026_field_schools_v24';
     const hasSeed = typeof window !== 'undefined' ? localStorage.getItem(SEED_VERSION_KEY) : null;
 
     const needsMigration =
       !hasSeed ||
-      !this.schools.some((s) => s.id === 'sch-smpn1-mendobarat') ||
-      !this.classes.some((c) => c.schoolId === 'sch-smpn1-mendobarat') ||
-      !this.classes.some((c) => c.id === 'cls-3b') ||
-      !this.users.some((u) => u.email === 'gurubk-1@radarsosial.id') ||
-      this.students.length < 240;
+      !this.schools.some((s) => s.id === 'sch-sman-olahraga-mnoer') ||
+      !this.schools.some((s) => s.id === 'sch-mts-daarul-abror') ||
+      !this.schools.some((s) => s.id === 'sch-smpn1-bakam') ||
+      !this.schools.some((s) => s.id === 'sch-smpn7-pangkalpinang') ||
+      !this.schools.some((s) => s.id === 'sch-smkn5-pangkalpinang') ||
+      !this.classes.some((c) => c.id === 'cls-3b');
 
     if (needsMigration) {
       this.schools = INITIAL_SCHOOLS;
@@ -180,7 +181,7 @@ export class DataStorageService {
       {
         id: 'log-1',
         timestamp: '2026-09-13T08:00:00Z',
-        userName: 'Liengga Brian Darea, S.Sos.,Gr',
+        userName: 'BK MTs Negeri 2 Bangka',
         userRole: 'guru_bk',
         action: 'Sinkronisasi Data Sosiometri',
         details: 'Data Kelas 3B Semester 1 2026/2027 berhasil dianalisis.',
@@ -445,7 +446,7 @@ export class DataStorageService {
       academicYear: classData.academicYear || '2026/2027',
       homeroomTeacher: classData.homeroomTeacher || 'Wali Kelas Terpilih',
       counselorId: counselor?.id || classData.counselorId,
-      counselorName: counselor?.name || classData.counselorName || targetSchool?.counselorName || 'Liengga Brian Darea, S.Sos.,Gr',
+      counselorName: counselor?.name || classData.counselorName || targetSchool?.counselorName || ('BK ' + (targetSchool?.name || 'Sekolah')),
       targetStudentCount: classData.targetStudentCount || 30,
       description: classData.description || 'Rombongan Belajar Terdaftar',
     };

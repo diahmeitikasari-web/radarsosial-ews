@@ -153,7 +153,7 @@ export const QualitativeNotesWorkspace: React.FC<QualitativeNotesWorkspaceProps>
       activeClass.id,
       activePeriod.id,
       counselorSummaryText.trim(),
-      currentUser?.name || 'Liengga Brian Darea, S.Sos.,Gr'
+      currentUser?.name || activeClass.counselorName || 'Guru BK'
     );
     setSaveSummaryFeedback('Refleksi Guru BK berhasil disimpan dan disinkronkan ke Laporan Resmi Cetak PDF!');
     if (onRefreshData) onRefreshData();

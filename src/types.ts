@@ -99,7 +99,15 @@ export interface Period {
 }
 
 export interface SchoolTheme {
-  preset: 'navy_gold' | 'emerald_gold' | 'royal_sapphire' | 'crimson_gold' | 'forest_mint' | 'amethyst_amber';
+  preset:
+    | 'navy_gold'
+    | 'emerald_gold'
+    | 'royal_sapphire'
+    | 'crimson_gold'
+    | 'forest_mint'
+    | 'amethyst_amber'
+    | 'teal_marine'
+    | 'amber_industrial';
   primaryColor: string; // e.g., '#0a2a4a'
   secondaryColor: string; // e.g., '#0f3d63'
   accentColor: string; // e.g., '#f0c040'
@@ -113,7 +121,7 @@ export interface School {
   npsn: string;
   address: string;
   city: string;
-  type: 'Madrasah' | 'SMP' | 'SMA';
+  type: 'Madrasah' | 'SMP' | 'SMA' | 'SMK';
   totalClasses: number;
   principalName?: string;
   counselorName?: string;

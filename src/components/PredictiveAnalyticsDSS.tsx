@@ -71,8 +71,8 @@ export const PredictiveAnalyticsDSS: React.FC<PredictiveAnalyticsDSSProps> = ({
   metrics,
   aggregate,
   activeClassName,
-  counselorName = 'Liengga Brian Darea, S.Sos.,Gr',
-  schoolName = 'MTs Negeri 2 Bangka',
+  counselorName = 'Guru BK',
+  schoolName = 'Satuan Pendidikan',
 }) => {
   // Compute predictive risk reports for all students
   const riskReports: PredictiveRiskReport[] = useMemo(() => {

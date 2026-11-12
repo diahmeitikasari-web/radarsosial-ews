@@ -59,14 +59,9 @@ export const OfficialPDFReport: React.FC<OfficialPDFReportProps> = ({
         (!activeClass?.id || !u.assignedClassIds || u.assignedClassIds.includes(activeClass.id))
     ) || schoolUsers.find((u) => u.role === 'guru_bk');
 
-  const resolvedPrincipalNip =
-    kepsekUser?.nip ||
-    (school.id === 'sch-smpn1-mendobarat' ? '19720814 199803 1 004' : '19740512 199903 1 002');
-  const resolvedCounselorNip =
-    bkUser?.nip ||
-    (school.id === 'sch-smpn1-mendobarat' ? '19870512 201402 1 003' : '19880914 201503 1 002');
-  const signCity =
-    school.id === 'sch-smpn1-mendobarat' ? 'Mendo Barat' : school.city || 'Sungailiat';
+  const resolvedPrincipalNip = kepsekUser?.nip || '-';
+  const resolvedCounselorNip = bkUser?.nip || '-';
+  const signCity = school.city || 'Bangka Belitung';
 
   const maleCount = metrics.filter((m) => m.gender === 'L').length;
   const femaleCount = metrics.filter((m) => m.gender === 'P').length;

@@ -83,7 +83,9 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
       // If detected class name in file matches an existing class, auto-point to it
       if (result.detectedClassName) {
         const matched = classes.find(
-          (c) => c.name.toLowerCase() === result.detectedClassName?.toLowerCase()
+          (c) =>
+            c.schoolId === effectiveTargetClass.schoolId &&
+            c.name.toLowerCase() === result.detectedClassName?.toLowerCase()
         );
         if (matched) {
           setSelectedClassId(matched.id);
@@ -98,16 +100,16 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
     let finalClassId = selectedClassId;
     let finalClassName = activeClass.name;
 
-    // Check if detected class is a brand new class that needs creation
+    // Check if detected class is a brand new class that needs creation (strictly scoped to current school!)
     if (parsedResult.detectedClassName && autoCreateNewClass) {
       const detectedNorm = parsedResult.detectedClassName.toLowerCase().replace(/[^a-z0-9]/g, '');
       const existing = classes.find(
         (c) =>
-          c.name.toLowerCase() === parsedResult.detectedClassName?.toLowerCase() ||
-          c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === detectedNorm ||
-          c.name.toLowerCase().replace(/[^a-z0-9]/g, '').includes(detectedNorm) ||
-          c.id.toLowerCase() === parsedResult.detectedClassName?.toLowerCase() ||
-          c.id.toLowerCase() === `cls-${detectedNorm}`
+          c.schoolId === activeClass.schoolId &&
+          (c.name.toLowerCase() === parsedResult.detectedClassName?.toLowerCase() ||
+            c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === detectedNorm ||
+            c.id.toLowerCase() === parsedResult.detectedClassName?.toLowerCase() ||
+            c.id.toLowerCase() === `cls-${detectedNorm}`)
       );
       if (!existing) {
         const created = dataStorage.addClass({

@@ -436,42 +436,8 @@ export const LoginView: React.FC = () => {
                     Multi-Sekolah Aktif
                   </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                  {/* SMPN 1 Mendo Barat - Guru BK */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('gurubk-1@radarsosial.id');
-                      setPassword('bk123456');
-                    }}
-                    className="text-left p-2.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/50 transition cursor-pointer group"
-                  >
-                    <div className="font-bold text-emerald-300 group-hover:text-emerald-200 transition flex items-center justify-between">
-                      <span>SMPN 1 Mendo Barat</span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-800/80 text-emerald-100">Guru BK</span>
-                    </div>
-                    <div className="text-[10px] text-emerald-200/80">gurubk-1@radarsosial.id</div>
-                    <div className="text-[9px] text-emerald-400 mt-0.5">Rahmat Hidayat • 6 Rombel SMPN</div>
-                  </button>
-
-                  {/* SMPN 1 Mendo Barat - Kepsek */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('kepsek.mendobarat@radarsosial.id');
-                      setPassword('kepsek123456');
-                    }}
-                    className="text-left p-2.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/30 transition cursor-pointer group"
-                  >
-                    <div className="font-bold text-emerald-300 group-hover:text-emerald-200 transition flex items-center justify-between">
-                      <span>SMPN 1 Mendo Barat</span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-800/80 text-emerald-100">Kepsek</span>
-                    </div>
-                    <div className="text-[10px] text-emerald-200/80">kepsek.mendobarat@radarsosial.id</div>
-                    <div className="text-[9px] text-emerald-400 mt-0.5">Drs. Hermansyah, M.Pd.</div>
-                  </button>
-
-                  {/* MTsN 2 Bangka - Guru BK */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-[11px]">
+                  {/* MTsN 2 Bangka */}
                   <button
                     type="button"
                     onClick={() => {
@@ -481,54 +447,112 @@ export const LoginView: React.FC = () => {
                     className="text-left p-2.5 rounded-xl bg-[#0d3555] hover:bg-[#1a3f64] border border-[#1a3f64] transition cursor-pointer group"
                   >
                     <div className="font-bold text-white group-hover:text-[#f7d970] transition flex items-center justify-between">
-                      <span>MTsN 2 Bangka</span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-900/80 text-[#f7d970]">Guru BK</span>
+                      <span className="truncate">MTsN 2 Bangka</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-900/80 text-[#f7d970] shrink-0">BK</span>
                     </div>
-                    <div className="text-[10px] text-[#b0c4de]">gurubk@radarsosial.id</div>
-                    <div className="text-[9px] text-[#f0c040] mt-0.5">Liengga Brian Darea • 6 Rombel MTsN</div>
+                    <div className="text-[10px] text-[#b0c4de] truncate">gurubk@radarsosial.id</div>
+                    <div className="text-[9px] text-[#f0c040] mt-0.5 truncate">BK MTs Negeri 2 Bangka</div>
                   </button>
 
-                  {/* MTsN 2 Bangka - Kepsek */}
+                  {/* SMAN Olahraga M. Noer (SKO M. Noer) */}
                   <button
                     type="button"
                     onClick={() => {
-                      setEmail('kepsek@radarsosial.id');
-                      setPassword('kepsek123456');
-                    }}
-                    className="text-left p-2.5 rounded-xl bg-[#0d3555]/80 hover:bg-[#1a3f64] border border-[#1a3f64] transition cursor-pointer group"
-                  >
-                    <div className="font-bold text-white group-hover:text-[#f7d970] transition flex items-center justify-between">
-                      <span>MTsN 2 Bangka</span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-900/80 text-[#f7d970]">Kepsek</span>
-                    </div>
-                    <div className="text-[10px] text-[#b0c4de]">kepsek@radarsosial.id</div>
-                    <div className="text-[9px] text-[#b0c4de] mt-0.5">Drs. H. Ahmad Fauzi, M.Ag.</div>
-                  </button>
-
-                  {/* SMPN 1 Sungailiat */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('bk.sungailiat@radarsosial.id');
+                      setEmail('bk.skonoer@radarsosial.id');
                       setPassword('bk123456');
                     }}
-                    className="text-left p-2 rounded-lg bg-sky-950/40 hover:bg-sky-900/50 border border-sky-600/30 transition cursor-pointer"
+                    className="text-left p-2.5 rounded-xl bg-red-950/60 hover:bg-red-900/70 border border-red-700/50 transition cursor-pointer group"
                   >
-                    <div className="font-bold text-sky-300">SMPN 1 Sungailiat</div>
-                    <div className="text-[10px] text-sky-200/70">bk.sungailiat@radarsosial.id</div>
+                    <div className="font-bold text-red-200 group-hover:text-amber-200 transition flex items-center justify-between">
+                      <span className="truncate">SKO M. Noer</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-red-800/80 text-amber-200 shrink-0">BK</span>
+                    </div>
+                    <div className="text-[10px] text-red-300/80 truncate">bk.skonoer@radarsosial.id</div>
+                    <div className="text-[9px] text-amber-300 mt-0.5 truncate">BK SMAN Olahraga M. Noer</div>
                   </button>
 
-                  {/* Super Admin */}
+                  {/* MTs Daarul Abror */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('bk.daarulabror@radarsosial.id');
+                      setPassword('bk123456');
+                    }}
+                    className="text-left p-2.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-600/50 transition cursor-pointer group"
+                  >
+                    <div className="font-bold text-emerald-200 group-hover:text-emerald-100 transition flex items-center justify-between">
+                      <span className="truncate">MTs Daarul Abror</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-800/80 text-emerald-100 shrink-0">BK</span>
+                    </div>
+                    <div className="text-[10px] text-emerald-300/80 truncate">bk.daarulabror@radarsosial.id</div>
+                    <div className="text-[9px] text-emerald-400 mt-0.5 truncate">BK MTs Daarul Abror</div>
+                  </button>
+
+                  {/* SMP Negeri 1 Bakam */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('bk.bakam@radarsosial.id');
+                      setPassword('bk123456');
+                    }}
+                    className="text-left p-2.5 rounded-xl bg-sky-950/60 hover:bg-sky-900/70 border border-sky-600/50 transition cursor-pointer group"
+                  >
+                    <div className="font-bold text-sky-200 group-hover:text-sky-100 transition flex items-center justify-between">
+                      <span className="truncate">SMPN 1 Bakam</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-sky-800/80 text-sky-100 shrink-0">BK</span>
+                    </div>
+                    <div className="text-[10px] text-sky-300/80 truncate">bk.bakam@radarsosial.id</div>
+                    <div className="text-[9px] text-sky-300 mt-0.5 truncate">BK SMP Negeri 1 Bakam</div>
+                  </button>
+
+                  {/* SMP Negeri 7 Pangkal Pinang */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('bk.smp7pkp@radarsosial.id');
+                      setPassword('bk123456');
+                    }}
+                    className="text-left p-2.5 rounded-xl bg-teal-950/60 hover:bg-teal-900/70 border border-teal-600/50 transition cursor-pointer group"
+                  >
+                    <div className="font-bold text-teal-200 group-hover:text-teal-100 transition flex items-center justify-between">
+                      <span className="truncate">SMPN 7 Pangkalpinang</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-800/80 text-teal-100 shrink-0">BK</span>
+                    </div>
+                    <div className="text-[10px] text-teal-300/80 truncate">bk.smp7pkp@radarsosial.id</div>
+                    <div className="text-[9px] text-teal-300 mt-0.5 truncate">BK SMPN 7 Pangkal Pinang</div>
+                  </button>
+
+                  {/* SMK N 5 Pangkalpinang */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('bk.smk5pkp@radarsosial.id');
+                      setPassword('bk123456');
+                    }}
+                    className="text-left p-2.5 rounded-xl bg-amber-950/50 hover:bg-amber-900/60 border border-amber-600/50 transition cursor-pointer group"
+                  >
+                    <div className="font-bold text-amber-200 group-hover:text-amber-100 transition flex items-center justify-between">
+                      <span className="truncate">SMK N 5 Pangkalpinang</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-800/80 text-amber-100 shrink-0">BK</span>
+                    </div>
+                    <div className="text-[10px] text-amber-300/80 truncate">bk.smk5pkp@radarsosial.id</div>
+                    <div className="text-[9px] text-amber-400 mt-0.5 truncate">BK SMK N 5 Pangkalpinang</div>
+                  </button>
+
+                  {/* Super Admin Lab */}
                   <button
                     type="button"
                     onClick={() => {
                       setEmail('admin@radarsosial.id');
                       setPassword('admin123456');
                     }}
-                    className="text-left p-2 rounded-lg bg-purple-950/40 hover:bg-purple-900/50 border border-purple-600/30 transition cursor-pointer"
+                    className="text-left p-2.5 rounded-xl bg-purple-950/60 hover:bg-purple-900/70 border border-purple-600/50 transition cursor-pointer group sm:col-span-2 lg:col-span-3"
                   >
-                    <div className="font-bold text-purple-300">Super-Admin Lab</div>
-                    <div className="text-[10px] text-purple-200/70">admin@radarsosial.id</div>
+                    <div className="font-bold text-purple-200 flex items-center justify-between">
+                      <span>Super-Admin Lab Hub</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-800/80 text-purple-100">Super Admin</span>
+                    </div>
+                    <div className="text-[10px] text-purple-300/80">admin@radarsosial.id &bull; admin123456</div>
                   </button>
                 </div>
               </div>
