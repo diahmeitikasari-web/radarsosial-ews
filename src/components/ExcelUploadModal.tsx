@@ -59,10 +59,14 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    // Reset input value immediately so uploading the same modified filename triggers onChange
-    e.target.value = '';
     if (!file) return;
-    await processFile(file);
+    try {
+      await processFile(file);
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
@@ -372,6 +376,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
                 ref={fileInputRef}
                 type="file"
                 accept=".xlsx,.xls,.csv"
+                onClick={(e) => e.stopPropagation()}
                 onChange={handleFileChange}
                 className="hidden"
               />

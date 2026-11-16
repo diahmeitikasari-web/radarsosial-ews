@@ -187,16 +187,20 @@ const MainApp: React.FC = () => {
 
   // Active data
   const students = useMemo(() => {
-    return dataStorage.getStudentsForClass(activeClass.id);
-  }, [activeClass.id, version]);
+    return activeClass?.id ? dataStorage.getStudentsForClass(activeClass.id) : [];
+  }, [activeClass?.id, version]);
 
   const nominations = useMemo(() => {
-    return dataStorage.getNominations(activePeriod.id, activeClass.id);
-  }, [activePeriod.id, activeClass.id, version]);
+    return activePeriod?.id && activeClass?.id
+      ? dataStorage.getNominations(activePeriod.id, activeClass.id)
+      : [];
+  }, [activePeriod?.id, activeClass?.id, version]);
 
   const behaviors = useMemo(() => {
-    return dataStorage.getBehaviors(activePeriod.id, activeClass.id);
-  }, [activePeriod.id, activeClass.id, version]);
+    return activePeriod?.id && activeClass?.id
+      ? dataStorage.getBehaviors(activePeriod.id, activeClass.id)
+      : [];
+  }, [activePeriod?.id, activeClass?.id, version]);
 
   // SNA and DSS Engine calculations
   const metrics = useMemo(() => {
@@ -205,15 +209,15 @@ const MainApp: React.FC = () => {
 
   const aggregate = useMemo(() => {
     return calculateClassAggregate(
-      activeClass.id,
-      activeClass.name,
-      activePeriod.id,
-      activePeriod.name,
+      activeClass?.id || '',
+      activeClass?.name || 'Rombel',
+      activePeriod?.id || '',
+      activePeriod?.name || 'Periode Aktif',
       students,
       nominations,
       metrics
     );
-  }, [activeClass.id, activeClass.name, activePeriod.id, activePeriod.name, students, nominations, metrics]);
+  }, [activeClass?.id, activeClass?.name, activePeriod?.id, activePeriod?.name, students, nominations, metrics]);
 
   // Floating transition notification on class/period switch
   const [switchToast, setSwitchToast] = useState<{ message: string; sub: string } | null>(null);
@@ -224,6 +228,7 @@ const MainApp: React.FC = () => {
       isFirstMount.current = false;
       return;
     }
+    if (!activeClass?.name || !activePeriod?.name) return;
     setSwitchToast({
       message: `Rombel: ${activeClass.name}`,
       sub: activePeriod.name,
@@ -232,7 +237,7 @@ const MainApp: React.FC = () => {
       setSwitchToast(null);
     }, 1800);
     return () => clearTimeout(timer);
-  }, [activeClassId, activePeriodId, activeClass.name, activePeriod.name]);
+  }, [activeClassId, activePeriodId, activeClass?.name, activePeriod?.name]);
 
   if (!isAuthenticated || !currentUser) {
     return <LoginView />;
