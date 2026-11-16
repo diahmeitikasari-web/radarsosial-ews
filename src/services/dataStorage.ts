@@ -118,8 +118,8 @@ export class DataStorageService {
       return u;
     });
 
-    // Multi-tenant migration check: ensure the 6 field schools, classes, and users are active
-    const SEED_VERSION_KEY = 'radar_sosial_seed_v2026_field_schools_v24';
+    // Multi-tenant migration check: ensure all 7 field tenants (including IAIN SAS) and classes are active
+    const SEED_VERSION_KEY = 'radar_sosial_seed_v2026_iainsas_v25';
     const hasSeed = typeof window !== 'undefined' ? localStorage.getItem(SEED_VERSION_KEY) : null;
 
     const needsMigration =
@@ -129,6 +129,8 @@ export class DataStorageService {
       !this.schools.some((s) => s.id === 'sch-smpn1-bakam') ||
       !this.schools.some((s) => s.id === 'sch-smpn7-pangkalpinang') ||
       !this.schools.some((s) => s.id === 'sch-smkn5-pangkalpinang') ||
+      !this.schools.some((s) => s.id === 'sch-iain-sas') ||
+      !this.classes.some((c) => c.id === 'cls-iain-pai') ||
       !this.classes.some((c) => c.id === 'cls-3b');
 
     if (needsMigration) {

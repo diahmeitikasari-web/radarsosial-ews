@@ -60,6 +60,20 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
     setIsProcessing(true);
     setErrorMsg(null);
 
+    const matchesClassOrProdi = (c: SchoolClass, detectedRaw: string): boolean => {
+      const dLower = detectedRaw.trim().toLowerCase();
+      const dNorm = dLower.replace(/[^a-z0-9]/g, '');
+      const cLower = c.name.trim().toLowerCase();
+      const cNorm = cLower.replace(/[^a-z0-9]/g, '');
+      if (cLower === dLower || cNorm === dNorm || c.id.toLowerCase() === dLower || c.id.toLowerCase() === `cls-${dNorm}`) {
+        return true;
+      }
+      if (dNorm.length >= 2 && (c.id.toLowerCase().endsWith(`-${dNorm}`) || new RegExp(`\\b${dLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(cLower))) {
+        return true;
+      }
+      return false;
+    };
+
     // Target class to pass
     const effectiveTargetClass = classes.find((c) => c.id === selectedClassId) || activeClass;
     const targetClassStudents = dataStorage.getStudents(effectiveTargetClass.id);
@@ -80,12 +94,12 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
       setParsedResult(null);
     } else {
       setParsedResult(result);
-      // If detected class name in file matches an existing class, auto-point to it
+      // If detected class name in file matches an existing class/prodi in this school, auto-point to it
       if (result.detectedClassName) {
         const matched = classes.find(
           (c) =>
             c.schoolId === effectiveTargetClass.schoolId &&
-            c.name.toLowerCase() === result.detectedClassName?.toLowerCase()
+            matchesClassOrProdi(c, result.detectedClassName!)
         );
         if (matched) {
           setSelectedClassId(matched.id);
@@ -102,14 +116,18 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
 
     // Check if detected class is a brand new class that needs creation (strictly scoped to current school!)
     if (parsedResult.detectedClassName && autoCreateNewClass) {
-      const detectedNorm = parsedResult.detectedClassName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const dLower = parsedResult.detectedClassName.trim().toLowerCase();
+      const detectedNorm = dLower.replace(/[^a-z0-9]/g, '');
       const existing = classes.find(
         (c) =>
           c.schoolId === activeClass.schoolId &&
-          (c.name.toLowerCase() === parsedResult.detectedClassName?.toLowerCase() ||
+          (c.name.toLowerCase() === dLower ||
             c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === detectedNorm ||
-            c.id.toLowerCase() === parsedResult.detectedClassName?.toLowerCase() ||
-            c.id.toLowerCase() === `cls-${detectedNorm}`)
+            c.id.toLowerCase() === dLower ||
+            c.id.toLowerCase() === `cls-${detectedNorm}` ||
+            (detectedNorm.length >= 2 &&
+              (c.id.toLowerCase().endsWith(`-${detectedNorm}`) ||
+                new RegExp(`\\b${dLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(c.name.toLowerCase()))))
       );
       if (!existing) {
         const created = dataStorage.addClass({

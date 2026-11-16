@@ -539,6 +539,23 @@ export const LoginView: React.FC = () => {
                     <div className="text-[9px] text-amber-400 mt-0.5 truncate">BK SMK N 5 Pangkalpinang</div>
                   </button>
 
+                  {/* IAIN SAS (PAI, TBI, BKPI) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('bk.iainsas@radarsosial.id');
+                      setPassword('bk123456');
+                    }}
+                    className="text-left p-2.5 rounded-xl bg-violet-950/60 hover:bg-violet-900/70 border border-violet-500/50 transition cursor-pointer group"
+                  >
+                    <div className="font-bold text-violet-200 group-hover:text-amber-200 transition flex items-center justify-between">
+                      <span className="truncate">IAIN SAS (PAI/TBI/BKPI)</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-violet-800/80 text-violet-100 shrink-0">BK</span>
+                    </div>
+                    <div className="text-[10px] text-violet-300/80 truncate">bk.iainsas@radarsosial.id</div>
+                    <div className="text-[9px] text-orange-300 mt-0.5 truncate">BK IAIN SAS &bull; 3 Prodi</div>
+                  </button>
+
                   {/* Super Admin Lab */}
                   <button
                     type="button"
@@ -546,7 +563,7 @@ export const LoginView: React.FC = () => {
                       setEmail('admin@radarsosial.id');
                       setPassword('admin123456');
                     }}
-                    className="text-left p-2.5 rounded-xl bg-purple-950/60 hover:bg-purple-900/70 border border-purple-600/50 transition cursor-pointer group sm:col-span-2 lg:col-span-3"
+                    className="text-left p-2.5 rounded-xl bg-purple-950/60 hover:bg-purple-900/70 border border-purple-600/50 transition cursor-pointer group sm:col-span-1 lg:col-span-2"
                   >
                     <div className="font-bold text-purple-200 flex items-center justify-between">
                       <span>Super-Admin Lab Hub</span>

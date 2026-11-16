@@ -103,11 +103,13 @@ class FirestoreSyncService {
         console.info('[FirestoreSync] Cloud database active. Fetching latest remote documents...');
         await this.pullAllFromCloud();
 
-        // Check if multi-tenant schools or classes are missing in Firestore
-        const hasMendoSchool = schoolsSnap.docs.some((d) => d.id === 'sch-smpn1-mendobarat');
-        const hasMendoClass = classesSnap.docs.some((d) => (d.data() as SchoolClass).schoolId === 'sch-smpn1-mendobarat');
-        if (!hasMendoSchool || !hasMendoClass) {
-          console.info('[FirestoreSync] Cloud missing SMPN 1 tenant documents. Uploading multi-tenant seed to Firestore...');
+        // Check if any multi-tenant schools or classes (e.g. IAIN SAS & field schools) are missing in Firestore
+        const localSchools = dataStorage.getSchools();
+        const localClasses = dataStorage.getClasses();
+        const hasAllSchools = localSchools.every((ls) => schoolsSnap.docs.some((d) => d.id === ls.id));
+        const hasAllClasses = localClasses.every((lc) => classesSnap.docs.some((d) => d.id === lc.id));
+        if (!hasAllSchools || !hasAllClasses) {
+          console.info('[FirestoreSync] Cloud missing multi-tenant documents. Uploading updated tenant seed to Firestore...');
           await this.seedMissingTenantsToCloud();
         }
       }

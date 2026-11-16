@@ -273,6 +273,11 @@ export async function parseUploadedExcel(
       const cVal = getRowValue(row, [
         'Kelas / Rombel',
         'Kelas/Rombel',
+        'Kelas / Prodi',
+        'Prodi / Kelas',
+        'Prodi',
+        'Program Studi',
+        'Jurusan',
         'Kelas',
         'Rombel',
         'Class',
@@ -371,6 +376,9 @@ export async function parseUploadedExcel(
       const direct = getRowValue(row, [
         'Nama Lengkap',
         'Nama Siswa',
+        'Nama Mahasiswa',
+        'Nama Mahasiswi',
+        'Nama Lengkap Mahasiswa',
         'Nama Santri',
         'Nama Santriwati',
         'Nama Atlet',
@@ -386,12 +394,13 @@ export async function parseUploadedExcel(
         'Student Name',
         'Full Name',
         'Siswa',
+        'Mahasiswa',
         'Santri',
         'Atlet',
       ]);
       if (direct) return direct;
 
-      // 2. Dynamic scan: check all row keys for name/santri/atlet indicators that are NOT nomination or parent columns
+      // 2. Dynamic scan: check all row keys for name/santri/atlet/mahasiswa indicators that are NOT nomination or parent columns
       for (const k of Object.keys(row)) {
         const val = cleanStr(row[k]);
         if (!val) continue;
@@ -404,9 +413,14 @@ export async function parseUploadedExcel(
           lowKey.includes('ayah') ||
           lowKey.includes('ibu') ||
           lowKey.includes('sekolah') ||
+          lowKey.includes('kampus') ||
           lowKey.includes('kelas') ||
           lowKey.includes('rombel') ||
+          lowKey.includes('prodi') ||
+          lowKey.includes('program studi') ||
+          lowKey.includes('jurusan') ||
           lowKey.includes('guru') ||
+          lowKey.includes('dosen') ||
           lowKey.includes('skor') ||
           lowKey.includes('nilai')
         ) {
@@ -415,6 +429,7 @@ export async function parseUploadedExcel(
 
         if (
           lowKey.includes('nama') ||
+          lowKey.includes('mahasiswa') ||
           lowKey.includes('santri') ||
           lowKey.includes('atlet') ||
           lowKey.includes('siswa') ||
@@ -433,7 +448,7 @@ export async function parseUploadedExcel(
       const name = extractStudentNameFromRow(row);
       const explicitNo = getRowValue(row, ['No', 'No.', 'Nomor', 'No Absen', 'Absen', 'No Urut']);
       const nis =
-        getRowValue(row, ['NIS', 'nis', 'Nomor Induk', 'NISN', 'No Induk']) ||
+        getRowValue(row, ['NIS', 'nis', 'NIM', 'nim', 'Nomor Induk', 'Nomor Induk Mahasiswa', 'NISN', 'No Induk']) ||
         `2026${String(index + 1).padStart(4, '0')}`;
       const genderRaw = getRowValue(row, [
         'Jenis Kelamin (L/P)',
@@ -707,8 +722,12 @@ export async function parseUploadedExcel(
       return (
         low.includes('nama') ||
         low.includes('nis') ||
+        low.includes('nim') ||
         low.includes('kelas') ||
         low.includes('rombel') ||
+        low.includes('prodi') ||
+        low.includes('program studi') ||
+        low.includes('jurusan') ||
         low.includes('gender') ||
         low.includes('jenis kelamin') ||
         low.includes('kelamin') ||

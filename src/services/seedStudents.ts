@@ -9,7 +9,7 @@ import {
 import seedData3B from './seedData3B.json';
 
 // ==========================================
-// DAFTAR SEKOLAH MULTI-TENANT (6 SATUAN PENDIDIKAN)
+// DAFTAR SEKOLAH MULTI-TENANT (7 SATUAN PENDIDIKAN)
 // ==========================================
 export const ALL_SCHOOLS: School[] = [
   {
@@ -136,6 +136,27 @@ export const ALL_SCHOOLS: School[] = [
       accentColor: '#f59e0b',
       accentLight: '#fde68a',
       schoolBadge: 'SMK Vokasi Unggul & Siap Kerja',
+    },
+  },
+  {
+    id: 'sch-iain-sas',
+    name: 'IAIN Syaikh Abdurrahman Siddik (IAIN SAS)',
+    npsn: '20219001',
+    address: 'Jl. Raya Petaling KM 13, Mendo Barat, Kabupaten Bangka, Kepulauan Bangka Belitung',
+    city: 'Kabupaten Bangka',
+    type: 'Perguruan Tinggi',
+    totalClasses: 3,
+    principalName: 'Pimpinan / Dekanat IAIN SAS',
+    counselorName: 'BK IAIN SAS',
+    phone: '(0717) 91234',
+    status: 'aktif',
+    theme: {
+      preset: 'amethyst_amber',
+      primaryColor: '#4c1d95',
+      secondaryColor: '#581c87',
+      accentColor: '#fb923c',
+      accentLight: '#fdba74',
+      schoolBadge: 'PTKIN Unggul • PAI • TBI • BKPI',
     },
   },
 ];
@@ -383,6 +404,44 @@ export const ALL_CLASSES: SchoolClass[] = [
     targetStudentCount: 30,
     description: 'Rombel Kejuruan Kelas XII SMK N 5 Pangkalpinang',
   },
+
+  // --- IAIN Syaikh Abdurrahman Siddik (IAIN SAS) — Prodi PAI, TBI, BKPI ---
+  {
+    id: 'cls-iain-pai',
+    schoolId: 'sch-iain-sas',
+    name: 'Prodi PAI (Pendidikan Agama Islam)',
+    grade: 'PT',
+    academicYear: '2026/2027',
+    homeroomTeacher: 'Dosen PA Prodi PAI',
+    counselorId: 'usr-bk-iainsas',
+    counselorName: 'BK IAIN SAS',
+    targetStudentCount: 35,
+    description: 'Program Studi Pendidikan Agama Islam (PAI) - IAIN SAS',
+  },
+  {
+    id: 'cls-iain-tbi',
+    schoolId: 'sch-iain-sas',
+    name: 'Prodi TBI (Tadris Bahasa Inggris)',
+    grade: 'PT',
+    academicYear: '2026/2027',
+    homeroomTeacher: 'Dosen PA Prodi TBI',
+    counselorId: 'usr-bk-iainsas',
+    counselorName: 'BK IAIN SAS',
+    targetStudentCount: 35,
+    description: 'Program Studi Tadris Bahasa Inggris (TBI) - IAIN SAS',
+  },
+  {
+    id: 'cls-iain-bkpi',
+    schoolId: 'sch-iain-sas',
+    name: 'Prodi BKPI (Bimbingan & Konseling Pendidikan Islam)',
+    grade: 'PT',
+    academicYear: '2026/2027',
+    homeroomTeacher: 'Dosen PA Prodi BKPI',
+    counselorId: 'usr-bk-iainsas',
+    counselorName: 'BK IAIN SAS',
+    targetStudentCount: 35,
+    description: 'Program Studi Bimbingan & Konseling Pendidikan Islam (BKPI) - IAIN SAS',
+  },
 ];
 
 // ==========================================
@@ -573,6 +632,35 @@ export const ALL_USERS: User[] = [
     schoolName: 'SMK N 5 Pangkalpinang',
     phone: '(0717) 42555',
     title: 'Kepala Sekolah',
+    status: 'active',
+    createdAt: '2025-02-01',
+  },
+
+  // 7. IAIN Syaikh Abdurrahman Siddik (IAIN SAS)
+  {
+    id: 'usr-bk-iainsas',
+    name: 'BK IAIN SAS',
+    email: 'bk.iainsas@radarsosial.id',
+    password: 'bk123456',
+    role: 'guru_bk',
+    schoolId: 'sch-iain-sas',
+    schoolName: 'IAIN Syaikh Abdurrahman Siddik (IAIN SAS)',
+    assignedClassIds: ['cls-iain-pai', 'cls-iain-tbi', 'cls-iain-bkpi'],
+    phone: '(0717) 91234',
+    title: 'Unit Layanan Bimbingan & Konseling Mahasiswa (PAI / TBI / BKPI)',
+    status: 'active',
+    createdAt: '2025-02-01',
+  },
+  {
+    id: 'usr-kepsek-iainsas',
+    name: 'Pimpinan / Dekanat IAIN SAS',
+    email: 'pimpinan.iainsas@radarsosial.id',
+    password: 'kepsek123456',
+    role: 'kepala_sekolah',
+    schoolId: 'sch-iain-sas',
+    schoolName: 'IAIN Syaikh Abdurrahman Siddik (IAIN SAS)',
+    phone: '(0717) 91234',
+    title: 'Pimpinan / Dekanat Perguruan Tinggi',
     status: 'active',
     createdAt: '2025-02-01',
   },

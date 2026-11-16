@@ -229,24 +229,27 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ---
 
 ### Anotasi #A-07: Isolasi Multi-Tenant Satuan Pendidikan & Proteksi Scoping Impor Data
-- **File & Baris**: `/src/components/ExcelUploadModal.tsx` (baris 84–115), `/src/services/seedStudents.ts` (baris 15–80), & `/src/services/dataStorage.ts` (baris 120–165)
-- **Fungsi / Variabel**: `handleConfirmSave()`, `classes.find(c => c.schoolId === activeClass.schoolId)`, `ALL_SCHOOLS` (6 tenant sekolah lapangan)
+- **File & Baris**: `/src/components/ExcelUploadModal.tsx` (baris 63–130), `/src/services/seedStudents.ts` (baris 15–160 & 385–425), & `/src/services/dataStorage.ts` (baris 121–165)
+- **Fungsi / Variabel**: `handleConfirmSave()`, `matchesClassOrProdi()`, `ALL_SCHOOLS` (7 tenant satuan pendidikan & perguruan tinggi)
 - **Cuplikan Kode**:
   ```typescript
-  // Proteksi Pembajakan Rombel Lintas-Tenant saat Impor Excel:
-  // Pencarian kelas existing wajib dikunci secara mutlak pada schoolId sekolah aktif
+  // Proteksi Pembajakan Rombel/Prodi Lintas-Tenant saat Impor Excel:
+  // Pencarian kelas atau program studi existing wajib dikunci pada schoolId aktif
   const existing = classes.find(
     (c) =>
       c.schoolId === activeClass.schoolId &&
-      (c.name.toLowerCase() === parsedResult.detectedClassName?.toLowerCase() ||
+      (c.name.toLowerCase() === dLower ||
         c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === detectedNorm ||
-        c.id.toLowerCase() === parsedResult.detectedClassName?.toLowerCase() ||
-        c.id.toLowerCase() === `cls-${detectedNorm}`)
+        c.id.toLowerCase() === dLower ||
+        c.id.toLowerCase() === `cls-${detectedNorm}` ||
+        (detectedNorm.length >= 2 &&
+          (c.id.toLowerCase().endsWith(`-${detectedNorm}`) ||
+            new RegExp(`\\b${dLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(c.name.toLowerCase()))))
   );
   ```
-- **Tinjauan AI**: AI awalnya mencari kelas hanya berdasarkan nama (`classes.find(c => c.name === name)`), sehingga ketika pengguna di sekolah baru (misal MTs Daarul Abror atau SMPN 1 Bakam) mengunggah rombel bernama "Kelas 7A", sistem mencocokkan `cls-7a` milik MTsN 2 Bangka. Akibatnya rombel sekolah asal tertimpa dan relasi kelas lain hilang. Selain itu AI mengisikan nama guru BK fiktif perorangan.
-- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI (Telah Diperbaiki)**. Scoping multi-tenant harus diterapkan secara ketat hingga ke tingkat proses impor Excel. Sistem kini melayani 6 satuan pendidikan lapangan (MTsN 2 Bangka, SMA Negeri Olahraga M. Noer, MTs Daarul Abror, SMPN 1 Bakam, SMPN 7 Pangkal Pinang, dan SMK N 5 Pangkalpinang) dengan rombel bersih yang siap menerima unggahan data nyata. Identitas konselor dibakukan secara profesional memakai peran resmi (misal `BK SMP Negeri 1 Bakam`) guna menjamin integritas etika kelembagaan ABKIN tanpa nama fiktif.
-- **Zona**: `✓ Konvergen (Telah Diperbaiki & Diuji Lintas 6 Satuan Pendidikan)`
+- **Tinjauan AI**: AI awalnya mencari kelas hanya berdasarkan nama (`classes.find(c => c.name === name)`), sehingga ketika pengguna di satuan pendidikan baru mengunggah rombel bernama sama, sistem membajak rombel milik sekolah lain. Selain itu AI mengisikan nama guru BK fiktif perorangan dan belum mendukung format perguruan tinggi (*Prodi/Mahasiswa/NIM*).
+- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI (Telah Diperbaiki)**. Scoping multi-tenant harus diterapkan secara ketat hingga ke tingkat proses impor Excel. Sistem kini melayani **7 tenant satuan pendidikan** (MTsN 2 Bangka, SMA Negeri Olahraga M. Noer, MTs Daarul Abror, SMPN 1 Bakam, SMPN 7 Pangkal Pinang, SMK N 5 Pangkalpinang, serta **IAIN Syaikh Abdurrahman Siddik / IAIN SAS** dengan Prodi **PAI**, **TBI**, dan **BKPI**) dengan rombel/prodi bersih yang siap menerima unggahan data lapangan nyata. Identitas konselor dibakukan secara profesional memakai peran resmi lembaga (misal `BK SMP Negeri 1 Bakam`, `BK IAIN SAS`) sesuai Kode Etik ABKIN.
+- **Zona**: `✓ Konvergen (Telah Diperbaiki & Diuji Lintas 7 Tenant Pendidikan)`
 
 ---
 

@@ -121,7 +121,7 @@ export interface School {
   npsn: string;
   address: string;
   city: string;
-  type: 'Madrasah' | 'SMP' | 'SMA' | 'SMK';
+  type: 'Madrasah' | 'SMP' | 'SMA' | 'SMK' | 'Perguruan Tinggi';
   totalClasses: number;
   principalName?: string;
   counselorName?: string;

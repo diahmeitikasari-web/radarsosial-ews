@@ -3786,7 +3786,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     className="w-full bg-[#0a2a4a] border border-[#1a3f64] rounded-xl p-2 text-white focus:outline-hidden focus:border-[#f0c040]"
                   >
                     <option value="Madrasah">Madrasah (Kemenag)</option>
-                    <option value="Sekolah Umum">Sekolah Umum (Kemendikbud)</option>
+                    <option value="SMP">SMP (Kemendikbud)</option>
+                    <option value="SMA">SMA (Kemendikbud)</option>
+                    <option value="SMK">SMK (Kemendikbud)</option>
+                    <option value="Perguruan Tinggi">Perguruan Tinggi (PTKIN / Universitas)</option>
                   </select>
                 </div>
               </div>
