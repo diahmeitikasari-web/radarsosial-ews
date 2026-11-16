@@ -10,6 +10,9 @@ import {
   RelationCriteria,
   SocialCommunity,
   NetworkCommunityAnalysis,
+  DualCriteriaComparison,
+  StudentDualCriteriaProfile,
+  CriteriaDiscrepancyType,
 } from '../types';
 
 export function calculateSNAMetrics(
@@ -741,6 +744,182 @@ export function detectCommunitiesAndBrokers(
     genderHomophilyIndex,
     cliqueCount: communities.length,
     modularityScore: Number((0.45 + communities.length * 0.05).toFixed(2)),
+  };
+}
+
+export function calculateDualCriteriaComparison(
+  classId: string,
+  className: string,
+  periodId: string,
+  periodName: string,
+  students: Student[],
+  nominations: SociometricNomination[],
+  behavioralRatings: PeerBehavioralRating[] = [],
+  overallMetrics?: StudentCalculatedMetrics[]
+): DualCriteriaComparison {
+  const belajarNoms = nominations.filter((n) => n.criteria === 'belajar');
+  const bermainNoms = nominations.filter((n) => n.criteria === 'bermain');
+
+  const hasBelajarData = belajarNoms.length > 0 && students.length > 0;
+  const hasBermainData = bermainNoms.length > 0 && students.length > 0;
+
+  const resolvedOverall =
+    overallMetrics && overallMetrics.length > 0
+      ? overallMetrics
+      : calculateSNAMetrics(students, nominations, behavioralRatings);
+
+  const belajarMetrics = hasBelajarData
+    ? calculateSNAMetrics(students, belajarNoms, behavioralRatings, 'belajar')
+    : [];
+  const bermainMetrics = hasBermainData
+    ? calculateSNAMetrics(students, bermainNoms, behavioralRatings, 'bermain')
+    : [];
+
+  const belajarAggregate = calculateClassAggregate(
+    classId,
+    className,
+    periodId,
+    periodName,
+    students,
+    belajarNoms,
+    belajarMetrics
+  );
+  const bermainAggregate = calculateClassAggregate(
+    classId,
+    className,
+    periodId,
+    periodName,
+    students,
+    bermainNoms,
+    bermainMetrics
+  );
+
+  const overallMap = new Map(resolvedOverall.map((m) => [m.studentId, m]));
+  const belajarMap = new Map(belajarMetrics.map((m) => [m.studentId, m]));
+  const bermainMap = new Map(bermainMetrics.map((m) => [m.studentId, m]));
+
+  let belajarOnlyAccepted = 0;
+  let bermainOnlyAccepted = 0;
+  let dualVulnerable = 0;
+  let dualPopular = 0;
+
+  const studentProfiles: StudentDualCriteriaProfile[] = students.map((s) => {
+    const overall = overallMap.get(s.id) || null;
+    const belajar = belajarMap.get(s.id) || null;
+    const bermain = bermainMap.get(s.id) || null;
+
+    let discrepancyType: CriteriaDiscrepancyType = 'Selaras / Adaptif';
+    let discrepancyNote = 'Penerimaan sebaya seimbang antara konteks belajar dan bermain.';
+
+    if (belajar && bermain) {
+      const bVuln = belajar.status === 'Rejected' || belajar.status === 'Neglected';
+      const pVuln = bermain.status === 'Rejected' || bermain.status === 'Neglected';
+      const bAcc = belajar.status === 'Popular' || belajar.zSP >= 0.5;
+      const pAcc = bermain.status === 'Popular' || bermain.zSP >= 0.5;
+      const bLow = belajar.status === 'Rejected' || belajar.status === 'Neglected' || belajar.zSP < -0.5;
+      const pLow = bermain.status === 'Rejected' || bermain.status === 'Neglected' || bermain.zSP < -0.5;
+
+      if (bVuln && pVuln) {
+        discrepancyType = 'Rentan Ganda';
+        discrepancyNote = `Berstatus ${belajar.status} di Belajar dan ${bermain.status} di Bermain; prioritas pendampingan lintas konteks.`;
+        dualVulnerable++;
+      } else if (belajar.status === 'Popular' && bermain.status === 'Popular') {
+        discrepancyType = 'Populer Lintas Konteks';
+        discrepancyNote = 'Menjadi figur rujukan baik saat belajar kelompok maupun pergaulan informal.';
+        dualPopular++;
+      } else if (bAcc && pLow) {
+        discrepancyType = 'Diterima Belajar, Rentan Bermain';
+        discrepancyNote = `Diandalkan dalam belajar (Z_SP ${belajar.zSP}), namun tersisih saat bermain (${bermain.status}, Z_SP ${bermain.zSP}).`;
+        belajarOnlyAccepted++;
+      } else if (pAcc && bLow) {
+        discrepancyType = 'Akrab Bermain, Terabaikan Belajar';
+        discrepancyNote = `Akrab saat bermain (Z_SP ${bermain.zSP}), namun kurang dipilih dalam kerja kelompok (${belajar.status}, Z_SP ${belajar.zSP}).`;
+        bermainOnlyAccepted++;
+      }
+    } else if (belajar && !bermain) {
+      discrepancyNote = 'Baru memiliki data kategori Belajar; data Bermain belum terisi.';
+    } else if (!belajar && bermain) {
+      discrepancyNote = 'Baru memiliki data kategori Bermain; data Belajar belum terisi.';
+    } else {
+      discrepancyNote = 'Data sosiometri belum terisi.';
+    }
+
+    return {
+      studentId: s.id,
+      nis: s.nis,
+      name: s.name,
+      gender: s.gender,
+      overall,
+      belajar,
+      bermain,
+      discrepancyType,
+      discrepancyNote,
+    };
+  });
+
+  let comparativeSummary = '';
+  let comparativeAdvice = '';
+
+  if (!hasBelajarData && !hasBermainData) {
+    comparativeSummary = `Belum ada data nominasi pada kategori Belajar (Sosio-Instrumental) maupun Bermain (Sosio-Afektif) untuk rombel ${className}.`;
+    comparativeAdvice =
+      'Laksanakan pengisian instrumen sosiometri bagian Belajar dan Bermain terlebih dahulu sebelum menyusun program intervensi.';
+  } else if (hasBelajarData && !hasBermainData) {
+    comparativeSummary = `Baru kategori Belajar (Sosio-Instrumental) yang terisi (${belajarNoms.length} relasi, Iklim: ${belajarAggregate.climateIndex} ${belajarAggregate.climateScore}/100), sedangkan kategori Bermain (Sosio-Afektif) belum terisi.`;
+    comparativeAdvice =
+      'Lengkapi data pilihan teman bermain/istirahat agar Guru BK dapat membedakan apakah penerimaan siswa murni fungsional tugas atau menyeluruh secara afektif.';
+  } else if (!hasBelajarData && hasBermainData) {
+    comparativeSummary = `Baru kategori Bermain (Sosio-Afektif) yang terisi (${bermainNoms.length} relasi, Iklim: ${bermainAggregate.climateIndex} ${bermainAggregate.climateScore}/100), sedangkan kategori Belajar (Sosio-Instrumental) belum terisi.`;
+    comparativeAdvice =
+      'Lengkapi data pilihan teman belajar kelompok guna memetakan kesiapan kolaborasi akademik kelas secara utuh.';
+  } else {
+    const scoreDiff = belajarAggregate.climateScore - bermainAggregate.climateScore;
+    const strongerContext =
+      Math.abs(scoreDiff) < 5
+        ? 'relatif seimbang antara konteks Belajar dan Bermain'
+        : scoreDiff > 0
+        ? `lebih kohesif pada konteks Belajar (${belajarAggregate.climateScore}/100) dibanding Bermain (${bermainAggregate.climateScore}/100)`
+        : `lebih kohesif pada konteks Bermain (${bermainAggregate.climateScore}/100) dibanding Belajar (${belajarAggregate.climateScore}/100)`;
+
+    const discrepancyTotal = belajarOnlyAccepted + bermainOnlyAccepted;
+    comparativeSummary =
+      `Iklim sosial rombel ${className} ${strongerContext}. Densitas Belajar ${belajarAggregate.density} (resiprositas ${belajarAggregate.reciprocityRate}%) vs Bermain ${bermainAggregate.density} (resiprositas ${bermainAggregate.reciprocityRate}%). ` +
+      (discrepancyTotal > 0
+        ? `Terdeteksi ${discrepancyTotal} siswa dengan kesenjangan lintas konteks (${belajarOnlyAccepted} diterima di Belajar namun rentan di Bermain; ${bermainOnlyAccepted} akrab di Bermain namun terabaikan di Belajar).`
+        : 'Tidak ditemukan kesenjangan ekstrem antara status belajar kelompok dan pergaulan informal.');
+
+    if (belajarOnlyAccepted > 0) {
+      comparativeAdvice =
+        'Siswa yang hanya diterima di kelompok belajar tetapi rentan saat bermain berisiko mengalami isolasi afektif di jam istirahat. Integrasikan pembinaan keterampilan pertemanan informal dan buddy system lintas jam istirahat.';
+    } else if (bermainOnlyAccepted > 0) {
+      comparativeAdvice =
+        'Siswa yang akrab saat bermain tetapi terhindari di kelompok belajar perlu penguatan fokus kolaborasi tugas, pembagian peran terstruktur (jigsaw), dan konseling regulasi diri saat belajar.';
+    } else if (dualVulnerable > 0) {
+      comparativeAdvice = `Terdapat ${dualVulnerable} siswa berstatus rentan ganda pada kedua konteks (Belajar & Bermain); prioritaskan perlindungan psikologis sesuai mandat TPPK (Permendikbudristek No. 46/2023).`;
+    } else {
+      comparativeAdvice =
+        'Kohesi tugas (Sosio-Instrumental) dan kedekatan afektif (Sosio-Afektif) berjalan selaras. Pertahankan rotasi kelompok kooperatif secara berkala.';
+    }
+  }
+
+  return {
+    hasBelajarData,
+    hasBermainData,
+    belajarNominationsCount: belajarNoms.length,
+    bermainNominationsCount: bermainNoms.length,
+    belajarMetrics,
+    bermainMetrics,
+    belajarAggregate,
+    bermainAggregate,
+    studentProfiles,
+    discrepancyCounts: {
+      belajarOnlyAccepted,
+      bermainOnlyAccepted,
+      dualVulnerable,
+      dualPopular,
+    },
+    comparativeSummary,
+    comparativeAdvice,
   };
 }
 

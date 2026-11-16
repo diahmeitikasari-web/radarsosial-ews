@@ -38,14 +38,15 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ### 1.2 Inventarisasi Komponen Matematis & Algoritma Inti
 | Modul / Komponen | Tipe Algoritma / Formula | Berkas Sumber | Cakupan Keluaran |
 | :--- | :--- | :--- | :--- |
-| **Normalisasi Skor Z** | Formula Baku Normalisasi Gaussian | `/src/services/snaEngine.ts` (baris 66–101) | $z_L, z_D, z_{SP}, z_{SI}$ |
-| **Klasifikasi Coie & Dodge** | Logika Ambang Batas 5 Kategori (1982) + Zero-Variance Guard | `/src/services/snaEngine.ts` (baris 81–82, 103–115) | Popular, Rejected, Neglected, Controversial, Average |
-| **Tipologi Perilaku Sebaya** | Integrasi Moreno x PEI x Hawley | `/src/services/snaEngine.ts` (baris 126–144) | 7 Kategori Profil Sosio-Perilaku |
-| **Deteksi Broker Jaringan** | Algoritma Brandes (*Betweenness Centrality*) | `/src/services/snaEngine.ts` (baris 506–573) | Skor Betweenness ternormalisasi & Siswa Broker |
-| **Deteksi Komunitas Klik** | *Weighted Label Propagation Algorithm* | `/src/services/snaEngine.ts` (baris 575–717) | Klaster Klik, Pemimpin Subgrup, Indeks Eksklusivitas |
-| **Indeks Homofili Gender** | Perbandingan Relasi Intra vs Inter-Gender | `/src/services/snaEngine.ts` (baris 719–735) | Nilai $-1.0$ s.d $+1.0$ |
+| **Normalisasi Skor Z** | Formula Baku Normalisasi Gaussian | `/src/services/snaEngine.ts` (baris 69–104) | $z_L, z_D, z_{SP}, z_{SI}$ |
+| **Klasifikasi Coie & Dodge** | Logika Ambang Batas 5 Kategori (1982) + Zero-Variance Guard | `/src/services/snaEngine.ts` (baris 84–85, 106–118) | Popular, Rejected, Neglected, Controversial, Average |
+| **Tipologi Perilaku Sebaya** | Integrasi Moreno x PEI x Hawley | `/src/services/snaEngine.ts` (baris 129–147) | 7 Kategori Profil Sosio-Perilaku |
+| **Deteksi Broker Jaringan** | Algoritma Brandes (*Betweenness Centrality*) | `/src/services/snaEngine.ts` (baris 509–576) | Skor Betweenness ternormalisasi & Siswa Broker |
+| **Deteksi Komunitas Klik** | *Weighted Label Propagation Algorithm* | `/src/services/snaEngine.ts` (baris 578–720) | Klaster Klik, Pemimpin Subgrup, Indeks Eksklusivitas |
+| **Indeks Homofili Gender** | Perbandingan Relasi Intra vs Inter-Gender | `/src/services/snaEngine.ts` (baris 722–738) | Nilai $-1.0$ s.d $+1.0$ |
 | **Smart Seating Optimizer** | Heuristik Constraint-Satisfaction Penataan Meja | `/src/services/seatingEngine.ts` (baris 16–285) | Denah Meja, Harmony Score, Pasangan Buddy |
-| **Evaluasi Iklim Kelas** | Formula Tertimbang Kohesi Multi-Kriteria & Penalti Risiko | `/src/services/snaEngine.ts` (baris 269–455) | Skor Iklim (0–100) & Status Kondusif/Waspada/Kritis/Belum Terisi |
+| **Evaluasi Iklim Kelas** | Formula Tertimbang Kohesi Multi-Kriteria & Penalti Risiko | `/src/services/snaEngine.ts` (baris 272–458) | Skor Iklim (0–100) & Status Kondusif/Waspada/Kritis/Belum Terisi |
+| **Komparasi Belajar vs Bermain** | Pemisahan Sosio-Instrumental vs Sosio-Afektif & Kesenjangan Lintas Konteks | `/src/services/snaEngine.ts` (baris 750–924), `/src/components/OfficialPDFReport.tsx`, `/src/dashboards/GuruBKDashboard.tsx` | Metrik & Iklim Belajar vs Bermain, 5 Tipe Kesenjangan Siswa, Sintesis PDF Resmi |
 
 ### 1.3 Formula Skoring & Ambang Batas Matematis
 1. **Standarisasi Skor Z Rombel (setelah deduplikasi relasi & eliminasi *self-nomination*)**:
@@ -76,8 +77,8 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
    - $0$ nominasi aktif: **Belum Terisi** (Skor $0$, sosiogram dikosongkan)
 
 ### 1.4 Temuan Tiga (3) Titik Paling Rawan Error (Bugs & Bottlenecks)
-- **Bug 1 (Zero Variance / Jebakan Kolom Dislike Kosong pada Coie-Dodge)**: Pada `/src/services/snaEngine.ts` baris 78–82 dan 105–108, jika seluruh siswa hanya mengisi pilihan positif (*Likes*) dan mengosongkan kolom penolakan (*Dislikes* = 0 semua), maka nilai $\mu_D = 0, \sigma_D = 0 \implies z_D = 0$ untuk semua siswa. Kondisi ketat `zD < 0` akan gagal melabeli siswa ber-`zSP > 1.0` sebagai *Popular*. Telah ditambahkan *guard* `Math.sqrt(variance) || 1` serta kondisi `(noDislikesInClass ? zD <= 0 : zD < 0)` dan `(noLikesInClass ? zL <= 0 : zL < 0)`.
-- **Bug 2 (Blank Screen & Kebocoran State Impor Excel serta Penamaan Properti Matriks)**: Pada `/src/components/ExcelUploadModal.tsx`, pengaksesan `parsedResult.students` saat `parsedResult === null` sempat menyebabkan runtime crash (*blank screen*), serta kolom kosong SheetJS (`__EMPTY_*`) berpotensi terbaca sebagai kolom matriks. Kini telah diproteksi dengan null-guard modal, pembersihan state `useEffect`, `<AppErrorBoundary>` di `App.tsx`, pengabaian kolom `__EMPTY*` di `excelHandler.ts`, serta sinkronisasi properti `studentId`/`targetId` dan skala 0–100 perilaku di `AdminDashboard.tsx`.
+- **Bug 1 (Zero Variance / Jebakan Kolom Dislike Kosong pada Coie-Dodge)**: Pada `/src/services/snaEngine.ts` baris 81–85 dan 108–111, jika seluruh siswa hanya mengisi pilihan positif (*Likes*) dan mengosongkan kolom penolakan (*Dislikes* = 0 semua), maka nilai $\mu_D = 0, \sigma_D = 0 \implies z_D = 0$ untuk semua siswa. Kondisi ketat `zD < 0` akan gagal melabeli siswa ber-`zSP > 1.0` sebagai *Popular*. Telah ditambahkan *guard* `Math.sqrt(variance) || 1` serta kondisi `(noDislikesInClass ? zD <= 0 : zD < 0)` dan `(noLikesInClass ? zL <= 0 : zL < 0)`.
+- **Bug 2 (Blank Screen & Kebocoran State Impor Excel serta Analisis Gabungan Saja di PDF)**: Pada `/src/components/ExcelUploadModal.tsx`, pengaksesan `parsedResult.students` saat `parsedResult === null` sempat menyebabkan runtime crash (*blank screen*), dan sebelumnya laporan PDF (`OfficialPDFReport.tsx`) serta Tabel Matriks Guru BK hanya menampilkan angka agregat gabungan tanpa memisahkan **Kategori Belajar (Sosio-Instrumental)** dan **Kategori Bermain (Sosio-Afektif)**. Kini telah diproteksi dengan null-guard modal, pembersihan state `useEffect`, `<AppErrorBoundary>` di `App.tsx`, serta fungsi `calculateDualCriteriaComparison()` di `snaEngine.ts` yang menyajikan perbandingan eksplisit *Belajar vs Bermain* di Sosiometri Guru BK dan Laporan Resmi PDF.
 - **Bug 3 (Kebocoran Istilah Klinis Konseling ke Dashboard Orang Tua)**: Pada berkas `/src/dashboards/OrangTuaDashboard.tsx` baris 167, teks rekomendasi awalnya menampilkan `student.dssRecommendation` (yang memuat istilah *"Intervensi Konseling Krisis: Perlindungan psikologis segera"*). Hal ini berisiko menimbulkan kecemasan (*secondary panic*) bagi wali murid. Telah diperbaiki dengan mengutamakan properti `student.parentNote` yang berorientasi pada pengasuhan positif (*gentle strength-based guidance*).
 
 ---
@@ -85,7 +86,7 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ## 2. Lembar Anotasi Kode Ground-Truth (Ground-Truth Code Anchors)
 
 ### Anotasi #A-01: Standarisasi Skor Z & Klasifikasi Coie & Dodge (1982)
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 81–115 (penjagaan data kosong di baris 29–34, deduplikasi di baris 49–64)
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 84–118 (penjagaan data kosong di baris 32–37, deduplikasi di baris 52–67)
 - **Fungsi / Variabel**: `calculateSNAMetrics()`, variabel `zL`, `zD`, `zSP`, `zSI`, `noDislikesInClass`, dan `status`
 - **Cuplikan Kode**:
   ```typescript
@@ -123,7 +124,7 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ---
 
 ### Anotasi #A-02: Matriks Silang Perilaku Sebaya (Moreno x PEI x Hawley)
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 126–144
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 129–147
 - **Fungsi / Variabel**: Penentuan `behavioralStatus`
 - **Cuplikan Kode**:
   ```typescript
@@ -147,7 +148,7 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ---
 
 ### Anotasi #A-03: Algoritma Brandes untuk Deteksi Siswa Broker Sosial
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 506–573
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 509–576
 - **Fungsi / Variabel**: `detectCommunitiesAndBrokers()`, variabel `betweenness`
 - **Cuplikan Kode**:
   ```typescript
@@ -163,7 +164,7 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ---
 
 ### Anotasi #A-04: Deteksi Klik Komunitas & Indeks Eksklusivitas
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 659–717
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 662–720
 - **Fungsi / Variabel**: `detectCommunitiesAndBrokers()`, penghitungan `exclusivityIndex`
 - **Cuplikan Kode**:
   ```typescript
@@ -199,7 +200,7 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ---
 
 ### Anotasi #A-06: Evaluasi Iklim Sosial Kelas & Peringatan Dini Kebijakan TPPK
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 269–391
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 272–394 (serta `calculateDualCriteriaComparison()` di baris 750–924)
 - **Fungsi / Variabel**: `calculateClassAggregate()`, variabel `density`, `reciprocityRate`, `climateScore`, `climateIndex`, `kepsekPolicyAdvice`
 - **Cuplikan Kode**:
   ```typescript
@@ -267,7 +268,7 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ---
 
 ### Anotasi #A-08: Etika Pelabelan & Komunikasi Ramah Pengasuhan (*Non-Stigmatizing Parent Guidance*)
-- **File & Baris**: `/src/dashboards/OrangTuaDashboard.tsx`, baris 163–168 & `/src/services/snaEngine.ts`, baris 194–205
+- **File & Baris**: `/src/dashboards/OrangTuaDashboard.tsx`, baris 163–168 & `/src/services/snaEngine.ts`, baris 197–208
 - **Fungsi / Variabel**: `student.parentNote` vs `student.dssRecommendation`
 - **Cuplikan Kode**:
   ```typescript
@@ -331,13 +332,13 @@ Sistem Radar Sosial dirancang selaras dengan mandat pencegahan kekerasan di seko
    - **Jawaban Peneliti**: *"Jika hanya menggunakan persentase pemilih (popularitas satu dimensi), kita tidak akan pernah bisa membedakan antara siswa 'Rejected' (yang aktif ditolak) dengan siswa 'Neglected' (yang tidak disukai tetapi juga tidak dibenci, alias tidak terlihat/invisible). Dalam model Coie, Dodge, & Coppotelli (1982), Social Preference ($z_{SP} = z_L - z_D$) mengukur preferensi penerimaan, sedangkan Social Impact ($z_{SI} = z_L + z_D$) mengukur tingkat kehadiran sosial. Siswa Neglected memiliki impact sangat rendah ($z_{SI} < -1.0$) dengan $L \le \mu_L$, sedangkan siswa Rejected memiliki preference sangat negatif ($z_{SP} < -1.0$) dengan penolakan tinggi ($z_D > 0$). Intervensi BK untuk keduanya 180 derajat berbeda: siswa Rejected memerlukan perlindungan dari viktimisasi dan mediasi konflik, sedangkan siswa Neglected memerlukan pemupukan kepercayaan diri dan penugasan kooperatif."*
 
 2. **Dosen Penguji**: *"Tunjukkan baris kode Algoritma Brandes pada berkas `snaEngine.ts`. Mengapa Anda menggunakan algoritma ini dan bagaimana kompleksitas komputasinya?"*
-   - **Jawaban Peneliti**: *"Algoritma Brandes berada pada baris 506 hingga 573 berkas `src/services/snaEngine.ts`. Algoritma ini digunakan untuk menghitung Betweenness Centrality secara eksak dengan kompleksitas waktu $\mathcal{O}(|V| \cdot |E|)$, jauh lebih efisien dibandingkan Floyd-Warshall yang membutuhkan waktu $\mathcal{O}(|V|^3)$. Dalam konteks kelas beranggotakan 30-40 siswa, Brandes mengeksekusi traversal BFS dan akumulasi dependensi ke belakang dalam fraksi milidetik. Manfaat bimbingan konselingnya adalah menemukan siswa 'broker'—yaitu siswa yang memegang peran jembatan antar-kelompok tertutup (klik). Siswa broker inilah yang diberdayakan Guru BK sebagai agen perdamaian (peer mediator).'*
+   - **Jawaban Peneliti**: *"Algoritma Brandes berada pada baris 509 hingga 576 berkas `src/services/snaEngine.ts`. Algoritma ini digunakan untuk menghitung Betweenness Centrality secara eksak dengan kompleksitas waktu $\mathcal{O}(|V| \cdot |E|)$, jauh lebih efisien dibandingkan Floyd-Warshall yang membutuhkan waktu $\mathcal{O}(|V|^3)$. Dalam konteks kelas beranggotakan 30-40 siswa, Brandes mengeksekusi traversal BFS dan akumulasi dependensi ke belakang dalam fraksi milidetik. Manfaat bimbingan konselingnya adalah menemukan siswa 'broker'—yaitu siswa yang memegang peran jembatan antar-kelompok tertutup (klik). Siswa broker inilah yang diberdayakan Guru BK sebagai agen perdamaian (peer mediator)."*
 
 3. **Dosen Penguji**: *"Bagaimana algoritma Smart Seating Anda menjamin siswa korban perundungan tidak duduk bersebelahan dengan pelaku penolakan?"*
    - **Jawaban Peneliti**: *"Di berkas `src/services/seatingEngine.ts` baris 45-62 dan baris 128-133, fungsi `isCompatiblePair(id1, id2)` memeriksa himpunan pasangan penolakan (`dislikePairs`). Jika terdapat nominasi penolakan satu arah maupun dua arah antara dua siswa, fungsi mengembalikan nilai `false`, sehingga algoritma menolak penempatan keduanya di meja yang sama. Selanjutnya pada baris 137-181, siswa yang berstatus rentan (Passive Victim atau Neglected) diprioritaskan terlebih dahulu untuk dipasangkan dengan siswa berkategori 'Populer-Prososial' di baris depan (meja 1 dan 2) sebagai mitra belajar suportif (*buddy system*)."*
 
 4. **Dosen Penguji**: *"Di mana letak koreksi paling mendasar yang Anda lakukan terhadap kode atau asumsi yang awalnya dibuat oleh AI?"*
-   - **Jawaban Peneliti**: *"Terdapat tiga koreksi paling fundamental: Pertama, pada etika pelaporan ke orang tua (`OrangTuaDashboard.tsx` baris 167), AI awalnya menampilkan rekomendasi klinis teknis Guru BK ('Intervensi Konseling Krisis: Perlindungan psikologis segera') ke layar orang tua. Kami mengoreksinya agar menampilkan narasi `parentNote` yang berorientasi pengasuhan positif di rumah untuk mencegah histeria dan menyelaraskan dengan asas kode etik ABKIN. Kedua, pada level arsitektur multi-tenant (`AdminDashboard.tsx` baris 255-301), kami membatasi agar standarisasi skor Z tidak mencampuradukkan data antar-satuan pendidikan serta mengoreksi penamaan properti `studentId`/`targetId` agar perhitungan resiprositas akurat. Ketiga, pada `snaEngine.ts` (baris 81-115 dan 282-353), kami menambahkan zero-dislike Coie-Dodge guard serta normalisasi densitas multi-kriteria agar hasil klasifikasi akurat pada survei kelas nyata."*
+   - **Jawaban Peneliti**: *"Terdapat tiga koreksi paling fundamental: Pertama, pada etika pelaporan ke orang tua (`OrangTuaDashboard.tsx` baris 167), AI awalnya menampilkan rekomendasi klinis teknis Guru BK ('Intervensi Konseling Krisis: Perlindungan psikologis segera') ke layar orang tua. Kami mengoreksinya agar menampilkan narasi `parentNote` yang berorientasi pengasuhan positif di rumah untuk mencegah histeria dan menyelaraskan dengan asas kode etik ABKIN. Kedua, pada level arsitektur multi-tenant (`AdminDashboard.tsx` baris 255-301), kami membatasi agar standarisasi skor Z tidak mencampuradukkan data antar-satuan pendidikan serta mengoreksi penamaan properti `studentId`/`targetId` agar perhitungan resiprositas akurat. Ketiga, pada `snaEngine.ts` (baris 84-118, 272-356, dan 750-924), kami menambahkan zero-dislike Coie-Dodge guard, normalisasi densitas multi-kriteria, serta pemisahan komparatif Sosio-Instrumental (Belajar) vs Sosio-Afektif (Bermain) pada Sosiometri dan Laporan PDF Resmi (`OfficialPDFReport.tsx`)."*
 
 ### Checklist Kelulusan Audit Viva:
 - [x] Minimal 8 anotasi kode riil dengan path berkas dan nomor baris persis.

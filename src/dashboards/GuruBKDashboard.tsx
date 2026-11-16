@@ -48,8 +48,12 @@ import {
   X,
   AlertTriangle,
   LayoutGrid,
+  BookOpen,
+  Gamepad2,
+  Scale,
 } from 'lucide-react';
 import { dataStorage } from '../services/dataStorage';
+import { calculateDualCriteriaComparison } from '../services/snaEngine';
 
 interface GuruBKDashboardProps {
   school?: School;
@@ -113,6 +117,20 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | CoieDodgeStatus>('ALL');
+  const [tableCriteriaMode, setTableCriteriaMode] = useState<'compare' | 'all' | 'belajar' | 'bermain'>('compare');
+
+  const dualComparison = useMemo(() => {
+    return calculateDualCriteriaComparison(
+      activeClass.id,
+      activeClass.name,
+      activePeriod.id,
+      activePeriod.name,
+      students,
+      nominations,
+      behaviors,
+      metrics
+    );
+  }, [activeClass.id, activeClass.name, activePeriod.id, activePeriod.name, students, nominations, behaviors, metrics]);
 
   // School theme & branding
   const schoolTheme = useMemo(() => {
@@ -382,12 +400,31 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
     onRefreshData();
   };
 
+  // Active metrics source for single-criterion or combined views
+  const activeTableMetrics = useMemo(() => {
+    if (tableCriteriaMode === 'belajar') return dualComparison.belajarMetrics;
+    if (tableCriteriaMode === 'bermain') return dualComparison.bermainMetrics;
+    return metrics;
+  }, [tableCriteriaMode, dualComparison.belajarMetrics, dualComparison.bermainMetrics, metrics]);
+
   // Filtered student list
-  const filteredMetrics = metrics.filter((m) => {
+  const filteredMetrics = activeTableMetrics.filter((m) => {
     const matchesSearch =
       m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.nis.includes(searchQuery);
     const matchesStatus = statusFilter === 'ALL' || m.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const filteredDualProfiles = dualComparison.studentProfiles.filter((prof) => {
+    const matchesSearch =
+      prof.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      prof.nis.includes(searchQuery);
+    const matchesStatus =
+      statusFilter === 'ALL' ||
+      prof.overall?.status === statusFilter ||
+      prof.belajar?.status === statusFilter ||
+      prof.bermain?.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -792,6 +829,127 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
             onSelectStudent={(s) => setSelectedStudent(s)}
           />
 
+          {/* Panel Komparasi Kategori Belajar (Sosio-Instrumental) vs Bermain (Sosio-Afektif) */}
+          {nominations.length > 0 && (
+            <div className="rounded-2xl bg-[#0d3555]/85 border border-[#1a3f64] p-5 shadow-xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1a3f64] pb-3">
+                <div>
+                  <h3 className="font-serif text-base font-bold text-white flex items-center gap-2">
+                    <Scale className="w-4 h-4 text-[#f0c040]" />
+                    <span>Analisis Komparatif Kategori Belajar vs Bermain</span>
+                  </h3>
+                  <p className="text-xs text-[#b0c4de] mt-0.5">
+                    Membandingkan kohesi tugas/akademik (Sosio-Instrumental) dan kedekatan pertemanan waktu luang (Sosio-Afektif).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTableCriteriaMode('compare');
+                    setActiveTab('metrics_table');
+                  }}
+                  className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#0a2a4a] hover:bg-[#1a3f64] text-[#f7d970] border border-[#f0c040]/30 transition cursor-pointer self-start sm:self-auto"
+                >
+                  Lihat Rincian Per Siswa &rarr;
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Kategori Belajar */}
+                <div className="p-4 rounded-xl bg-[#0a2a4a]/80 border border-sky-500/30 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-sky-400" />
+                      <span className="text-xs font-bold text-white uppercase tracking-wide">
+                        Belajar (Sosio-Instrumental)
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                      {dualComparison.belajarAggregate.climateIndex === 'Belum Terisi'
+                        ? 'Belum Terisi'
+                        : `${dualComparison.belajarAggregate.climateScore}/100 (${dualComparison.belajarAggregate.climateIndex})`}
+                    </span>
+                  </div>
+                  {dualComparison.hasBelajarData ? (
+                    <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                      <div className="p-2 rounded-lg bg-[#061c30] border border-white/5">
+                        <div className="text-[10px] text-[#8ba3c7]">Relasi</div>
+                        <div className="font-bold text-white">{dualComparison.belajarNominationsCount}</div>
+                      </div>
+                      <div className="p-2 rounded-lg bg-[#061c30] border border-white/5">
+                        <div className="text-[10px] text-[#8ba3c7]">Densitas</div>
+                        <div className="font-bold text-sky-300">{dualComparison.belajarAggregate.density}</div>
+                      </div>
+                      <div className="p-2 rounded-lg bg-[#061c30] border border-white/5">
+                        <div className="text-[10px] text-[#8ba3c7]">Resiprositas</div>
+                        <div className="font-bold text-emerald-300">{dualComparison.belajarAggregate.reciprocityRate}%</div>
+                      </div>
+                      <div className="p-2 rounded-lg bg-[#061c30] border border-white/5">
+                        <div className="text-[10px] text-[#8ba3c7]">Rej / Neg</div>
+                        <div className="font-bold text-rose-300">
+                          {dualComparison.belajarAggregate.statusCounts.Rejected} / {dualComparison.belajarAggregate.statusCounts.Neglected}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-[#8ba3c7] italic py-2">
+                      Belum ada pilihan teman untuk kriteria Belajar pada kelas ini.
+                    </div>
+                  )}
+                </div>
+
+                {/* Kategori Bermain */}
+                <div className="p-4 rounded-xl bg-[#0a2a4a]/80 border border-purple-500/30 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Gamepad2 className="w-4 h-4 text-purple-400" />
+                      <span className="text-xs font-bold text-white uppercase tracking-wide">
+                        Bermain (Sosio-Afektif)
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      {dualComparison.bermainAggregate.climateIndex === 'Belum Terisi'
+                        ? 'Belum Terisi'
+                        : `${dualComparison.bermainAggregate.climateScore}/100 (${dualComparison.bermainAggregate.climateIndex})`}
+                    </span>
+                  </div>
+                  {dualComparison.hasBermainData ? (
+                    <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                      <div className="p-2 rounded-lg bg-[#061c30] border border-white/5">
+                        <div className="text-[10px] text-[#8ba3c7]">Relasi</div>
+                        <div className="font-bold text-white">{dualComparison.bermainNominationsCount}</div>
+                      </div>
+                      <div className="p-2 rounded-lg bg-[#061c30] border border-white/5">
+                        <div className="text-[10px] text-[#8ba3c7]">Densitas</div>
+                        <div className="font-bold text-purple-300">{dualComparison.bermainAggregate.density}</div>
+                      </div>
+                      <div className="p-2 rounded-lg bg-[#061c30] border border-white/5">
+                        <div className="text-[10px] text-[#8ba3c7]">Resiprositas</div>
+                        <div className="font-bold text-emerald-300">{dualComparison.bermainAggregate.reciprocityRate}%</div>
+                      </div>
+                      <div className="p-2 rounded-lg bg-[#061c30] border border-white/5">
+                        <div className="text-[10px] text-[#8ba3c7]">Rej / Neg</div>
+                        <div className="font-bold text-rose-300">
+                          {dualComparison.bermainAggregate.statusCounts.Rejected} / {dualComparison.bermainAggregate.statusCounts.Neglected}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-[#8ba3c7] italic py-2">
+                      Belum ada pilihan teman untuk kriteria Bermain pada kelas ini.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#061c30]/80 border border-[#1a3f64] text-xs text-[#b0c4de] leading-relaxed">
+                <strong className="text-[#f7d970]">Sintesis Lintas Konteks: </strong>
+                {dualComparison.comparativeSummary}{' '}
+                <span className="text-white/90">{dualComparison.comparativeAdvice}</span>
+              </div>
+            </div>
+          )}
+
           {/* Deep-Dive Grid: Dual Radar & Longitudinal Trend */}
           {selectedStudent && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -843,22 +1001,70 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
       {activeTab === 'metrics_table' && (
         <div className="rounded-2xl bg-[#0d3555]/80 border border-[#1a3f64] p-5 shadow-xl space-y-4">
           {/* Table Controls */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
             <div>
-              <h3 className="font-serif text-base font-bold text-white flex items-center gap-2">
+              <h3 className="font-serif text-base font-bold text-white flex items-center gap-2 flex-wrap">
                 <span>Tabel Matriks Sosiometri &amp; Status Sosial Siswa</span>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-[#0a2a4a] text-[#f7d970] font-medium border border-[#1a3f64]">
-                  {filteredMetrics.length} dari {metrics.length} Siswa
+                  {tableCriteriaMode === 'compare' ? filteredDualProfiles.length : filteredMetrics.length} dari {metrics.length} Siswa
                 </span>
               </h3>
               <p className="text-xs text-[#b0c4de]">
-                Klasifikasi otomatis status sosial Coie &amp; Dodge (1982) berdasarkan Likes, Dislikes, dan skor Z.
+                Klasifikasi status sosial Coie &amp; Dodge (1982) untuk kategori gabungan, Belajar (Sosio-Instrumental), dan Bermain (Sosio-Afektif).
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+              {/* Criteria Filter Mode */}
+              <div className="flex items-center rounded-xl bg-[#0a2a4a] p-1 border border-[#1a3f64] text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setTableCriteriaMode('compare')}
+                  className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                    tableCriteriaMode === 'compare'
+                      ? 'bg-[#f0c040] text-[#0a2a4a]'
+                      : 'text-[#b0c4de] hover:text-white'
+                  }`}
+                >
+                  Belajar vs Bermain
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTableCriteriaMode('all')}
+                  className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                    tableCriteriaMode === 'all'
+                      ? 'bg-cyan-500 text-[#0a2a4a]'
+                      : 'text-[#b0c4de] hover:text-white'
+                  }`}
+                >
+                  Gabungan
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTableCriteriaMode('belajar')}
+                  className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                    tableCriteriaMode === 'belajar'
+                      ? 'bg-sky-500 text-[#0a2a4a]'
+                      : 'text-[#b0c4de] hover:text-white'
+                  }`}
+                >
+                  Belajar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTableCriteriaMode('bermain')}
+                  className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                    tableCriteriaMode === 'bermain'
+                      ? 'bg-purple-500 text-white'
+                      : 'text-[#b0c4de] hover:text-white'
+                  }`}
+                >
+                  Bermain
+                </button>
+              </div>
+
               {/* Search Input */}
-              <div className="relative flex-1 sm:w-56">
+              <div className="relative flex-1 sm:w-48">
                 <Search className="w-3.5 h-3.5 text-[#b0c4de] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
@@ -896,6 +1102,148 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
               <p className="text-xs max-w-md mx-auto">
                 Belum ada respons kuesioner sosiometri yang diinput untuk rombel {activeClass.name}. Tabel matriks dan status Coie-Dodge tidak menghitung status palsu hingga kuesioner diisi.
               </p>
+            </div>
+          ) : tableCriteriaMode === 'compare' ? (
+            <div className="overflow-x-auto rounded-xl border border-[#1a3f64]">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-[#0a2a4a] text-[#b0c4de] border-b border-[#1a3f64]">
+                    <th className="py-3 px-3 font-bold">No</th>
+                    <th className="py-3 px-3 font-bold">Nama Siswa</th>
+                    <th className="py-3 px-3 font-bold text-center">Gabungan (L/D &bull; Z_SP)</th>
+                    <th className="py-3 px-3 font-bold text-center text-sky-300">Belajar (Sosio-Instrumental)</th>
+                    <th className="py-3 px-3 font-bold text-center text-purple-300">Bermain (Sosio-Afektif)</th>
+                    <th className="py-3 px-3 font-bold">Pola Lintas Konteks</th>
+                    <th className="py-3 px-3 font-bold">Risiko</th>
+                    <th className="py-3 px-3 font-bold text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1a3f64]/60">
+                  {filteredDualProfiles.map((prof, idx) => {
+                    const student = prof.overall;
+                    if (!student) return null;
+                    const isSelected = selectedStudent?.studentId === student.studentId;
+                    const statusBadge = (st: CoieDodgeStatus) =>
+                      st === 'Popular'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : st === 'Rejected'
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        : st === 'Neglected'
+                        ? 'bg-slate-500/20 text-slate-300 border border-slate-500/30'
+                        : st === 'Controversial'
+                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                        : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30';
+
+                    return (
+                      <tr
+                        key={student.studentId}
+                        onClick={() => setSelectedStudent(student)}
+                        className={`cursor-pointer transition duration-150 ${
+                          isSelected
+                            ? 'bg-[#1a3f64] text-white font-medium'
+                            : 'hover:bg-[#0a2a4a]/80 text-[#e8edf5]'
+                        }`}
+                      >
+                        <td className="py-3 px-3 text-[#b0c4de] font-mono">{idx + 1}</td>
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-white">{student.name}</div>
+                          <div className="font-mono text-[10px] text-[#b0c4de]">
+                            {student.nis} ({student.gender}) &bull; {student.behavioralStatus}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <div className="font-mono text-[11px]">
+                            <span className="text-emerald-400 font-bold">L:{student.likesReceived}</span>{' '}
+                            <span className="text-rose-400 font-bold">D:{student.dislikesReceived}</span>{' '}
+                            <span className="text-[#8ba3c7]">({student.zSP})</span>
+                          </div>
+                          <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${statusBadge(student.status)}`}>
+                            {student.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          {prof.belajar ? (
+                            <div>
+                              <div className="font-mono text-[11px]">
+                                <span className="text-emerald-400 font-bold">L:{prof.belajar.likesReceived}</span>{' '}
+                                <span className="text-rose-400 font-bold">D:{prof.belajar.dislikesReceived}</span>{' '}
+                                <span className="text-[#8ba3c7]">({prof.belajar.zSP})</span>
+                              </div>
+                              <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${statusBadge(prof.belajar.status)}`}>
+                                {prof.belajar.status}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] italic text-[#8ba3c7]">Belum terisi</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          {prof.bermain ? (
+                            <div>
+                              <div className="font-mono text-[11px]">
+                                <span className="text-emerald-400 font-bold">L:{prof.bermain.likesReceived}</span>{' '}
+                                <span className="text-rose-400 font-bold">D:{prof.bermain.dislikesReceived}</span>{' '}
+                                <span className="text-[#8ba3c7]">({prof.bermain.zSP})</span>
+                              </div>
+                              <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${statusBadge(prof.bermain.status)}`}>
+                                {prof.bermain.status}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] italic text-[#8ba3c7]">Belum terisi</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                              prof.discrepancyType === 'Rentan Ganda'
+                                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                : prof.discrepancyType === 'Diterima Belajar, Rentan Bermain' ||
+                                  prof.discrepancyType === 'Akrab Bermain, Terabaikan Belajar'
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                : prof.discrepancyType === 'Populer Lintas Konteks'
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                : 'bg-white/5 text-[#b0c4de] border border-white/10'
+                            }`}
+                          >
+                            {prof.discrepancyType}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span
+                            className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                              student.riskLevel === 'Tinggi'
+                                ? 'bg-rose-500/20 text-rose-300'
+                                : student.riskLevel === 'Sedang'
+                                ? 'bg-amber-500/20 text-amber-300'
+                                : 'bg-emerald-500/20 text-emerald-300'
+                            }`}
+                          >
+                            {student.riskLevel}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedStudent(student);
+                              setActiveTab('predictive_dss');
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-[#f0c040]/10 hover:bg-[#f0c040] hover:text-[#0a2a4a] text-[#f7d970] text-[10px] font-bold border border-[#f0c040]/30 transition cursor-pointer"
+                          >
+                            DSS Intervensi
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : filteredMetrics.length === 0 ? (
+            <div className="p-8 text-center text-[#b0c4de] bg-[#0a2a4a]/40 rounded-xl border border-[#1a3f64]">
+              Tidak ada data untuk filter kriteria <strong>{tableCriteriaMode}</strong> dan status yang dipilih.
             </div>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-[#1a3f64]">

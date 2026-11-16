@@ -268,6 +268,45 @@ export interface ClassMetricsAggregate {
   kepsekPolicyAdvice: string[];
 }
 
+export type CriteriaDiscrepancyType =
+  | 'Selaras / Adaptif'
+  | 'Populer Lintas Konteks'
+  | 'Rentan Ganda'
+  | 'Diterima Belajar, Rentan Bermain'
+  | 'Akrab Bermain, Terabaikan Belajar';
+
+export interface StudentDualCriteriaProfile {
+  studentId: string;
+  nis: string;
+  name: string;
+  gender: 'L' | 'P';
+  overall: StudentCalculatedMetrics | null;
+  belajar: StudentCalculatedMetrics | null;
+  bermain: StudentCalculatedMetrics | null;
+  discrepancyType: CriteriaDiscrepancyType;
+  discrepancyNote: string;
+}
+
+export interface DualCriteriaComparison {
+  hasBelajarData: boolean;
+  hasBermainData: boolean;
+  belajarNominationsCount: number;
+  bermainNominationsCount: number;
+  belajarMetrics: StudentCalculatedMetrics[];
+  bermainMetrics: StudentCalculatedMetrics[];
+  belajarAggregate: ClassMetricsAggregate;
+  bermainAggregate: ClassMetricsAggregate;
+  studentProfiles: StudentDualCriteriaProfile[];
+  discrepancyCounts: {
+    belajarOnlyAccepted: number;
+    bermainOnlyAccepted: number;
+    dualVulnerable: number;
+    dualPopular: number;
+  };
+  comparativeSummary: string;
+  comparativeAdvice: string;
+}
+
 export interface NotificationItem {
   id: string;
   title: string;

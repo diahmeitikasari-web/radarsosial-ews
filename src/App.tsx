@@ -369,6 +369,9 @@ const MainApp: React.FC = () => {
         period={activePeriod}
         metrics={metrics}
         aggregate={aggregate}
+        students={students}
+        nominations={nominations}
+        behaviors={behaviors}
         counselorName={
           activeClass?.counselorName ||
           activeSchool?.counselorName ||
