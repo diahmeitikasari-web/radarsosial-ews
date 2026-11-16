@@ -214,7 +214,7 @@ export const OfficialPDFReport: React.FC<OfficialPDFReportProps> = ({
               <div className="p-3 rounded-lg border border-slate-300 bg-slate-50 text-center">
                 <div className="text-[10px] text-slate-500 uppercase font-semibold">Kepadatan Jaringan (Density)</div>
                 <div className="text-lg font-bold text-slate-900 mt-0.5">{aggregate.climateIndex === 'Belum Terisi' ? '-' : aggregate.density}</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">{aggregate.climateIndex === 'Belum Terisi' ? 'Belum ada data' : 'Rentang ideal: 0.25 - 0.45'}</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">{aggregate.climateIndex === 'Belum Terisi' ? 'Belum ada data' : 'Ideal: ≥ 0.10 (pilihan terbatas)'}</div>
               </div>
               <div className="p-3 rounded-lg border border-slate-300 bg-slate-50 text-center">
                 <div className="text-[10px] text-slate-500 uppercase font-semibold">Tingkat Resiprositas</div>
@@ -334,12 +334,22 @@ export const OfficialPDFReport: React.FC<OfficialPDFReportProps> = ({
               V. KESIMPULAN HASIL ASESMEN PSIKOSOSIAL & PERINGATAN DINI
             </div>
             <div className="p-3 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 space-y-1 text-justify">
-              <p>
-                Berdasarkan olahan algoritma sosiometri dan radar perilaku, iklim sosial <strong>{activeClass.name}</strong> pada {period.name} berada pada kategori <strong>{aggregate.climateIndex}</strong>. Teridentifikasi sejumlah siswa yang memerlukan atensi preventif segera, yaitu siswa dengan status <em>Rejected</em> yang menerima tingkat penolakan signifikan dan siswa <em>Neglected</em> yang terisolasi dari kelompok pertemanan sebaya.
-              </p>
-              <p>
-                Dinamika ini berpotensi memicu kerentanan psikologis seperti kecemasan sosial, penurunan motivasi belajar, dan risiko viktimisasi terselubung jika tidak diintervensi melalui penataan interaksi kelompok.
-              </p>
+              {aggregate.climateIndex === 'Belum Terisi' ? (
+                <p>
+                  Asesmen sosiometri dan radar perilaku untuk rombongan belajar <strong>{activeClass.name}</strong> pada {period.name} berstatus <strong>Belum Terisi</strong>. Belum terdapat data pilihan teman maupun skor evaluasi sebaya yang dapat disimpulkan oleh sistem. Segera laksanakan penyebaran kuesioner dan unggah hasilnya ke portal Radar Sosial.
+                </p>
+              ) : (
+                <>
+                  <p>
+                    Berdasarkan olahan algoritma sosiometri dan radar perilaku terhadap <strong>{aggregate.totalStudents} siswa</strong>, iklim sosial <strong>{activeClass.name}</strong> pada {period.name} berada pada kategori <strong>{aggregate.climateIndex}</strong> (Skor: <strong>{aggregate.climateScore}/100</strong>). Tercatat <strong>{aggregate.statusCounts.Popular}</strong> siswa berstatus <em>Popular</em>, <strong>{aggregate.statusCounts.Rejected}</strong> siswa <em>Rejected</em>, dan <strong>{aggregate.statusCounts.Neglected}</strong> siswa <em>Neglected</em> dengan kepadatan relasi <strong>{aggregate.density}</strong> serta resiprositas <strong>{aggregate.reciprocityRate}%</strong>.
+                  </p>
+                  <p>
+                    {aggregate.statusCounts.Rejected > 0 || aggregate.statusCounts.Neglected > 0
+                      ? 'Siswa dengan status Rejected dan Neglected memerlukan atensi preventif terstruktur melalui penataan tempat duduk suportif (buddy system), mediasi restoratif, dan bimbingan sosial agar tidak berkembang menjadi kerentanan psikologis maupun viktimisasi terselubung.'
+                      : 'Tidak teridentifikasi kasus penolakan ekstrem pada periode ini. Pertahankan kohesi kelas melalui kegiatan kolaboratif lintas subkelompok serta pemberdayaan siswa Popular-Prososial sebagai duta inklusi kelas.'}
+                  </p>
+                </>
+              )}
             </div>
           </div>
 

@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Student, SchoolClass, Period } from '../types';
 import { generateExcelTemplate, parseUploadedExcel, ParsedExcelResult } from '../services/excelHandler';
 import { dataStorage } from '../services/dataStorage';
-import { FileSpreadsheet, Download, Upload, CheckCircle2, AlertTriangle, X, FileText, Loader2, ShieldCheck, RefreshCw } from 'lucide-react';
+import { FileSpreadsheet, Download, Upload, CheckCircle2, AlertTriangle, X, Loader2, ShieldCheck, RefreshCw } from 'lucide-react';
 
 interface ExcelUploadModalProps {
   isOpen: boolean;
@@ -32,18 +32,35 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Target class management
-  const [targetClassMode, setTargetClassMode] = useState<'current' | 'select' | 'auto'>('auto');
-  const [selectedClassId, setSelectedClassId] = useState<string>(activeClass.id);
+  const [selectedClassId, setSelectedClassId] = useState<string>(activeClass?.id || '');
   const [autoCreateNewClass, setAutoCreateNewClass] = useState<boolean>(true);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen && activeClass?.id) {
+      setSelectedClassId(activeClass.id);
+      setSelectedFile(null);
+      setParsedResult(null);
+      setErrorMsg(null);
+      setIsProcessing(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [isOpen, activeClass?.id]);
+
+  if (!isOpen || !activeClass || !activePeriod) return null;
+
+  const targetClassObj = classes.find((c) => c.id === selectedClassId) || activeClass;
 
   const handleDownloadTemplate = () => {
-    generateExcelTemplate(existingStudents, activeClass.name);
+    const classStudents = dataStorage.getStudents(targetClassObj.id);
+    generateExcelTemplate(classStudents.length > 0 ? classStudents : existingStudents, targetClassObj.name);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Reset input value immediately so uploading the same modified filename triggers onChange
+    e.target.value = '';
     if (!file) return;
     await processFile(file);
   };
@@ -59,6 +76,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
     setSelectedFile(file);
     setIsProcessing(true);
     setErrorMsg(null);
+    setParsedResult(null);
 
     const matchesClassOrProdi = (c: SchoolClass, detectedRaw: string): boolean => {
       const dLower = detectedRaw.trim().toLowerCase();
@@ -74,53 +92,60 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
       return false;
     };
 
-    // Target class to pass
-    const effectiveTargetClass = classes.find((c) => c.id === selectedClassId) || activeClass;
-    const targetClassStudents = dataStorage.getStudents(effectiveTargetClass.id);
-    const existingToPass = targetClassStudents.length > 0 ? targetClassStudents : existingStudents;
+    try {
+      // Pass only students already registered in the exact target class (never leak from another class)
+      const effectiveTargetClass = classes.find((c) => c.id === selectedClassId) || activeClass;
+      const existingToPass = dataStorage.getStudents(effectiveTargetClass.id);
 
-    const result = await parseUploadedExcel(
-      file,
-      activePeriod.id,
-      effectiveTargetClass.id,
-      effectiveTargetClass.name,
-      effectiveTargetClass.schoolId,
-      existingToPass
-    );
+      const result = await parseUploadedExcel(
+        file,
+        activePeriod.id,
+        effectiveTargetClass.id,
+        effectiveTargetClass.name,
+        effectiveTargetClass.schoolId,
+        existingToPass
+      );
 
-    setIsProcessing(false);
-    if (!result.success) {
-      setErrorMsg(result.message);
-      setParsedResult(null);
-    } else {
-      setParsedResult(result);
-      // If detected class name in file matches an existing class/prodi in this school, auto-point to it
-      if (result.detectedClassName) {
-        const matched = classes.find(
-          (c) =>
-            c.schoolId === effectiveTargetClass.schoolId &&
-            matchesClassOrProdi(c, result.detectedClassName!)
-        );
-        if (matched) {
-          setSelectedClassId(matched.id);
+      if (!result.success) {
+        setErrorMsg(result.message);
+        setParsedResult(null);
+      } else {
+        setParsedResult(result);
+        // If detected class name in file matches an existing class/prodi in this school, auto-point to it
+        if (result.detectedClassName) {
+          const matched = classes.find(
+            (c) =>
+              c.schoolId === effectiveTargetClass.schoolId &&
+              matchesClassOrProdi(c, result.detectedClassName!)
+          );
+          if (matched) {
+            setSelectedClassId(matched.id);
+          }
         }
       }
+    } catch (err: any) {
+      setErrorMsg(`Terjadi kesalahan saat memproses file: ${err?.message || 'Format berkas tidak valid'}`);
+      setParsedResult(null);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleConfirmSave = () => {
     if (!parsedResult) return;
 
-    let finalClassId = selectedClassId;
-    let finalClassName = activeClass.name;
+    const manualTargetClass = classes.find((c) => c.id === selectedClassId) || activeClass;
+    let finalClassId = manualTargetClass.id;
+    let finalClassName = manualTargetClass.name;
+    const targetSchoolId = manualTargetClass.schoolId || activeClass.schoolId || classes[0]?.schoolId || 'sch-mtsn2-bangka';
 
-    // Check if detected class is a brand new class that needs creation (strictly scoped to current school!)
+    // Check if detected class matches an existing class or should create a new class in this school
     if (parsedResult.detectedClassName && autoCreateNewClass) {
       const dLower = parsedResult.detectedClassName.trim().toLowerCase();
       const detectedNorm = dLower.replace(/[^a-z0-9]/g, '');
       const existing = classes.find(
         (c) =>
-          c.schoolId === activeClass.schoolId &&
+          c.schoolId === targetSchoolId &&
           (c.name.toLowerCase() === dLower ||
             c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === detectedNorm ||
             c.id.toLowerCase() === dLower ||
@@ -132,7 +157,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
       if (!existing) {
         const created = dataStorage.addClass({
           name: parsedResult.detectedClassName,
-          schoolId: activeClass.schoolId,
+          schoolId: targetSchoolId,
           grade: '9',
           academicYear: activePeriod.academicYear || '2026/2027',
           homeroomTeacher: 'Wali Kelas Terdaftar',
@@ -144,16 +169,9 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
         finalClassId = existing.id;
         finalClassName = existing.name;
       }
-    } else {
-      const cls = classes.find((c) => c.id === selectedClassId);
-      if (cls) {
-        finalClassId = cls.id;
-        finalClassName = cls.name;
-      }
     }
 
-    // CRITICAL FIX: Explicitly remap classId, className, and periodId across all entities
-    const targetSchoolId = activeClass.schoolId || classes[0]?.schoolId || 'sch-mtsn2-bangka';
+    // Explicitly remap classId, className, schoolId, and periodId across all entities
     const finalStudents = parsedResult.students.map((s) => ({
       ...s,
       classId: finalClassId,
@@ -209,7 +227,6 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
     onClose();
   };
 
-  const targetClassObj = classes.find((c) => c.id === selectedClassId) || activeClass;
   const existingClassStudents = dataStorage.getStudents(targetClassObj.id);
   const existingClassNominations = dataStorage.getNominations(activePeriod.id, targetClassObj.id);
   const hasExistingData = existingClassNominations.length > 0 || existingClassStudents.length > 0;
@@ -467,11 +484,13 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
           <button
             disabled={!parsedResult}
             onClick={handleConfirmSave}
-            className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:pointer-events-none text-xs font-bold text-white transition flex items-center gap-2 shadow-lg shadow-cyan-900/30"
+            className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:pointer-events-none text-xs font-bold text-white transition flex items-center gap-2 shadow-lg shadow-cyan-900/30 cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>
-              {hasExistingData
+              {!parsedResult
+                ? 'Pilih & Validasi File Excel Terlebih Dahulu'
+                : hasExistingData
                 ? `Perbarui & Timpa Data Rombel (${parsedResult.students.length} Siswa, ${parsedResult.nominations.length} Relasi)`
                 : `Simpan & Integrasikan ke Sistem Pusat (${parsedResult.students.length} Siswa, ${parsedResult.nominations.length} Relasi)`}
             </span>

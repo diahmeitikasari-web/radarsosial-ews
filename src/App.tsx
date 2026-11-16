@@ -14,8 +14,67 @@ import { LoginView } from './dashboards/LoginView';
 import { School, SchoolClass, Period } from './types';
 import { PrintableQuestionnaireA4 } from './components/PrintableQuestionnaireA4';
 import { UserGuideBook } from './components/UserGuideBook';
-import { X, Layers, Calendar, CheckCircle2 } from 'lucide-react';
+import { X, Layers, Calendar, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
+interface AppErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface AppErrorBoundaryState {
+  hasError: boolean;
+  errorMessage: string;
+}
+
+class AppErrorBoundary extends React.Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
+  declare props: Readonly<AppErrorBoundaryProps>;
+  declare setState: (
+    state: Partial<AppErrorBoundaryState> | ((prevState: Readonly<AppErrorBoundaryState>) => Partial<AppErrorBoundaryState>)
+  ) => void;
+  state: AppErrorBoundaryState = { hasError: false, errorMessage: '' };
+
+  constructor(props: AppErrorBoundaryProps) {
+    super(props);
+  }
+
+  static getDerivedStateFromError(error: Error): AppErrorBoundaryState {
+    return { hasError: true, errorMessage: error?.message || 'Terjadi kesalahan antarmuka.' };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[RadarSosial ErrorBoundary]', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#0a2a4a] text-[#e8edf5] flex items-center justify-center p-6">
+          <div className="max-w-md w-full rounded-2xl bg-[#0d3555] border border-rose-500/40 p-6 shadow-2xl space-y-4 text-center">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">Terjadi Gangguan Tampilan Sementara</h2>
+              <p className="text-xs text-[#b0c4de] mt-1.5 leading-relaxed">
+                Sistem mencegah layar blank akibat kesalahan data sementara ({this.state.errorMessage}).
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <button
+                onClick={() => this.setState({ hasError: false, errorMessage: '' })}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#f0c040] hover:bg-[#f7d970] text-[#0a2a4a] text-xs font-bold transition cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Muat Ulang Tampilan</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const MainApp: React.FC = () => {
   const { currentUser, isAuthenticated } = useAuth();
@@ -364,8 +423,10 @@ const MainApp: React.FC = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <AppErrorBoundary>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </AppErrorBoundary>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Student,
   SociometricNomination,
+  PeerBehavioralRating,
   StudentCalculatedMetrics,
   RelationCriteria,
   RelationType,
@@ -9,7 +10,7 @@ import {
   SocialCommunity,
   NetworkCommunityAnalysis,
 } from '../types';
-import { detectCommunitiesAndBrokers } from '../services/snaEngine';
+import { calculateSNAMetrics, detectCommunitiesAndBrokers } from '../services/snaEngine';
 import {
   Eye,
   Filter,
@@ -42,6 +43,7 @@ import {
 interface SNAVisualizerProps {
   students: Student[];
   nominations: SociometricNomination[];
+  behaviors?: PeerBehavioralRating[];
   metrics: StudentCalculatedMetrics[];
   onSelectStudent?: (student: StudentCalculatedMetrics) => void;
   selectedStudentId?: string | null;
@@ -77,6 +79,7 @@ interface NodeSimulation {
 export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
   students,
   nominations,
+  behaviors = [],
   metrics,
   onSelectStudent,
   selectedStudentId,
@@ -106,22 +109,28 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
   // Simulation nodes storage
   const nodesRef = useRef<Map<string, NodeSimulation>>(new Map());
 
+  // Recalculate metrics when user isolates a specific criterion ('belajar' or 'bermain')
+  const effectiveMetrics = useMemo(() => {
+    if (criteriaFilter === 'all') return metrics;
+    return calculateSNAMetrics(students, nominations, behaviors, criteriaFilter);
+  }, [criteriaFilter, students, nominations, behaviors, metrics]);
+
   // Metrics quick lookup map
   const metricMap = useMemo(() => {
     const map = new Map<string, StudentCalculatedMetrics>();
-    metrics.forEach((m) => map.set(m.studentId, m));
+    effectiveMetrics.forEach((m) => map.set(m.studentId, m));
     return map;
-  }, [metrics]);
+  }, [effectiveMetrics]);
 
   // Contemporary Community & Broker Analysis
   const communityAnalysis: NetworkCommunityAnalysis = useMemo(() => {
     return detectCommunitiesAndBrokers(
       students,
       nominations,
-      metrics,
+      effectiveMetrics,
       criteriaFilter === 'all' ? undefined : criteriaFilter
     );
-  }, [students, nominations, metrics, criteriaFilter]);
+  }, [students, nominations, effectiveMetrics, criteriaFilter]);
 
   const brokerSet = useMemo(() => {
     return new Set(communityAnalysis.brokerStudentIds);
@@ -152,12 +161,17 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
     }
   };
 
-  // Pre-calculate reciprocal nominations for quick highlighting
+  // Pre-calculate reciprocal nominations for quick highlighting (scoped by criteriaFilter)
   const nominationPairs = useMemo(() => {
     const set = new Set<string>();
-    nominations.forEach((n1) => {
+    const activeNoms =
+      criteriaFilter === 'all'
+        ? nominations
+        : nominations.filter((n) => n.criteria === criteriaFilter);
+
+    activeNoms.forEach((n1) => {
       if (n1.type === 'like') {
-        const reciprocal = nominations.find(
+        const reciprocal = activeNoms.find(
           (n2) =>
             n2.studentId === n1.targetId &&
             n2.targetId === n1.studentId &&
@@ -171,7 +185,7 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
       }
     });
     return set;
-  }, [nominations]);
+  }, [nominations, criteriaFilter]);
 
   // Initialize or re-position nodes based on chosen layoutMode
   useEffect(() => {
@@ -182,41 +196,39 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
     const newMap = new Map<string, NodeSimulation>();
 
     // Jika data nominasi kosong (kuesioner belum diisi), kosongkan sosiogram tanpa nama siswa
-    if (nominations.length === 0) {
+    if (nominations.length === 0 || effectiveMetrics.length === 0) {
       nodesRef.current = newMap;
       return;
     }
 
     students.forEach((s, idx) => {
-      const m = metricMap.get(s.id) || {
+      const m: StudentCalculatedMetrics = metricMap.get(s.id) || {
         studentId: s.id,
-        name: s.name,
         nis: s.nis,
+        name: s.name,
         gender: s.gender,
-        classId: s.classId,
+        className: s.className,
         likesReceived: 0,
         dislikesReceived: 0,
         likesGiven: 0,
         dislikesGiven: 0,
-        status: 'Average' as CoieDodgeStatus,
-        zL: 0,
-        zD: 0,
+        zLikes: 0,
+        zDislikes: 0,
         zSP: 0,
         zSI: 0,
-        reciprocalCount: 0,
-        riskLevel: 'Stabil',
+        status: 'Average',
+        behavioralStatus: 'Average / Adaptif',
+        prosocialScore: 5,
+        aggressiveScore: 2,
+        withdrawnScore: 2,
+        victimizationScore: 1,
+        hyperactiveScore: 2,
+        riskLevel: 'Rendah',
         priorityFlag: false,
         priorityReason: '',
         dssRecommendation: '',
-        parentingAdvice: '',
-        academicSupportAdvice: '',
-        peerBehaviorScore: {
-          prosocialScore: 50,
-          emotionRegulationScore: 50,
-          socialCourageScore: 50,
-          selfControlScore: 50,
-          victimizationRiskScore: 10,
-        },
+        parentNote: '',
+        longitudinalHistory: [],
       };
 
       const existing = nodesRef.current.get(s.id);
@@ -292,7 +304,7 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
     });
 
     nodesRef.current = newMap;
-  }, [students, metrics, layoutMode, colorMode, communityAnalysis, studentCommunityMap, brokerSet]);
+  }, [students, effectiveMetrics, nominations.length, layoutMode, colorMode, communityAnalysis, studentCommunityMap, brokerSet, metricMap]);
 
   // Filter nominations according to user filters
   const filteredNominations = useMemo(() => {
@@ -979,16 +991,23 @@ export const SNAVisualizer: React.FC<SNAVisualizerProps> = ({
             </button>
           </div>
         ) : (
-          <canvas
-            ref={canvasRef}
-            width={900}
-            height={520}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            className="w-full h-full block cursor-grab active:cursor-grabbing"
-          />
+          <>
+            <canvas
+              ref={canvasRef}
+              width={900}
+              height={520}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              className="w-full h-full block cursor-grab active:cursor-grabbing"
+            />
+            {filteredNominations.length === 0 && (
+              <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-[#0a2a4a]/95 border border-amber-500/40 text-amber-200 text-xs font-medium shadow-lg text-center max-w-md">
+                Tidak ada relasi yang cocok dengan filter aktif ({criteriaFilter !== 'all' ? criteriaFilter : 'Semua Kriteria'} / {typeFilter}). Coba ubah pilihan filter di atas.
+              </div>
+            )}
+          </>
         )}
 
         {/* Zoom & Pan Controls Widget */}

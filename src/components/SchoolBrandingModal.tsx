@@ -70,7 +70,7 @@ export const SchoolBrandingModal: React.FC<SchoolBrandingModalProps> = ({
                 <Sparkles className="w-4 h-4 text-[#f0c040]" />
               </h3>
               <p className="text-xs text-[#b0c4de]">
-                Personalisasi atmosfer visual dashboard untuk <strong className="text-white">{currentSchool.name}</strong>
+                Personalisasi atmosfer visual dashboard untuk <strong className="text-white">{targetSchool.name}</strong>
               </p>
             </div>
           </div>
@@ -105,10 +105,10 @@ export const SchoolBrandingModal: React.FC<SchoolBrandingModalProps> = ({
                       color: currentPresetDef.accentLight,
                     }}
                   >
-                    {currentSchool.type} &bull; {currentSchool.city}
+                    {targetSchool.type} &bull; {targetSchool.city}
                   </span>
                   <h4 className="font-serif text-base font-bold text-white">
-                    {currentSchool.name}
+                    {targetSchool.name}
                   </h4>
                   <p className="text-[11px] text-white/80 font-medium">
                     {schoolBadge || 'Motto Sekolah'}
@@ -125,7 +125,7 @@ export const SchoolBrandingModal: React.FC<SchoolBrandingModalProps> = ({
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-white/15 flex items-center justify-between text-[11px] text-white/70">
-                <span>NPSN: {currentSchool.npsn}</span>
+                <span>NPSN: {targetSchool.npsn}</span>
                 <span className="flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5" style={{ color: currentPresetDef.accent }} />
                   Tema: {currentPresetDef.name.split(' (')[0]}

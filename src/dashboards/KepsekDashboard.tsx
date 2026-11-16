@@ -7,6 +7,8 @@ import {
   StudentCalculatedMetrics,
   ClassMetricsAggregate,
 } from '../types';
+import { dataStorage } from '../services/dataStorage';
+import { calculateClassMetrics, calculateClassAggregate } from '../services/snaEngine';
 import {
   ShieldCheck,
   Building2,
@@ -125,11 +127,19 @@ export const KepsekDashboard: React.FC<KepsekDashboardProps> = ({
             </span>
           </div>
           <div className="text-2xl font-extrabold text-rose-400 flex items-baseline gap-2">
-            {highRiskCount} <span className="text-xs text-slate-400 font-normal">Tinggi</span>
-            <span className="text-sm font-semibold text-amber-400">/ {mediumRiskCount} Sedang</span>
+            {aggregate.climateIndex === 'Belum Terisi' ? (
+              <span className="text-slate-400 text-lg">-</span>
+            ) : (
+              <>
+                {highRiskCount} <span className="text-xs text-slate-400 font-normal">Tinggi</span>
+                <span className="text-sm font-semibold text-amber-400">/ {mediumRiskCount} Sedang</span>
+              </>
+            )}
           </div>
           <div className="mt-2 text-[11px] text-rose-300">
-            {highRiskCount > 0
+            {aggregate.climateIndex === 'Belum Terisi'
+              ? 'Asesmen sosiometri rombel ini belum terisi'
+              : highRiskCount > 0
               ? 'Terindikasi potensi viktimisasi atau penolakan parah'
               : 'Tidak ada kasus penolakan ekstrem terdeteksi'}
           </div>
@@ -221,6 +231,20 @@ export const KepsekDashboard: React.FC<KepsekDashboardProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {classes.map((cls) => {
             const isCurrent = cls.id === activeClass.id;
+            const clsStudents = dataStorage.getStudentsForClass(cls.id);
+            const clsNoms = dataStorage.getNominations(activePeriod.id, cls.id);
+            const clsBehaviors = dataStorage.getBehaviors(activePeriod.id, cls.id);
+            const clsMetrics = calculateClassMetrics(clsStudents, clsNoms, clsBehaviors);
+            const clsAgg = calculateClassAggregate(
+              cls.id,
+              cls.name,
+              activePeriod.id,
+              activePeriod.name,
+              clsStudents,
+              clsNoms,
+              clsMetrics
+            );
+
             return (
               <motion.div
                 key={cls.id}
@@ -248,12 +272,24 @@ export const KepsekDashboard: React.FC<KepsekDashboardProps> = ({
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span className="text-slate-400">Total Siswa:</span>
-                    <span className="font-bold text-white">{cls.studentCount} Siswa</span>
+                    <span className="font-bold text-white">{clsStudents.length} Siswa</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Indeks Iklim:</span>
-                    <span className="font-bold text-cyan-400">
-                      {cls.id === 'c-8a' ? '74 (Kondusif)' : cls.id === 'c-8b' ? '68 (Cukup)' : '82 (Sangat Baik)'}
+                    <span
+                      className={`font-bold ${
+                        clsAgg.climateIndex === 'Belum Terisi'
+                          ? 'text-slate-400'
+                          : clsAgg.climateIndex === 'Kritis'
+                          ? 'text-rose-400'
+                          : clsAgg.climateIndex === 'Waspada'
+                          ? 'text-amber-400'
+                          : 'text-emerald-400'
+                      }`}
+                    >
+                      {clsAgg.climateIndex === 'Belum Terisi'
+                        ? 'Belum Terisi'
+                        : `${clsAgg.climateScore} (${clsAgg.climateIndex})`}
                     </span>
                   </div>
                 </div>

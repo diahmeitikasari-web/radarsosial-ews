@@ -38,42 +38,46 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ### 1.2 Inventarisasi Komponen Matematis & Algoritma Inti
 | Modul / Komponen | Tipe Algoritma / Formula | Berkas Sumber | Cakupan Keluaran |
 | :--- | :--- | :--- | :--- |
-| **Normalisasi Skor Z** | Formula Baku Normalisasi Gaussian | `/src/services/snaEngine.ts` (baris 52–85) | $z_L, z_D, z_{SP}, z_{SI}$ |
-| **Klasifikasi Coie & Dodge** | Logika Ambang Batas 5 Kategori (1982) | `/src/services/snaEngine.ts` (baris 86–98) | Popular, Rejected, Neglected, Controversial, Average |
-| **Tipologi Perilaku Sebaya** | Integrasi Moreno x PEI x Hawley | `/src/services/snaEngine.ts` (baris 109–128) | 7 Kategori Profil Sosio-Perilaku |
-| **Deteksi Broker Jaringan** | Algoritma Brandes (*Betweenness Centrality*) | `/src/services/snaEngine.ts` (baris 437–505) | Skor Betweenness ternormalisasi & Siswa Broker |
-| **Deteksi Komunitas Klik** | *Weighted Label Propagation Algorithm* | `/src/services/snaEngine.ts` (baris 506–648) | Klaster Klik, Pemimpin Subgrup, Indeks Eksklusivitas |
-| **Indeks Homofili Gender** | Perbandingan Relasi Intra vs Inter-Gender | `/src/services/snaEngine.ts` (baris 650–667) | Nilai $-1.0$ s.d $+1.0$ |
+| **Normalisasi Skor Z** | Formula Baku Normalisasi Gaussian | `/src/services/snaEngine.ts` (baris 66–101) | $z_L, z_D, z_{SP}, z_{SI}$ |
+| **Klasifikasi Coie & Dodge** | Logika Ambang Batas 5 Kategori (1982) + Zero-Variance Guard | `/src/services/snaEngine.ts` (baris 81–82, 103–115) | Popular, Rejected, Neglected, Controversial, Average |
+| **Tipologi Perilaku Sebaya** | Integrasi Moreno x PEI x Hawley | `/src/services/snaEngine.ts` (baris 126–144) | 7 Kategori Profil Sosio-Perilaku |
+| **Deteksi Broker Jaringan** | Algoritma Brandes (*Betweenness Centrality*) | `/src/services/snaEngine.ts` (baris 506–573) | Skor Betweenness ternormalisasi & Siswa Broker |
+| **Deteksi Komunitas Klik** | *Weighted Label Propagation Algorithm* | `/src/services/snaEngine.ts` (baris 575–717) | Klaster Klik, Pemimpin Subgrup, Indeks Eksklusivitas |
+| **Indeks Homofili Gender** | Perbandingan Relasi Intra vs Inter-Gender | `/src/services/snaEngine.ts` (baris 719–735) | Nilai $-1.0$ s.d $+1.0$ |
 | **Smart Seating Optimizer** | Heuristik Constraint-Satisfaction Penataan Meja | `/src/services/seatingEngine.ts` (baris 16–285) | Denah Meja, Harmony Score, Pasangan Buddy |
-| **Evaluasi Iklim Kelas** | Formula Tertimbang Kohesi & Penalti Risiko | `/src/services/snaEngine.ts` (baris 305–323) | Skor Iklim (0–100) & Status Kondusif/Waspada/Kritis |
+| **Evaluasi Iklim Kelas** | Formula Tertimbang Kohesi Multi-Kriteria & Penalti Risiko | `/src/services/snaEngine.ts` (baris 269–455) | Skor Iklim (0–100) & Status Kondusif/Waspada/Kritis/Belum Terisi |
 
 ### 1.3 Formula Skoring & Ambang Batas Matematis
-1. **Standarisasi Skor Z Rombel**:
+1. **Standarisasi Skor Z Rombel (setelah deduplikasi relasi & eliminasi *self-nomination*)**:
    $$\mu_L = \frac{\sum L_i}{n}, \quad \sigma_L = \sqrt{\frac{\sum (L_i - \mu_L)^2}{n}}$$
    $$\mu_D = \frac{\sum D_i}{n}, \quad \sigma_D = \sqrt{\frac{\sum (D_i - \mu_D)^2}{n}}$$
    $$z_L = \frac{L - \mu_L}{\sigma_L}, \quad z_D = \frac{D - \mu_D}{\sigma_D}$$
 2. **Preferensi Sosial ($z_{SP}$) & Dampak Sosial ($z_{SI}$)**:
    $$z_{SP} = z_L - z_D \quad (\text{Ukuran Seberapa Disukai Relatif terhadap Penolakan})$$
    $$z_{SI} = z_L + z_D \quad (\text{Ukuran Tingkat Keberadaan / Visibilitas Sosial})$$
-3. **Kriteria Klasifikasi Status Coie & Dodge (1982)**:
-   - **Popular**: $z_{SP} > 1.0 \land z_L > 0 \land z_D < 0$
-   - **Rejected**: $z_{SP} < -1.0 \land z_D > 0 \land z_L < 0$
+3. **Kriteria Klasifikasi Status Coie & Dodge (1982) dengan *Zero-Dislike / Zero-Like Guard***:
+   - **Popular**: $z_{SP} > 1.0 \land z_L > 0 \land (z_D < 0 \text{ atau } z_D \le 0 \text{ bila } \mu_D = \sigma_D = 0)$
+   - **Rejected**: $z_{SP} < -1.0 \land z_D > 0 \land (z_L < 0 \text{ atau } z_L \le 0 \text{ bila } \mu_L = \sigma_L = 0)$
    - **Neglected**: $z_{SI} < -1.0 \land L \le \mu_L$
    - **Controversial**: $z_{SI} > 1.0 \land z_L > 0 \land z_D > 0$
    - **Average**: Siswa di luar batas kriteria di atas (posisi adaptif mayoritas).
-4. **Sentralitas Perantara Brandes ($C_B$)**:
+4. **Densitas Multi-Kriteria & Resiprositas Berbasis Kriteria**:
+   $$\text{Density} = \min\left(1,\; \frac{|E_{\text{like}}^{\text{unik}}|}{n(n-1) \times K_{\text{aktif}}}\right)$$
+   di mana $K_{\text{aktif}}$ adalah jumlah kriteria aktif (mis. Belajar & Bermain = 2), dan pasangan timbal balik (*Reciprocity*) dihitung pada himpunan `(criteria, studentId, targetId)` agar sinkron dengan visualisasi sosiogram.
+5. **Sentralitas Perantara Brandes ($C_B$)**:
    Untuk setiap simpul $v \in V$, Brandes menghitung akumulasi *pair-dependency* $\delta_{s\bullet}(v)$ dalam waktu $\mathcal{O}(|V| \cdot |E|)$:
    $$\delta_{s\bullet}(v) = \sum_{w: v \in \text{Pred}(s, w)} \frac{\sigma_{sv}}{\sigma_{sw}} (1 + \delta_{s\bullet}(w))$$
-   Ternormalisasi untuk graf berarah: $C_B'(v) = \frac{C_B(v)}{(n-1)(n-2)}$.
-5. **Skor Iklim Sosial Kelas (0–100)**:
-   $$\text{Climate} = \text{clamp}\left(65 + (\text{Density} \times 120) + (\text{Reciprocity} \times 0.25) - (\text{Rejected} \times 12) - (\text{Neglected} \times 6), 10, 100\right)$$
+   Ternormalisasi untuk graf tak-berarah/berpasangan: $C_B'(v) = \frac{C_B(v)}{(n-1)(n-2)}$.
+6. **Skor Iklim Sosial Kelas (0–100)**:
+   $$\text{Climate} = \text{clamp}\left(65 + \min(35,\; \text{Density} \times 180) + (\text{Reciprocity} \times 0.25) - (\text{Rejected} \times 12) - (\text{Neglected} \times 6),\; 10,\; 100\right)$$
    - $\ge 70$: **Kondusif**
    - $45 - 69$: **Waspada** (Rekomendasi TPPK aktif)
    - $< 45$: **Kritis** (Prioritas intervensi darurat)
+   - $0$ nominasi aktif: **Belum Terisi** (Skor $0$, sosiogram dikosongkan)
 
 ### 1.4 Temuan Tiga (3) Titik Paling Rawan Error (Bugs & Bottlenecks)
-- **Bug 1 (Zero Variance / Pembagian dengan Nol)**: Pada `/src/services/snaEngine.ts` baris 64–65, jika semua siswa dalam kelas memiliki nilai nominasi identik (misal di awal semester saat seluruh pilihan bernilai 0), nilai $\sigma$ menghasilkan angka 0. Guard `Math.sqrt(variance) || 1` telah dipasang untuk mencegah nilai `NaN` atau `Infinity`.
-- **Bug 2 (Pencampuran Populasi Standarisasi Multi-Sekolah)**: Pada audit awal, filter `ALL` di Dashboard Admin berisiko mencampur siswa SMP dan MTs ke dalam satu populasi perhitungan skor Z yang sama. Hal ini tidak valid secara psikometri karena norma kelompok sebaya (*peer group norm*) hanya berlaku dalam satuan ekosistem sosial kelas/sekolah yang berinteraksi langsung. Hal ini telah diisolasi dengan filter bertingkat sekolah (`selectedSchoolId`).
+- **Bug 1 (Zero Variance / Jebakan Kolom Dislike Kosong pada Coie-Dodge)**: Pada `/src/services/snaEngine.ts` baris 78–82 dan 105–108, jika seluruh siswa hanya mengisi pilihan positif (*Likes*) dan mengosongkan kolom penolakan (*Dislikes* = 0 semua), maka nilai $\mu_D = 0, \sigma_D = 0 \implies z_D = 0$ untuk semua siswa. Kondisi ketat `zD < 0` akan gagal melabeli siswa ber-`zSP > 1.0` sebagai *Popular*. Telah ditambahkan *guard* `Math.sqrt(variance) || 1` serta kondisi `(noDislikesInClass ? zD <= 0 : zD < 0)` dan `(noLikesInClass ? zL <= 0 : zL < 0)`.
+- **Bug 2 (Blank Screen & Kebocoran State Impor Excel serta Penamaan Properti Matriks)**: Pada `/src/components/ExcelUploadModal.tsx`, pengaksesan `parsedResult.students` saat `parsedResult === null` sempat menyebabkan runtime crash (*blank screen*), serta kolom kosong SheetJS (`__EMPTY_*`) berpotensi terbaca sebagai kolom matriks. Kini telah diproteksi dengan null-guard modal, pembersihan state `useEffect`, `<AppErrorBoundary>` di `App.tsx`, pengabaian kolom `__EMPTY*` di `excelHandler.ts`, serta sinkronisasi properti `studentId`/`targetId` dan skala 0–100 perilaku di `AdminDashboard.tsx`.
 - **Bug 3 (Kebocoran Istilah Klinis Konseling ke Dashboard Orang Tua)**: Pada berkas `/src/dashboards/OrangTuaDashboard.tsx` baris 167, teks rekomendasi awalnya menampilkan `student.dssRecommendation` (yang memuat istilah *"Intervensi Konseling Krisis: Perlindungan psikologis segera"*). Hal ini berisiko menimbulkan kecemasan (*secondary panic*) bagi wali murid. Telah diperbaiki dengan mengutamakan properti `student.parentNote` yang berorientasi pada pengasuhan positif (*gentle strength-based guidance*).
 
 ---
@@ -81,13 +85,13 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ## 2. Lembar Anotasi Kode Ground-Truth (Ground-Truth Code Anchors)
 
 ### Anotasi #A-01: Standarisasi Skor Z & Klasifikasi Coie & Dodge (1982)
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 90–109 (dengan penjagaan data kosong di baris 30–35)
-- **Fungsi / Variabel**: `calculateSNAMetrics()`, variabel `zL`, `zD`, `zSP`, `zSI`, dan `status`
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 81–115 (penjagaan data kosong di baris 29–34, deduplikasi di baris 49–64)
+- **Fungsi / Variabel**: `calculateSNAMetrics()`, variabel `zL`, `zD`, `zSP`, `zSI`, `noDislikesInClass`, dan `status`
 - **Cuplikan Kode**:
   ```typescript
-  // Perlindungan Survei Kosong: Jika kuesioner sosiometri belum terisi (0 nominasi),
+  // Domain Rule: Jika data kuesioner sosiometri belum terisi (0 nominasi atau 0 pada kriteria filter aktif),
   // jangan lakukan kalkulasi semu yang menetapkan semua siswa sebagai 'Average'.
-  if (nominations.length === 0 || (criteriaFilter && activeNoms.length === 0 && nominations.length === 0)) {
+  if (nominations.length === 0 || activeNoms.length === 0) {
     return [];
   }
 
@@ -98,11 +102,11 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
   const zSP = zL - zD; // Social Preference
   const zSI = zL + zD; // Social Impact
 
-  // Coie & Dodge 1982 Status Classification
+  // Coie & Dodge 1982 Status Classification (with zero-dislike / zero-like variance guard)
   let status: CoieDodgeStatus = 'Average';
-  if (zSP > 1.0 && zL > 0 && zD < 0) {
+  if (zSP > 1.0 && zL > 0 && (noDislikesInClass ? zD <= 0 : zD < 0)) {
     status = 'Popular';
-  } else if (zSP < -1.0 && zD > 0 && zL < 0) {
+  } else if (zSP < -1.0 && zD > 0 && (noLikesInClass ? zL <= 0 : zL < 0)) {
     status = 'Rejected';
   } else if (zSI < -1.0 && L <= meanLikes) {
     status = 'Neglected';
@@ -112,14 +116,14 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
     status = 'Average';
   }
   ```
-- **Tinjauan AI**: AI menyatakan bahwa Coie-Dodge dapat diterapkan hanya dengan membandingkan selisih nilai mentah suka dan tidak suka ($L - D$). Selain itu AI awalnya membiarkan kelas kosong (0 like dan 0 dislike) dihitung sebagai populasi aktif, sehingga seluruh siswa otomatis menjadi *Average* semu.
-- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI**. Pendekatan selisih mentah cacat metodologis karena tidak memperhitungkan varians sebaran kelas. Menggunakan skor Z yang dibakukan terhadap $\mu$ dan $\sigma$ kelas menjamin komparabilitas antar-rombel. Yang paling krusial: jika kuesioner belum diisi, sosiogram wajib dikosongkan tanpa nama siswa agar laporan tidak membaca iklim kelas sebagai normal/kondusif padahal instrumen belum terlaksana.
+- **Tinjauan AI**: AI menyatakan bahwa Coie-Dodge dapat diterapkan hanya dengan membandingkan selisih nilai mentah suka dan tidak suka ($L - D$). Selain itu AI awalnya membiarkan kelas kosong (0 like dan 0 dislike) dihitung sebagai populasi aktif, serta gagal mengklasifikasikan siswa `Popular` ketika seluruh kelas tidak mengisi kolom penolakan ($D = 0 \implies z_D = 0$).
+- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI**. Pendekatan selisih mentah cacat metodologis karena tidak memperhitungkan varians sebaran kelas. Menggunakan skor Z yang dibakukan terhadap $\mu$ dan $\sigma$ kelas (ditambah *zero-dislike guard*) menjamin komparabilitas antar-rombel sekaligus akurasi saat kuesioner hanya mengumpulkan nominasi positif. Jika kuesioner belum diisi, sosiogram wajib dikosongkan tanpa nama siswa.
 - **Zona**: `✓ Konvergen (Telah Terverifikasi Penuh Sesuai Coie, Dodge, & Coppotelli 1982)`
 
 ---
 
 ### Anotasi #A-02: Matriks Silang Perilaku Sebaya (Moreno x PEI x Hawley)
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 119–138
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 126–144
 - **Fungsi / Variabel**: Penentuan `behavioralStatus`
 - **Cuplikan Kode**:
   ```typescript
@@ -143,7 +147,7 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ---
 
 ### Anotasi #A-03: Algoritma Brandes untuk Deteksi Siswa Broker Sosial
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 479–547
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 506–573
 - **Fungsi / Variabel**: `detectCommunitiesAndBrokers()`, variabel `betweenness`
 - **Cuplikan Kode**:
   ```typescript
@@ -159,7 +163,7 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ---
 
 ### Anotasi #A-04: Deteksi Klik Komunitas & Indeks Eksklusivitas
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 548–670
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 659–717
 - **Fungsi / Variabel**: `detectCommunitiesAndBrokers()`, penghitungan `exclusivityIndex`
 - **Cuplikan Kode**:
   ```typescript
@@ -195,12 +199,12 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ---
 
 ### Anotasi #A-06: Evaluasi Iklim Sosial Kelas & Peringatan Dini Kebijakan TPPK
-- **File & Baris**: `/src/services/snaEngine.ts`, baris 268–365
-- **Fungsi / Variabel**: `calculateClassAggregate()`, variabel `climateScore`, `climateIndex`, `kepsekPolicyAdvice`
+- **File & Baris**: `/src/services/snaEngine.ts`, baris 269–391
+- **Fungsi / Variabel**: `calculateClassAggregate()`, variabel `density`, `reciprocityRate`, `climateScore`, `climateIndex`, `kepsekPolicyAdvice`
 - **Cuplikan Kode**:
   ```typescript
-  // Perlindungan Data Kosong: Jika instrumen belum diisi (0 nominasi),
-  // jangan keluarkan skor iklim semu 'Kondusif' (Skor 65)
+  // Domain Rule: Jika data kuesioner sosiometri kosong (0 nominasi),
+  // jangan tampilkan iklim semu 'Kondusif' atau skor rata-rata palsu.
   if (totalStudents === 0 || nominations.length === 0 || metrics.length === 0) {
     return {
       classId, className, periodId, periodName, totalStudents,
@@ -214,30 +218,39 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
     };
   }
 
+  const maxPossibleEdgesPerCriterion = totalStudents * (totalStudents - 1) || 1;
+  const activeCriteriaCount = Math.max(1, new Set(nominations.map((n) => n.criteria)).size);
+  const density = Number(
+    Math.min(1, positiveEdges / (maxPossibleEdgesPerCriterion * activeCriteriaCount)).toFixed(3)
+  );
+
   const rejectionPenalty = statusCounts.Rejected * 12;
   const neglectedPenalty = statusCounts.Neglected * 6;
-  const densityBonus = density * 120;
+  const densityBonus = Math.min(35, density * 180);
   const reciprocityBonus = (reciprocityRate / 100) * 25;
 
   let rawClimate = 65 + densityBonus + reciprocityBonus - rejectionPenalty - neglectedPenalty;
   rawClimate = Math.min(100, Math.max(10, Math.round(rawClimate)));
   ```
-- **Tinjauan AI**: Mengukur iklim hanya dari rasio siswa yang mengisi kuisioner atau menetapkan nilai *default* 65 (Kondusif) meskipun belum ada data yang terisi.
-- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI (Koreksi Mutlak)**. Iklim sosial kelas ditentukan oleh struktur relasional: kohesi jaringan (densitas & resiprositas) sebagai faktor pelindung, serta jumlah siswa *Rejected* dan *Neglected* sebagai faktor risiko. Jika data kuesioner belum diisi, status iklim wajib ditetapkan sebagai `Belum Terisi` (Skor 0) dan tidak boleh melabeli kelas sebagai 'Kondusif', agar kepala sekolah dan TPPK tidak salah mengira bahwa kelas yang belum disurvei sudah aman.
+- **Tinjauan AI**: Mengukur iklim hanya dari rasio siswa yang mengisi kuisioner, menetapkan nilai *default* 65 (Kondusif) meskipun belum ada data terisi, serta menjumlahkan seluruh nominasi *Belajar* dan *Bermain* tanpa menormalisasi penyebut densitas dengan jumlah kriteria aktif (`activeCriteriaCount`).
+- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI (Koreksi Mutlak)**. Iklim sosial kelas ditentukan oleh struktur relasional: kohesi jaringan (densitas ternormalisasi per kriteria & resiprositas berbasis kriteria) sebagai faktor pelindung, serta jumlah siswa *Rejected* dan *Neglected* sebagai faktor risiko. Jika data kuesioner belum diisi, status iklim wajib ditetapkan sebagai `Belum Terisi` (Skor 0) agar kepala sekolah dan TPPK tidak salah mengira kelas yang belum disurvei sudah aman.
 - **Zona**: `✓ Konvergen (Telah Diperbaiki & Diuji)`
 
 ---
 
 ### Anotasi #A-07: Isolasi Multi-Tenant Satuan Pendidikan & Proteksi Scoping Impor Data
-- **File & Baris**: `/src/components/ExcelUploadModal.tsx` (baris 63–130), `/src/services/seedStudents.ts` (baris 15–160 & 385–425), & `/src/services/dataStorage.ts` (baris 121–165)
-- **Fungsi / Variabel**: `handleConfirmSave()`, `matchesClassOrProdi()`, `ALL_SCHOOLS` (7 tenant satuan pendidikan & perguruan tinggi)
+- **File & Baris**: `/src/components/ExcelUploadModal.tsx` (baris 38–173), `/src/services/dataStorage.ts` (baris 126–315), & `/src/dashboards/AdminDashboard.tsx` (baris 255–301)
+- **Fungsi / Variabel**: `handleConfirmSave()`, `matchesClassOrProdi()`, `syncFromCloud()`, `ALL_SCHOOLS` (7 tenant satuan pendidikan & perguruan tinggi)
 - **Cuplikan Kode**:
   ```typescript
-  // Proteksi Pembajakan Rombel/Prodi Lintas-Tenant saat Impor Excel:
-  // Pencarian kelas atau program studi existing wajib dikunci pada schoolId aktif
+  // ExcelUploadModal.tsx — Proteksi Scoping & Null Guard:
+  if (!isOpen || !activeClass || !activePeriod) return null;
+  const existingToPass = dataStorage.getStudents(effectiveTargetClass.id);
+
+  // Pencarian kelas atau program studi existing wajib dikunci pada targetSchoolId
   const existing = classes.find(
     (c) =>
-      c.schoolId === activeClass.schoolId &&
+      c.schoolId === targetSchoolId &&
       (c.name.toLowerCase() === dLower ||
         c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === detectedNorm ||
         c.id.toLowerCase() === dLower ||
@@ -247,14 +260,14 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
             new RegExp(`\\b${dLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(c.name.toLowerCase()))))
   );
   ```
-- **Tinjauan AI**: AI awalnya mencari kelas hanya berdasarkan nama (`classes.find(c => c.name === name)`), sehingga ketika pengguna di satuan pendidikan baru mengunggah rombel bernama sama, sistem membajak rombel milik sekolah lain. Selain itu AI mengisikan nama guru BK fiktif perorangan dan belum mendukung format perguruan tinggi (*Prodi/Mahasiswa/NIM*).
-- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI (Telah Diperbaiki)**. Scoping multi-tenant harus diterapkan secara ketat hingga ke tingkat proses impor Excel. Sistem kini melayani **7 tenant satuan pendidikan** (MTsN 2 Bangka, SMA Negeri Olahraga M. Noer, MTs Daarul Abror, SMPN 1 Bakam, SMPN 7 Pangkal Pinang, SMK N 5 Pangkalpinang, serta **IAIN Syaikh Abdurrahman Siddik / IAIN SAS** dengan Prodi **PAI**, **TBI**, dan **BKPI**) dengan rombel/prodi bersih yang siap menerima unggahan data lapangan nyata. Identitas konselor dibakukan secara profesional memakai peran resmi lembaga (misal `BK SMP Negeri 1 Bakam`, `BK IAIN SAS`) sesuai Kode Etik ABKIN.
+- **Tinjauan AI**: AI awalnya mencari kelas hanya berdasarkan nama (`classes.find(c => c.name === name)`), mewariskan daftar siswa kelas sebelumnya saat modal dibuka, serta mengakses `parsedResult.students` sebelum file diunggah sehingga memicu *blank screen*. Selain itu `syncFromCloud()` menimpa ulang kelas yang sudah diunggah dengan data seed awal.
+- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI (Telah Diperbaiki)**. Scoping multi-tenant dan integritas timpa bersih (*clean overwrite*) wajib dijaga dari lapisan UI modal hingga sinkronisasi Firestore (`replaceScopedBatch`). Sistem kini melayani **7 tenant satuan pendidikan** (MTsN 2 Bangka, SMA Negeri Olahraga M. Noer, MTs Daarul Abror, SMPN 1 Bakam, SMPN 7 Pangkal Pinang, SMK N 5 Pangkalpinang, serta **IAIN Syaikh Abdurrahman Siddik / IAIN SAS** dengan Prodi **PAI**, **TBI**, dan **BKPI**) dengan identitas konselor berbasis peran lembaga (misal `BK SMP Negeri 1 Bakam`, `BK IAIN SAS`) sesuai Kode Etik ABKIN.
 - **Zona**: `✓ Konvergen (Telah Diperbaiki & Diuji Lintas 7 Tenant Pendidikan)`
 
 ---
 
 ### Anotasi #A-08: Etika Pelabelan & Komunikasi Ramah Pengasuhan (*Non-Stigmatizing Parent Guidance*)
-- **File & Baris**: `/src/dashboards/OrangTuaDashboard.tsx`, baris 160–170 & `/src/services/snaEngine.ts`, baris 177–189
+- **File & Baris**: `/src/dashboards/OrangTuaDashboard.tsx`, baris 163–168 & `/src/services/snaEngine.ts`, baris 194–205
 - **Fungsi / Variabel**: `student.parentNote` vs `student.dssRecommendation`
 - **Cuplikan Kode**:
   ```typescript
@@ -318,13 +331,13 @@ Sistem Radar Sosial dirancang selaras dengan mandat pencegahan kekerasan di seko
    - **Jawaban Peneliti**: *"Jika hanya menggunakan persentase pemilih (popularitas satu dimensi), kita tidak akan pernah bisa membedakan antara siswa 'Rejected' (yang aktif ditolak) dengan siswa 'Neglected' (yang tidak disukai tetapi juga tidak dibenci, alias tidak terlihat/invisible). Dalam model Coie, Dodge, & Coppotelli (1982), Social Preference ($z_{SP} = z_L - z_D$) mengukur preferensi penerimaan, sedangkan Social Impact ($z_{SI} = z_L + z_D$) mengukur tingkat kehadiran sosial. Siswa Neglected memiliki impact sangat rendah ($z_{SI} < -1.0$) dengan $L \le \mu_L$, sedangkan siswa Rejected memiliki preference sangat negatif ($z_{SP} < -1.0$) dengan penolakan tinggi ($z_D > 0$). Intervensi BK untuk keduanya 180 derajat berbeda: siswa Rejected memerlukan perlindungan dari viktimisasi dan mediasi konflik, sedangkan siswa Neglected memerlukan pemupukan kepercayaan diri dan penugasan kooperatif."*
 
 2. **Dosen Penguji**: *"Tunjukkan baris kode Algoritma Brandes pada berkas `snaEngine.ts`. Mengapa Anda menggunakan algoritma ini dan bagaimana kompleksitas komputasinya?"*
-   - **Jawaban Peneliti**: *"Algoritma Brandes berada pada baris 437 hingga 505 berkas `src/services/snaEngine.ts`. Algoritma ini digunakan untuk menghitung Betweenness Centrality secara eksak dengan kompleksitas waktu $\mathcal{O}(|V| \cdot |E|)$, jauh lebih efisien dibandingkan Floyd-Warshall yang membutuhkan waktu $\mathcal{O}(|V|^3)$. Dalam konteks kelas beranggotakan 30-40 siswa, Brandes mengeksekusi traversal BFS dan akumulasi dependensi ke belakang dalam fraksi milidetik. Manfaat bimbingan konselingnya adalah menemukan siswa 'broker'—yaitu siswa yang memegang peran jembatan antar-kelompok tertutup (klik). Siswa broker inilah yang diberdayakan Guru BK sebagai agen perdamaian (peer mediator).'*
+   - **Jawaban Peneliti**: *"Algoritma Brandes berada pada baris 506 hingga 573 berkas `src/services/snaEngine.ts`. Algoritma ini digunakan untuk menghitung Betweenness Centrality secara eksak dengan kompleksitas waktu $\mathcal{O}(|V| \cdot |E|)$, jauh lebih efisien dibandingkan Floyd-Warshall yang membutuhkan waktu $\mathcal{O}(|V|^3)$. Dalam konteks kelas beranggotakan 30-40 siswa, Brandes mengeksekusi traversal BFS dan akumulasi dependensi ke belakang dalam fraksi milidetik. Manfaat bimbingan konselingnya adalah menemukan siswa 'broker'—yaitu siswa yang memegang peran jembatan antar-kelompok tertutup (klik). Siswa broker inilah yang diberdayakan Guru BK sebagai agen perdamaian (peer mediator).'*
 
 3. **Dosen Penguji**: *"Bagaimana algoritma Smart Seating Anda menjamin siswa korban perundungan tidak duduk bersebelahan dengan pelaku penolakan?"*
-   - **Jawaban Peneliti**: *"Di berkas `src/services/seatingEngine.ts` baris 45-63 dan baris 128-133, fungsi `isCompatiblePair(id1, id2)` memeriksa himpunan pasangan penolakan (`dislikePairs`). Jika terdapat nominasi penolakan satu arah maupun dua arah antara dua siswa, fungsi mengembalikan nilai `false`, sehingga algoritma menolak penempatan keduanya di meja yang sama. Selanjutnya pada baris 137-181, siswa yang berstatus rentan (Passive Victim atau Neglected) diprioritaskan terlebih dahulu untuk dipasangkan dengan siswa berkategori 'Populer-Prososial' di baris depan (meja 1 dan 2) sebagai mitra belajar suportif (*buddy system*)."*
+   - **Jawaban Peneliti**: *"Di berkas `src/services/seatingEngine.ts` baris 45-62 dan baris 128-133, fungsi `isCompatiblePair(id1, id2)` memeriksa himpunan pasangan penolakan (`dislikePairs`). Jika terdapat nominasi penolakan satu arah maupun dua arah antara dua siswa, fungsi mengembalikan nilai `false`, sehingga algoritma menolak penempatan keduanya di meja yang sama. Selanjutnya pada baris 137-181, siswa yang berstatus rentan (Passive Victim atau Neglected) diprioritaskan terlebih dahulu untuk dipasangkan dengan siswa berkategori 'Populer-Prososial' di baris depan (meja 1 dan 2) sebagai mitra belajar suportif (*buddy system*)."*
 
 4. **Dosen Penguji**: *"Di mana letak koreksi paling mendasar yang Anda lakukan terhadap kode atau asumsi yang awalnya dibuat oleh AI?"*
-   - **Jawaban Peneliti**: *"Terdapat dua koreksi paling fundamental: Pertama, pada etika pelaporan ke orang tua (`OrangTuaDashboard.tsx` baris 167), AI awalnya menampilkan rekomendasi klinis teknis Guru BK ('Intervensi Konseling Krisis: Perlindungan psikologis segera') ke layar orang tua. Kami mengoreksinya agar menampilkan narasi `parentNote` yang berorientasi pengasuhan positif di rumah untuk mencegah histeria dan menyelaraskan dengan asas kode etik ABKIN. Kedua, pada level arsitektur multi-tenant (`AdminDashboard.tsx` baris 250-290), kami membatasi agar standarisasi skor Z tidak mencampuradukkan data antar-satuan pendidikan yang berbeda saat admin memilih tampilan agregat."*
+   - **Jawaban Peneliti**: *"Terdapat tiga koreksi paling fundamental: Pertama, pada etika pelaporan ke orang tua (`OrangTuaDashboard.tsx` baris 167), AI awalnya menampilkan rekomendasi klinis teknis Guru BK ('Intervensi Konseling Krisis: Perlindungan psikologis segera') ke layar orang tua. Kami mengoreksinya agar menampilkan narasi `parentNote` yang berorientasi pengasuhan positif di rumah untuk mencegah histeria dan menyelaraskan dengan asas kode etik ABKIN. Kedua, pada level arsitektur multi-tenant (`AdminDashboard.tsx` baris 255-301), kami membatasi agar standarisasi skor Z tidak mencampuradukkan data antar-satuan pendidikan serta mengoreksi penamaan properti `studentId`/`targetId` agar perhitungan resiprositas akurat. Ketiga, pada `snaEngine.ts` (baris 81-115 dan 282-353), kami menambahkan zero-dislike Coie-Dodge guard serta normalisasi densitas multi-kriteria agar hasil klasifikasi akurat pada survei kelas nyata."*
 
 ### Checklist Kelulusan Audit Viva:
 - [x] Minimal 8 anotasi kode riil dengan path berkas dan nomor baris persis.

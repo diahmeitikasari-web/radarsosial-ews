@@ -9,6 +9,8 @@ import {
   deleteDoc,
   onSnapshot,
   writeBatch,
+  query,
+  where,
   Unsubscribe,
   Firestore,
 } from 'firebase/firestore';
@@ -86,5 +88,7 @@ export {
   deleteDoc,
   onSnapshot,
   writeBatch,
+  query,
+  where,
   type Unsubscribe,
 };

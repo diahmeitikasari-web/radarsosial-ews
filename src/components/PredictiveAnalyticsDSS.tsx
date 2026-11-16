@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Student,
   SociometricNomination,
@@ -269,6 +269,16 @@ export const PredictiveAnalyticsDSS: React.FC<PredictiveAnalyticsDSSProps> = ({
   const [selectedStudentId, setSelectedStudentId] = useState<string>(() => {
     return highRiskReports[0]?.studentId || sortedReports[0]?.studentId || '';
   });
+
+  useEffect(() => {
+    if (sortedReports.length === 0) {
+      setSelectedStudentId('');
+      return;
+    }
+    if (!sortedReports.some((r) => r.studentId === selectedStudentId)) {
+      setSelectedStudentId(highRiskReports[0]?.studentId || sortedReports[0]?.studentId || '');
+    }
+  }, [sortedReports, highRiskReports, selectedStudentId]);
 
   const activeReport = useMemo(() => {
     return sortedReports.find((r) => r.studentId === selectedStudentId) || sortedReports[0];

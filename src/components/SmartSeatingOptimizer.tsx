@@ -31,6 +31,7 @@ interface SmartSeatingOptimizerProps {
   metrics: StudentCalculatedMetrics[];
   nominations: SociometricNomination[];
   className: string;
+  homeroomTeacher?: string;
 }
 
 export const SmartSeatingOptimizer: React.FC<SmartSeatingOptimizerProps> = ({
@@ -38,6 +39,7 @@ export const SmartSeatingOptimizer: React.FC<SmartSeatingOptimizerProps> = ({
   metrics,
   nominations,
   className,
+  homeroomTeacher,
 }) => {
   const [activeView, setActiveView] = useState<'seating' | 'cooperative'>('seating');
   const [layoutType, setLayoutType] = useState<SeatingLayoutType>('pairs_grid');
@@ -241,7 +243,22 @@ export const SmartSeatingOptimizer: React.FC<SmartSeatingOptimizerProps> = ({
               </span>
               <span className="text-xs text-[#8ba3c7]">/ 100</span>
             </div>
-            <span className="text-[10px] text-emerald-400 font-semibold">Iklim Sosial Sangat Kondusif</span>
+            <span
+              className={`text-[10px] font-semibold ${
+                seatingState.harmonyScore >= 80
+                  ? 'text-emerald-400'
+                  : seatingState.harmonyScore >= 60
+                  ? 'text-amber-300'
+                  : 'text-rose-300'
+              }`}
+            >
+              {seatingState.harmonyScore >= 80
+                ? 'Harmonisasi Penataan Tinggi'
+                : seatingState.harmonyScore >= 60
+                ? 'Harmonisasi Cukup Baik'
+                : 'Perlu Penyesuaian Wali Kelas'}
+              {homeroomTeacher ? ` • ${homeroomTeacher}` : ''}
+            </span>
           </div>
         </div>
 

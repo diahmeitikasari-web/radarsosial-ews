@@ -26,10 +26,10 @@ export function calculateSNAMetrics(
     ? nominations.filter((nom) => nom.criteria === criteriaFilter)
     : nominations;
 
-  // Domain Rule: Jika data kuesioner sosiometri belum terisi (0 nominasi),
+  // Domain Rule: Jika data kuesioner sosiometri belum terisi (0 nominasi atau 0 pada kriteria filter aktif),
   // jangan lakukan kalkulasi semu yang menetapkan semua siswa sebagai 'Average'.
   // Siswa pada kelas yang belum diisi kuesionernya berstatus unassessed (kosongkan sosiometrinya).
-  if (nominations.length === 0 || (criteriaFilter && activeNoms.length === 0 && nominations.length === 0)) {
+  if (nominations.length === 0 || activeNoms.length === 0) {
     return [];
   }
 
@@ -46,7 +46,14 @@ export function calculateSNAMetrics(
     dislikesGiven[s.id] = 0;
   });
 
+  // Deduplicate nominations per (studentId, targetId, criteria, type) and skip self-nominations
+  const seenNomKeys = new Set<string>();
   activeNoms.forEach((nom) => {
+    if (!nom.studentId || !nom.targetId || nom.studentId === nom.targetId) return;
+    const dedupKey = `${nom.criteria}:${nom.type}:${nom.studentId}->${nom.targetId}`;
+    if (seenNomKeys.has(dedupKey)) return;
+    seenNomKeys.add(dedupKey);
+
     if (nom.type === 'like') {
       if (rawLikes[nom.targetId] !== undefined) rawLikes[nom.targetId]++;
       if (likesGiven[nom.studentId] !== undefined) likesGiven[nom.studentId]++;
@@ -71,6 +78,9 @@ export function calculateSNAMetrics(
   const stdLikes = Math.sqrt(varianceLikes) || 1;
   const stdDislikes = Math.sqrt(varianceDislikes) || 1;
 
+  const noDislikesInClass = meanDislikes === 0 && varianceDislikes === 0;
+  const noLikesInClass = meanLikes === 0 && varianceLikes === 0;
+
   // Behavior map
   const behaviorMap: Record<string, PeerBehavioralRating> = {};
   (behavioralRatings || []).forEach((b) => {
@@ -90,11 +100,11 @@ export function calculateSNAMetrics(
     const zSP = zL - zD; // Social Preference
     const zSI = zL + zD; // Social Impact
 
-    // Coie & Dodge 1982 Status Classification
+    // Coie & Dodge 1982 Status Classification (with zero-dislike / zero-like variance guard)
     let status: CoieDodgeStatus = 'Average';
-    if (zSP > 1.0 && zL > 0 && zD < 0) {
+    if (zSP > 1.0 && zL > 0 && (noDislikesInClass ? zD <= 0 : zD < 0)) {
       status = 'Popular';
-    } else if (zSP < -1.0 && zD > 0 && zL < 0) {
+    } else if (zSP < -1.0 && zD > 0 && (noLikesInClass ? zL <= 0 : zL < 0)) {
       status = 'Rejected';
     } else if (zSI < -1.0 && L <= meanLikes) {
       status = 'Neglected';
@@ -301,26 +311,43 @@ export function calculateClassAggregate(
     };
   }
 
-  const maxPossibleEdges = totalStudents * (totalStudents - 1) || 1;
+  const studentIdSet = new Set(students.map((s) => s.id));
+  const seenLikeKeys = new Set<string>();
+  const uniqueLikes: SociometricNomination[] = [];
+  nominations.forEach((n) => {
+    if (
+      n.type === 'like' &&
+      n.studentId !== n.targetId &&
+      studentIdSet.has(n.studentId) &&
+      studentIdSet.has(n.targetId)
+    ) {
+      const k = `${n.criteria}:${n.studentId}->${n.targetId}`;
+      if (!seenLikeKeys.has(k)) {
+        seenLikeKeys.add(k);
+        uniqueLikes.push(n);
+      }
+    }
+  });
 
-  // Count positive edges
-  const positiveEdges = nominations.filter((n) => n.type === 'like').length;
-  const density = Number((positiveEdges / maxPossibleEdges).toFixed(3));
+  const maxPossibleEdgesPerCriterion = totalStudents * (totalStudents - 1) || 1;
+  const activeCriteriaCount = Math.max(1, new Set(nominations.map((n) => n.criteria)).size);
 
-  // Count reciprocal positive nominations
+  // Normalized multi-criteria network density (0.000 - 1.000)
+  const positiveEdges = uniqueLikes.length;
+  const density = Number(
+    Math.min(1, positiveEdges / (maxPossibleEdgesPerCriterion * activeCriteriaCount)).toFixed(3)
+  );
+
+  // Count reciprocal positive nominations scoped by criterion (consistent with SNAVisualizer)
   let reciprocalCount = 0;
   const edgeSet = new Set<string>();
-  nominations
-    .filter((n) => n.type === 'like')
-    .forEach((n) => edgeSet.add(`${n.studentId}->${n.targetId}`));
+  uniqueLikes.forEach((n) => edgeSet.add(`${n.criteria}:${n.studentId}->${n.targetId}`));
 
-  nominations
-    .filter((n) => n.type === 'like')
-    .forEach((n) => {
-      if (edgeSet.has(`${n.targetId}->${n.studentId}`)) {
-        reciprocalCount++;
-      }
-    });
+  uniqueLikes.forEach((n) => {
+    if (edgeSet.has(`${n.criteria}:${n.targetId}->${n.studentId}`)) {
+      reciprocalCount++;
+    }
+  });
 
   const reciprocityRate =
     positiveEdges > 0 ? Number(((reciprocalCount / positiveEdges) * 100).toFixed(1)) : 0;
@@ -345,10 +372,10 @@ export function calculateClassAggregate(
   });
 
   // Calculate social climate score (0-100)
-  // Higher density & reciprocity + fewer rejected students = higher climate score
+  // Scaled density bonus accounts for normalized per-criterion density (~0.10-0.25 typical in 3-choice classroom surveys)
   const rejectionPenalty = statusCounts.Rejected * 12;
   const neglectedPenalty = statusCounts.Neglected * 6;
-  const densityBonus = density * 120;
+  const densityBonus = Math.min(35, density * 180);
   const reciprocityBonus = (reciprocityRate / 100) * 25;
 
   let rawClimate = 65 + densityBonus + reciprocityBonus - rejectionPenalty - neglectedPenalty;
@@ -375,13 +402,13 @@ export function calculateClassAggregate(
       `Terdapat ${statusCounts.Neglected} siswa terisolasi ('Neglected'). Terapkan metode cooperative jigsaw learning dan reorganisasi tempat duduk berkala untuk mencairkan sub-grup tertutup.`
     );
   }
-  if (density < 0.25) {
+  if (density < 0.1) {
     dssStrategicAdvice.push(
       `Kepadatan jaringan sosial kelas rendah (${density}). Iklim kelas cenderung terfragmentasi; jadwalkan program team-building dan bimbingan klasikal tentang empati.`
     );
   } else {
     dssStrategicAdvice.push(
-      `Jaringan sosial kelas memiliki kohesi yang baik dengan tingkat resiprositas ${reciprocityRate}%. Pertahankan ruang dialog terbuka dan apresiasi kegiatan kolaboratif.`
+      `Jaringan sosial kelas memiliki kohesi yang baik (densitas ${density}) dengan tingkat resiprositas ${reciprocityRate}%. Pertahankan ruang dialog terbuka dan apresiasi kegiatan kolaboratif.`
     );
   }
 

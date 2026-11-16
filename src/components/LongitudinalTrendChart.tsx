@@ -15,12 +15,23 @@ export const LongitudinalTrendChart: React.FC<LongitudinalTrendChartProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<'student' | 'class'>('student');
 
+  const currentRejected = allMetrics.filter((m) => m.status === 'Rejected').length;
+  const currentNeglected = allMetrics.filter((m) => m.status === 'Neglected').length;
+  const currentPopular = allMetrics.filter((m) => m.status === 'Popular').length;
+  const activeN = allMetrics.length;
+  const totalLikesCount = allMetrics.reduce((acc, m) => acc + (m.likesReceived || 0), 0);
+  const currentDensity = activeN > 1 ? Number((totalLikesCount / (activeN * (activeN - 1) * 2)).toFixed(3)) : 0;
+  const currentClimate =
+    activeN === 0
+      ? 0
+      : Math.min(100, Math.max(10, Math.round(65 + Math.min(35, currentDensity * 180) + 8 - currentRejected * 12 - currentNeglected * 6)));
+
   // Multi-semester class aggregate trends
   const classTrends = [
     {
       periodCode: '2025-S1',
       name: 'Sem 1 25/26',
-      density: 0.28,
+      density: 0.14,
       rejectedCount: 1,
       neglectedCount: 2,
       popularCount: 2,
@@ -29,7 +40,7 @@ export const LongitudinalTrendChart: React.FC<LongitudinalTrendChartProps> = ({
     {
       periodCode: '2025-S2',
       name: 'Sem 2 25/26',
-      density: 0.25,
+      density: 0.12,
       rejectedCount: 2,
       neglectedCount: 3,
       popularCount: 3,
@@ -38,13 +49,15 @@ export const LongitudinalTrendChart: React.FC<LongitudinalTrendChartProps> = ({
     {
       periodCode: '2026-S1',
       name: 'Sem 1 26/27 (Aktif)',
-      density: 0.22,
-      rejectedCount: allMetrics.filter((m) => m.status === 'Rejected').length || 1,
-      neglectedCount: allMetrics.filter((m) => m.status === 'Neglected').length || 1,
-      popularCount: allMetrics.filter((m) => m.status === 'Popular').length || 2,
-      climateScore: 60,
+      density: currentDensity,
+      rejectedCount: currentRejected,
+      neglectedCount: currentNeglected,
+      popularCount: currentPopular,
+      climateScore: currentClimate,
     },
   ];
+
+  const historyList = selectedStudent?.longitudinalHistory || [];
 
   return (
     <div className="rounded-2xl bg-slate-900 border border-slate-800 p-4 shadow-xl text-slate-100">
@@ -126,11 +139,11 @@ export const LongitudinalTrendChart: React.FC<LongitudinalTrendChartProps> = ({
 
               {/* Trajectory Timeline Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {selectedStudent.longitudinalHistory.map((hist, idx) => (
+                {historyList.map((hist, idx) => (
                   <div
                     key={hist.periodCode}
                     className={`p-3.5 rounded-xl border relative transition ${
-                      idx === selectedStudent.longitudinalHistory.length - 1
+                      idx === historyList.length - 1
                         ? 'bg-indigo-950/30 border-indigo-500/50 shadow-md'
                         : 'bg-slate-950/40 border-slate-800'
                     }`}
@@ -189,7 +202,7 @@ export const LongitudinalTrendChart: React.FC<LongitudinalTrendChartProps> = ({
                   </div>
                   <p className="text-slate-300 mt-0.5">
                     {selectedStudent.status === 'Rejected'
-                      ? `Pola menunjukkan tren penurunan preferensi sosial secara bertahap dari ${selectedStudent.longitudinalHistory[0].status} pada semester lalu menjadi Rejected. Eskalasi ini mengindikasikan isolasi yang mengakar, membutuhkan intervensi terstruktur sebelum siswa menarik diri total.`
+                      ? `Pola menunjukkan tren penurunan preferensi sosial secara bertahap dari ${historyList[0]?.status || 'Average'} pada semester lalu menjadi Rejected. Eskalasi ini mengindikasikan isolasi yang mengakar, membutuhkan intervensi terstruktur sebelum siswa menarik diri total.`
                       : `Perkembangan sosiometri siswa stabil dan menunjukkan integrasi sosial yang baik di lingkungan kelas.`}
                   </p>
                 </div>
@@ -239,7 +252,9 @@ export const LongitudinalTrendChart: React.FC<LongitudinalTrendChartProps> = ({
                 Rekomendasi Decision Support System (DSS) untuk Kepala Sekolah:
               </div>
               <p className="text-slate-400 leading-relaxed">
-                Kepadatan relasi sosiometri kelas mengalami penurunan tren dari 0.28 ke 0.22 dalam rentang 3 semester. Rekomendasi kebijakan: Adakan program orientasi pertemanan kembali, optimalkan jam bimbingan klasikal, dan berikan arahan wali kelas untuk melakukan rotasi kelompok belajar setiap 2 pekan.
+                {activeN === 0
+                  ? 'Data sosiometri untuk kelas dan periode aktif belum diisi. Silakan unggah berkas Excel kuesioner siswa untuk mengaktifkan perbandingan tren lintas semester.'
+                  : `Pada periode aktif tercatat ${currentRejected} siswa Rejected, ${currentNeglected} siswa Neglected, dan ${currentPopular} siswa Popular dengan densitas ${currentDensity}. Rekomendasi kebijakan: Optimalkan jam bimbingan klasikal dan lakukan rotasi kelompok belajar inklusif setiap 2 pekan.`}
               </p>
             </div>
           </div>

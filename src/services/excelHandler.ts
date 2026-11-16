@@ -305,21 +305,39 @@ export async function parseUploadedExcel(
 
     const effectiveClassName = detectedClassName || className;
 
-    // Student Lookup Tables
+    // Active Roster Lookup Tables (STRICTLY populated ONLY from students present in the uploaded file)
     const exactNameMap = new Map<string, Student>();
     const alphaNameMap = new Map<string, Student>();
     const nisMap = new Map<string, Student>();
     const indexMap = new Map<string, Student>();
     const students: Student[] = [];
 
-    // Pre-populate with existing students if any
+    // Separate existing student ID lookup so matched names keep IDs without polluting nomination resolver
+    const existingByExactName = new Map<string, Student>();
+    const existingByAlphaName = new Map<string, Student>();
+    const existingByNis = new Map<string, Student>();
     existingStudents.forEach((s) => {
-      const cName = cleanStr(s.name).toLowerCase();
-      exactNameMap.set(cName, s);
-      alphaNameMap.set(cleanAlpha(s.name), s);
-      if (s.nis) nisMap.set(cleanStr(s.nis), s);
-      if (s.nisn) nisMap.set(cleanStr(s.nisn), s);
+      existingByExactName.set(cleanStr(s.name).toLowerCase(), s);
+      existingByAlphaName.set(cleanAlpha(s.name), s);
+      if (s.nis) existingByNis.set(cleanStr(s.nis), s);
+      if (s.nisn) existingByNis.set(cleanStr(s.nisn), s);
     });
+
+    const isPlaceholderVal = (val: string): boolean => {
+      const cleaned = cleanStr(val).toLowerCase();
+      if (!cleaned) return true;
+      return /^(-+|—+|–+|0+|nihil|kosong|tidak\s*ada|tdk\s*ada|none|n\/?a|null|belum\s*ada|\.+|_+|x)$/i.test(
+        cleaned
+      );
+    };
+
+    const isSummaryName = (nameVal: string): boolean => {
+      const low = cleanStr(nameVal).toLowerCase();
+      if (isPlaceholderVal(low)) return true;
+      return /^(total|jumlah|rata-rata|rata2|average|mean|keterangan|catatan|rekap|rekapitulasi)\b/i.test(
+        low
+      );
+    };
 
     // Helper to identify nomination signals in column names
     const isNominationSignal = (str: string): boolean => {
@@ -461,7 +479,7 @@ export async function parseUploadedExcel(
       const gender: 'L' | 'P' =
         genderRaw.startsWith('P') || genderRaw === 'PEREMPUAN' || genderRaw === 'FEMALE' ? 'P' : 'L';
 
-      if (!name) return;
+      if (!name || isSummaryName(name)) return;
 
       const normName = cleanStr(name).toLowerCase();
       const alphaKey = cleanAlpha(name);
@@ -473,15 +491,30 @@ export async function parseUploadedExcel(
         (cleanNis ? nisMap.get(cleanNis) : undefined);
 
       if (!studentObj) {
-        studentObj = {
-          id: `s-imp-${Date.now()}-${index}`,
-          nis: cleanNis,
-          name: cleanStr(name),
-          gender,
-          classId,
-          className: effectiveClassName,
-          schoolId,
-        };
+        const matchedExisting =
+          existingByExactName.get(normName) ||
+          existingByAlphaName.get(alphaKey) ||
+          (cleanNis ? existingByNis.get(cleanNis) : undefined);
+
+        studentObj = matchedExisting
+          ? {
+              ...matchedExisting,
+              name: cleanStr(name) || matchedExisting.name,
+              gender: gender || matchedExisting.gender,
+              nis: cleanNis || matchedExisting.nis,
+              classId,
+              className: effectiveClassName,
+              schoolId,
+            }
+          : {
+              id: `s-imp-${Date.now()}-${index}`,
+              nis: cleanNis,
+              name: cleanStr(name),
+              gender,
+              classId,
+              className: effectiveClassName,
+              schoolId,
+            };
       } else {
         studentObj = {
           ...studentObj,
@@ -490,6 +523,7 @@ export async function parseUploadedExcel(
           nis: cleanNis || studentObj.nis,
           classId,
           className: effectiveClassName,
+          schoolId,
         };
       }
 
@@ -668,6 +702,7 @@ export async function parseUploadedExcel(
       }
 
       rawTargets.forEach((targetStr) => {
+        if (isPlaceholderVal(targetStr)) return;
         const target = resolveStudent(targetStr, nominator.id);
         if (!target) {
           warnings.push(
@@ -759,8 +794,14 @@ export async function parseUploadedExcel(
     const matrixCols: { key: string; targetStudent: Student }[] = [];
 
     allRowKeys.forEach((k) => {
-      const low = cleanStr(k).toLowerCase();
+      const cleanedKey = cleanStr(k);
+      const low = cleanedKey.toLowerCase();
       const alpha = cleanAlpha(k);
+
+      // 0. Ignore SheetJS synthetic unnamed columns (e.g. __EMPTY, __EMPTY_1)
+      if (!cleanedKey || /^__empty/i.test(cleanedKey)) {
+        return;
+      }
 
       // 1. Skip behavioral columns
       if (isBehavioralCol(low)) {
@@ -772,11 +813,14 @@ export async function parseUploadedExcel(
         return;
       }
 
-      // 3. Matrix format: Check if column header is a student absen index (e.g. "1", "2", "3")
-      const cleanDigits = k.replace(/[^0-9]/g, '');
-      if (cleanDigits && indexMap.has(cleanDigits) && !isNominationSignal(low)) {
-        matrixCols.push({ key: k, targetStudent: indexMap.get(cleanDigits)! });
-        return;
+      // 3. Matrix format: Check ONLY if column header strictly represents a student absen index (e.g. "1", "01", "#1", "No 1", "No. 1")
+      const strictMatrixNumMatch = cleanedKey.match(/^(?:no\.?\s*|#)?(\d{1,3})$/i);
+      if (strictMatrixNumMatch && !isNominationSignal(low)) {
+        const cleanDigits = String(parseInt(strictMatrixNumMatch[1], 10));
+        if (indexMap.has(cleanDigits)) {
+          matrixCols.push({ key: k, targetStudent: indexMap.get(cleanDigits)! });
+          return;
+        }
       }
 
       // 4. Matrix format: Check if column header matches an exact student name
@@ -850,12 +894,11 @@ export async function parseUploadedExcel(
     // Step 2: Parse nominations and behavioral scores for each row
     rawJson.forEach((row, rowIndex) => {
       const nominatorName = extractStudentNameFromRow(row);
-      if (!nominatorName) return;
+      if (!nominatorName || isSummaryName(nominatorName)) return;
 
       const nominator =
         exactNameMap.get(cleanStr(nominatorName).toLowerCase()) ||
-        alphaNameMap.get(cleanAlpha(nominatorName)) ||
-        students[rowIndex];
+        alphaNameMap.get(cleanAlpha(nominatorName));
       if (!nominator) return;
 
       // 1. Process Belajar Columns

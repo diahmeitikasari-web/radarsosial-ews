@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Student,
   SchoolClass,
@@ -95,6 +95,21 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
     // Default to a priority high risk student (Rejected/Neglected) if exists
     return metrics.find((m) => m.riskLevel === 'Tinggi') || metrics[0] || null;
   });
+
+  // Resync selectedStudent when class data is updated via Excel upload or period change
+  useEffect(() => {
+    if (metrics.length === 0) {
+      setSelectedStudent(null);
+      return;
+    }
+    setSelectedStudent((prev) => {
+      if (prev) {
+        const updatedMatch = metrics.find((m) => m.studentId === prev.studentId);
+        if (updatedMatch) return updatedMatch;
+      }
+      return metrics.find((m) => m.riskLevel === 'Tinggi') || metrics[0] || null;
+    });
+  }, [metrics]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | CoieDodgeStatus>('ALL');
@@ -771,6 +786,7 @@ export const GuruBKDashboard: React.FC<GuruBKDashboardProps> = ({
           <SNAVisualizer
             students={students}
             nominations={nominations}
+            behaviors={behaviors}
             metrics={metrics}
             selectedStudentId={selectedStudent?.studentId}
             onSelectStudent={(s) => setSelectedStudent(s)}

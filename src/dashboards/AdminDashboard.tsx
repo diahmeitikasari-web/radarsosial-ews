@@ -13,7 +13,7 @@ import {
   StudentCalculatedMetrics,
 } from '../types';
 import { dataStorage } from '../services/dataStorage';
-import { calculateSNAMetrics } from '../services/snaEngine';
+import { calculateSNAMetrics, calculateClassAggregate } from '../services/snaEngine';
 import {
   ShieldAlert,
   Users,
@@ -199,7 +199,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Simulation Modal State
   const [showSimulationModal, setShowSimulationModal] = useState(false);
-  const [simClassId, setSimClassId] = useState(classes[0]?.id || 'c-8a');
+  const [simClassId, setSimClassId] = useState(classes[0]?.id || 'cls-3b');
   const [simPeriodId, setSimPeriodId] = useState(selectedPeriodId);
   const [simScenario, setSimScenario] = useState<'healthy' | 'polarized' | 'isolated_risk' | 'random'>('healthy');
   const [isSimulating, setIsSimulating] = useState(false);
@@ -292,19 +292,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Calculate SNA and Behavioral Metrics
   const calculatedMetrics = useMemo(() => {
-    return calculateSNAMetrics(allStudents, allNominations, allBehaviors);
-  }, [allStudents, allNominations, allBehaviors]);
+    return calculateSNAMetrics(
+      allStudents,
+      allNominations,
+      allBehaviors,
+      criteriaFilter === 'all' ? undefined : criteriaFilter
+    );
+  }, [allStudents, allNominations, allBehaviors, criteriaFilter]);
 
   // Reciprocal dyads map
   const reciprocalMap = useMemo(() => {
     const map = new Map<string, number>();
     const studentNomMap = new Map<string, Set<string>>();
     allNominations.forEach((nom) => {
-      if (nom.type === 'like') {
-        if (!studentNomMap.has(nom.fromStudentId)) {
-          studentNomMap.set(nom.fromStudentId, new Set());
+      if (nom.type === 'like' && nom.studentId && nom.targetId && nom.studentId !== nom.targetId) {
+        if (!studentNomMap.has(nom.studentId)) {
+          studentNomMap.set(nom.studentId, new Set());
         }
-        studentNomMap.get(nom.fromStudentId)!.add(nom.toStudentId);
+        studentNomMap.get(nom.studentId)!.add(nom.targetId);
       }
     });
     allStudents.forEach((st) => {
@@ -383,11 +388,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       zD: calc(filteredMetrics.map((m) => m.zDislikes ?? 0)),
       zSP: calc(filteredMetrics.map((m) => m.zSP ?? 0)),
       zSI: calc(filteredMetrics.map((m) => m.zSI ?? 0)),
-      prosocial: calc(filteredMetrics.map((m) => m.prosocialScore ?? 0)),
-      emotion: calc(filteredMetrics.map((m) => Math.max(0, 100 - (m.aggressiveScore ?? 0)))),
-      courage: calc(filteredMetrics.map((m) => Math.max(0, 100 - (m.withdrawnScore ?? 0)))),
-      control: calc(filteredMetrics.map((m) => Math.max(0, 100 - (m.hyperactiveScore ?? 0)))),
-      victimization: calc(filteredMetrics.map((m) => m.victimizationScore ?? 0)),
+      prosocial: calc(filteredMetrics.map((m) => (m.prosocialScore ?? 5) * 10)),
+      emotion: calc(filteredMetrics.map((m) => Math.max(10, (11 - (m.aggressiveScore ?? 2)) * 10))),
+      courage: calc(filteredMetrics.map((m) => Math.max(10, (11 - (m.withdrawnScore ?? 2)) * 10))),
+      control: calc(filteredMetrics.map((m) => Math.max(10, (11 - (m.hyperactiveScore ?? 2)) * 10))),
+      victimization: calc(filteredMetrics.map((m) => (m.victimizationScore ?? 1) * 10)),
     };
   }, [filteredMetrics]);
 
@@ -438,11 +443,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       const cells = behaviorDims.map((bCol) => {
         const colVals = filteredMetrics.map((m: any) => {
-          if (bCol.id === 'prosocial') return m.prosocialScore ?? 0;
-          if (bCol.id === 'emotion') return Math.max(0, 100 - (m.aggressiveScore ?? 0));
-          if (bCol.id === 'courage') return Math.max(0, 100 - (m.withdrawnScore ?? 0));
-          if (bCol.id === 'control') return Math.max(0, 100 - (m.hyperactiveScore ?? 0));
-          if (bCol.id === 'victimization') return Math.max(0, 100 - (m.victimizationScore ?? 0));
+          if (bCol.id === 'prosocial') return (m.prosocialScore ?? 5) * 10;
+          if (bCol.id === 'emotion') return Math.max(10, (11 - (m.aggressiveScore ?? 2)) * 10);
+          if (bCol.id === 'courage') return Math.max(10, (11 - (m.withdrawnScore ?? 2)) * 10);
+          if (bCol.id === 'control') return Math.max(10, (11 - (m.hyperactiveScore ?? 2)) * 10);
+          if (bCol.id === 'victimization') return Math.max(10, (11 - (m.victimizationScore ?? 1)) * 10);
           return m[bCol.key] ?? 0;
         });
         const r = calcPearson(rowVals, colVals);
@@ -501,16 +506,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return calculateSNAMetrics(drilldownStudents, drilldownNominations, drilldownBehaviors);
   }, [drilldownStudents, drilldownNominations, drilldownBehaviors]);
 
+  const drilldownAggregate = useMemo(() => {
+    const clsName = classes.find((c) => c.id === drilldownClassId)?.name || drilldownClassId;
+    const perName = periods.find((p) => p.id === selectedPeriodId)?.name || selectedPeriodId;
+    return calculateClassAggregate(
+      drilldownClassId,
+      clsName,
+      selectedPeriodId,
+      perName,
+      drilldownStudents,
+      drilldownNominations,
+      drilldownMetrics
+    );
+  }, [classes, periods, drilldownClassId, selectedPeriodId, drilldownStudents, drilldownNominations, drilldownMetrics]);
+
   // Reciprocal map for drilldown class
   const drilldownReciprocalMap = useMemo(() => {
     const map = new Map<string, number>();
     const studentNomMap = new Map<string, Set<string>>();
     drilldownNominations.forEach((nom) => {
-      if (nom.type === 'like') {
-        if (!studentNomMap.has(nom.fromStudentId)) {
-          studentNomMap.set(nom.fromStudentId, new Set());
+      if (nom.type === 'like' && nom.studentId && nom.targetId && nom.studentId !== nom.targetId) {
+        if (!studentNomMap.has(nom.studentId)) {
+          studentNomMap.set(nom.studentId, new Set());
         }
-        studentNomMap.get(nom.fromStudentId)!.add(nom.toStudentId);
+        studentNomMap.get(nom.studentId)!.add(nom.targetId);
       }
     });
     drilldownStudents.forEach((st) => {
@@ -532,66 +551,98 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (!selectedStudentDrilldown) return null;
     const stId = selectedStudentDrilldown.studentId;
 
-    const inNoms = drilldownNominations.filter((n) => n.toStudentId === stId);
-    const outNoms = drilldownNominations.filter((n) => n.fromStudentId === stId);
+    const inNoms = drilldownNominations.filter((n) => n.targetId === stId);
+    const outNoms = drilldownNominations.filter((n) => n.studentId === stId);
 
-    const outTargets = new Set(outNoms.filter((n) => n.type === 'like').map((n) => n.toStudentId));
-    const inSources = new Set(inNoms.filter((n) => n.type === 'like').map((n) => n.fromStudentId));
+    const outTargets = new Set(outNoms.filter((n) => n.type === 'like').map((n) => n.targetId));
+    const inSources = new Set(inNoms.filter((n) => n.type === 'like').map((n) => n.studentId));
     const mutualIds = new Set([...outTargets].filter((id) => inSources.has(id)));
 
     const studentMap = new Map(drilldownStudents.map((s) => [s.id, s.name]));
 
     return {
       inNoms: inNoms.map((n) => ({
-        fromName: studentMap.get(n.fromStudentId) || 'Teman Sekelas',
+        fromName: studentMap.get(n.studentId) || 'Teman Sekelas',
         type: n.type,
         criteria: n.criteria,
-        isMutual: n.type === 'like' && mutualIds.has(n.fromStudentId),
+        isMutual: n.type === 'like' && mutualIds.has(n.studentId),
       })),
       outNoms: outNoms.map((n) => ({
-        toName: studentMap.get(n.toStudentId) || 'Teman Sekelas',
+        toName: studentMap.get(n.targetId) || 'Teman Sekelas',
         type: n.type,
         criteria: n.criteria,
-        isMutual: n.type === 'like' && mutualIds.has(n.toStudentId),
+        isMutual: n.type === 'like' && mutualIds.has(n.targetId),
       })),
       mutualCount: mutualIds.size,
       mutualNames: [...mutualIds].map((id) => studentMap.get(id) || 'Teman Sekelas'),
     };
   }, [selectedStudentDrilldown, drilldownNominations, drilldownStudents]);
 
-  // Longitudinal Multi-Semester Class Aggregate Trends
-  const longitudinalData = [
-    {
-      periodCode: '2025-S1',
-      name: 'Sem 1 2025/2026',
-      density: 0.28,
-      reciprocityRate: 64,
-      rejectedCount: 1,
-      neglectedCount: 2,
-      popularCount: 2,
-      climateScore: 78,
-    },
-    {
-      periodCode: '2025-S2',
-      name: 'Sem 2 2025/2026',
-      density: 0.25,
-      reciprocityRate: 58,
-      rejectedCount: 2,
-      neglectedCount: 3,
-      popularCount: 3,
-      climateScore: 68,
-    },
-    {
-      periodCode: '2026-S1',
-      name: 'Sem 1 2026/2027 (Aktif)',
-      density: 0.22,
-      reciprocityRate: 52,
-      rejectedCount: filteredMetrics.filter((m) => m.status === 'Rejected').length || 1,
-      neglectedCount: filteredMetrics.filter((m) => m.status === 'Neglected').length || 1,
-      popularCount: filteredMetrics.filter((m) => m.status === 'Popular').length || 2,
-      climateScore: 62,
-    },
-  ];
+  // Longitudinal Multi-Semester Class Aggregate Trends (Live active snapshot + baseline reference)
+  const activePeriodAggregate = useMemo(() => {
+    const scopeName =
+      selectedClassId === 'ALL'
+        ? selectedSchoolId === 'ALL'
+          ? 'Seluruh Satuan Pendidikan'
+          : currentSelectedSchool?.name || 'Sekolah'
+        : classes.find((c) => c.id === selectedClassId)?.name || selectedClassId;
+    const periodObj = periods.find((p) => p.id === selectedPeriodId);
+    return calculateClassAggregate(
+      selectedClassId,
+      scopeName,
+      selectedPeriodId,
+      periodObj?.name || 'Periode Aktif',
+      allStudents,
+      allNominations,
+      calculatedMetrics
+    );
+  }, [
+    selectedClassId,
+    selectedSchoolId,
+    currentSelectedSchool,
+    classes,
+    periods,
+    selectedPeriodId,
+    allStudents,
+    allNominations,
+    calculatedMetrics,
+  ]);
+
+  const longitudinalData = useMemo(() => {
+    const currentPeriod = periods.find((p) => p.id === selectedPeriodId);
+    return [
+      {
+        periodCode: '2025-S1',
+        name: 'Sem 1 2025/2026 (Baseline)',
+        density: 0.28,
+        reciprocityRate: 64,
+        rejectedCount: 1,
+        neglectedCount: 2,
+        popularCount: 2,
+        climateScore: 78,
+      },
+      {
+        periodCode: '2025-S2',
+        name: 'Sem 2 2025/2026 (Baseline)',
+        density: 0.25,
+        reciprocityRate: 58,
+        rejectedCount: 2,
+        neglectedCount: 3,
+        popularCount: 3,
+        climateScore: 68,
+      },
+      {
+        periodCode: currentPeriod?.code || '2026-S1',
+        name: `${currentPeriod?.name || 'Sem 1 2026/2027'} (Aktif)`,
+        density: activePeriodAggregate.density,
+        reciprocityRate: activePeriodAggregate.reciprocityRate,
+        rejectedCount: filteredMetrics.filter((m) => m.status === 'Rejected').length,
+        neglectedCount: filteredMetrics.filter((m) => m.status === 'Neglected').length,
+        popularCount: filteredMetrics.filter((m) => m.status === 'Popular').length,
+        climateScore: activePeriodAggregate.climateScore,
+      },
+    ];
+  }, [periods, selectedPeriodId, activePeriodAggregate, filteredMetrics]);
 
   // Period Management Handlers
   const handleAddPeriod = (e: React.FormEvent) => {
@@ -715,11 +766,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       `"${m.status}"`,
       reciprocalMap.get(m.studentId) || 0,
       `"${m.riskLevel}"`,
-      m.prosocialScore ?? 0,
-      Math.max(0, 100 - (m.aggressiveScore ?? 0)),
-      Math.max(0, 100 - (m.withdrawnScore ?? 0)),
-      Math.max(0, 100 - (m.hyperactiveScore ?? 0)),
-      Math.max(0, 100 - (m.victimizationScore ?? 0)),
+      (m.prosocialScore ?? 5) * 10,
+      Math.max(10, (11 - (m.aggressiveScore ?? 2)) * 10),
+      Math.max(10, (11 - (m.withdrawnScore ?? 2)) * 10),
+      Math.max(10, (11 - (m.hyperactiveScore ?? 2)) * 10),
+      Math.max(10, (11 - (m.victimizationScore ?? 1)) * 10),
       `"${(m.dssRecommendation || '').replace(/"/g, '""')}"`,
     ]);
 
@@ -1704,7 +1755,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             {m.zSI != null ? m.zSI.toFixed(2) : '0.00'}
                           </td>
                           <td className="p-3 text-center font-mono text-emerald-400 font-bold">
-                            {m.prosocialScore ?? 0}
+                            {(m.prosocialScore ?? 5) * 10}
                           </td>
                           <td className="p-3 text-center">
                             <span
@@ -1932,9 +1983,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="p-3 rounded-xl bg-[#0a2a4a] border border-[#1a3f64]">
                 <span className="text-[#b0c4de] text-[11px] block">Ikatan Timbal Balik (Resiprokal)</span>
                 <span className="text-base font-bold text-[#f7d970] mt-0.5 block">
-                  {drilldownNominations.filter((n) => n.type === 'like').length > 0
-                    ? `${Math.round(([...drilldownReciprocalMap.values()].reduce((a, b) => a + b, 0) / (drilldownNominations.filter((n) => n.type === 'like').length || 1)) * 50)}%`
-                    : '0%'}
+                  {drilldownAggregate.climateIndex === 'Belum Terisi'
+                    ? '0%'
+                    : `${drilldownAggregate.reciprocityRate}%`}
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-[#0a2a4a] border border-[#1a3f64]">
@@ -1986,11 +2037,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   const xPercent = Math.max(8, Math.min(92, 50 + (zSP / 2.5) * 40));
 
                   // Compute Y coordinate (0 to 100 behavior score mapped to 90% to 10%)
-                  let rawY = student.prosocialScore ?? 50;
-                  if (selectedHeatmapCell?.colId === 'emotion') rawY = Math.max(0, 100 - (student.aggressiveScore ?? 0));
-                  if (selectedHeatmapCell?.colId === 'courage') rawY = Math.max(0, 100 - (student.withdrawnScore ?? 0));
-                  if (selectedHeatmapCell?.colId === 'control') rawY = Math.max(0, 100 - (student.hyperactiveScore ?? 0));
-                  if (selectedHeatmapCell?.colId === 'victimization') rawY = Math.max(0, 100 - (student.victimizationScore ?? 0));
+                  let rawY = (student.prosocialScore ?? 5) * 10;
+                  if (selectedHeatmapCell?.colId === 'emotion') rawY = Math.max(10, (11 - (student.aggressiveScore ?? 2)) * 10);
+                  if (selectedHeatmapCell?.colId === 'courage') rawY = Math.max(10, (11 - (student.withdrawnScore ?? 2)) * 10);
+                  if (selectedHeatmapCell?.colId === 'control') rawY = Math.max(10, (11 - (student.hyperactiveScore ?? 2)) * 10);
+                  if (selectedHeatmapCell?.colId === 'victimization') rawY = Math.max(10, (11 - (student.victimizationScore ?? 1)) * 10);
 
                   const yPercent = Math.max(10, Math.min(90, 100 - (rawY / 100) * 80 - 10));
 
@@ -2411,7 +2462,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <strong className="text-white text-sm block mb-1">
                 Catatan Analis Riset Lab:
               </strong>
-              Terdapat indikasi penurunan densitas jaringan dari 28% ke 22% pada semester berjalan, diiringi peningkatan siswa berstatus terisolasi. Disarankan aktivasi program pembentukan kelompok belajar heterogen dan bimbingan klasikal penguatan relasi pertemanan sehat sebelum ujian tengah semester.
+              {activePeriodAggregate.climateIndex === 'Belum Terisi'
+                ? 'Data kuesioner sosiometri pada cakupan filter aktif belum terisi. Unggah data rombel terkait untuk memantau perubahan densitas jaringan dan dinamika status siswa secara faktual.'
+                : `Pada periode aktif (${activePeriodAggregate.className}), densitas jaringan tercatat sebesar ${Math.round(activePeriodAggregate.density * 100)}% dengan tingkat resiprositas ${activePeriodAggregate.reciprocityRate}% (Skor Iklim ${activePeriodAggregate.climateScore}/100 — ${activePeriodAggregate.climateIndex}). Terdeteksi ${activePeriodAggregate.statusCounts.Rejected} siswa berstatus Rejected dan ${activePeriodAggregate.statusCounts.Neglected} siswa berstatus Neglected yang menjadi prioritas penguatan relasi sosial.`}
             </div>
           </div>
         </div>

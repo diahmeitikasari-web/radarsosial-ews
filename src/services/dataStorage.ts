@@ -68,6 +68,11 @@ export type CloudWriteHandler = {
   saveDocument: (collectionName: string, id: string, data: any) => Promise<void>;
   deleteDocument: (collectionName: string, id: string) => Promise<void>;
   saveBatch: (collectionName: string, items: Array<{ id: string; [k: string]: any }>) => Promise<void>;
+  replaceScopedBatch?: (
+    collectionName: string,
+    filters: Array<{ field: string; value: string }>,
+    items: Array<{ id: string; [k: string]: any }>
+  ) => Promise<void>;
 };
 
 let cloudHandler: CloudWriteHandler | null = null;
@@ -252,8 +257,13 @@ export class DataStorageService {
         break;
       }
       case 'students': {
+        const syncedClassIds = new Set(items.map((st: Student) => st.classId).filter(Boolean));
         const studentMap = new Map<string, Student>();
-        INITIAL_STUDENTS.forEach((st) => studentMap.set(st.id, st));
+        INITIAL_STUDENTS.forEach((st) => {
+          if (!syncedClassIds.has(st.classId)) {
+            studentMap.set(st.id, st);
+          }
+        });
         items.forEach((st: Student) => studentMap.set(st.id, { ...studentMap.get(st.id), ...st }));
         this.students = Array.from(studentMap.values());
         setStored(STORAGE_KEYS.STUDENTS, this.students);
@@ -274,16 +284,30 @@ export class DataStorageService {
         break;
       }
       case 'nominations': {
+        const syncedScopes = new Set(
+          items.map((nm: SociometricNomination) => `${nm.periodId}_${nm.classId}`)
+        );
         const nomMap = new Map<string, SociometricNomination>();
-        generateSeedNominations('period-2026-s1').forEach((nm) => nomMap.set(nm.id, nm));
+        generateSeedNominations('period-2026-s1').forEach((nm) => {
+          if (!syncedScopes.has(`${nm.periodId}_${nm.classId}`)) {
+            nomMap.set(nm.id, nm);
+          }
+        });
         items.forEach((nm: SociometricNomination) => nomMap.set(nm.id, nm));
         this.nominations = Array.from(nomMap.values());
         setStored(STORAGE_KEYS.NOMINATIONS, this.nominations);
         break;
       }
       case 'behaviors': {
+        const syncedScopes = new Set(
+          items.map((b: PeerBehavioralRating) => `${b.periodId}_${b.classId}`)
+        );
         const behMap = new Map<string, PeerBehavioralRating>();
-        generateSeedBehavioralRatings('period-2026-s1').forEach((b) => behMap.set(b.id, b));
+        generateSeedBehavioralRatings('period-2026-s1').forEach((b) => {
+          if (!syncedScopes.has(`${b.periodId}_${b.classId}`)) {
+            behMap.set(b.id, b);
+          }
+        });
         items.forEach((b: PeerBehavioralRating) => behMap.set(b.id, b));
         this.behaviors = Array.from(behMap.values());
         setStored(STORAGE_KEYS.BEHAVIORS, this.behaviors);
@@ -568,7 +592,11 @@ export class DataStorageService {
   public setStudentsForClass(classId: string, newStudents: Student[]): void {
     this.students = this.students.filter((s) => s.classId !== classId).concat(newStudents);
     setStored(STORAGE_KEYS.STUDENTS, this.students);
-    cloudHandler?.saveBatch('students', newStudents);
+    if (cloudHandler?.replaceScopedBatch) {
+      cloudHandler.replaceScopedBatch('students', [{ field: 'classId', value: classId }], newStudents);
+    } else {
+      cloudHandler?.saveBatch('students', newStudents);
+    }
     this.notifySubscribers('students');
   }
 
@@ -590,7 +618,18 @@ export class DataStorageService {
       .filter((n) => !(n.periodId === periodId && n.classId === classId))
       .concat(newNoms);
     setStored(STORAGE_KEYS.NOMINATIONS, this.nominations);
-    cloudHandler?.saveBatch('nominations', newNoms);
+    if (cloudHandler?.replaceScopedBatch) {
+      cloudHandler.replaceScopedBatch(
+        'nominations',
+        [
+          { field: 'periodId', value: periodId },
+          { field: 'classId', value: classId },
+        ],
+        newNoms
+      );
+    } else {
+      cloudHandler?.saveBatch('nominations', newNoms);
+    }
     this.notifySubscribers('nominations');
   }
 
@@ -611,7 +650,18 @@ export class DataStorageService {
       .filter((b) => !(b.periodId === periodId && b.classId === classId))
       .concat(newBehaviors);
     setStored(STORAGE_KEYS.BEHAVIORS, this.behaviors);
-    cloudHandler?.saveBatch('behaviors', newBehaviors);
+    if (cloudHandler?.replaceScopedBatch) {
+      cloudHandler.replaceScopedBatch(
+        'behaviors',
+        [
+          { field: 'periodId', value: periodId },
+          { field: 'classId', value: classId },
+        ],
+        newBehaviors
+      );
+    } else {
+      cloudHandler?.saveBatch('behaviors', newBehaviors);
+    }
     this.notifySubscribers('behaviors');
   }
 

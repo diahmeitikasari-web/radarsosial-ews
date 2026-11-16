@@ -7,10 +7,28 @@ import {
   deleteDoc,
   onSnapshot,
   writeBatch,
+  query,
+  where,
   Unsubscribe,
   testConnection,
 } from './firebase';
 import { dataStorage, registerCloudHandler } from './dataStorage';
+
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefined(item)) as unknown as T;
+  }
+  if (value !== null && typeof value === 'object') {
+    const cleaned: Record<string, any> = {};
+    Object.entries(value as Record<string, any>).forEach(([k, v]) => {
+      if (v !== undefined) {
+        cleaned[k] = stripUndefined(v);
+      }
+    });
+    return cleaned as T;
+  }
+  return value;
+}
 import {
   School,
   SchoolClass,
@@ -342,7 +360,7 @@ class FirestoreSyncService {
    */
   public async saveDocument(collectionName: string, docId: string, data: any): Promise<void> {
     try {
-      await setDoc(doc(db, collectionName, docId), data, { merge: true });
+      await setDoc(doc(db, collectionName, docId), stripUndefined(data), { merge: true });
       this.setStatus('connected');
     } catch (e) {
       console.warn(`[FirestoreSync] Failed to save document ${collectionName}/${docId}:`, e);
@@ -375,13 +393,57 @@ class FirestoreSyncService {
         const chunk = items.slice(i, i + chunkSize);
         const batch = writeBatch(db);
         chunk.forEach((item) => {
-          batch.set(doc(db, collectionName, item.id), item, { merge: true });
+          batch.set(doc(db, collectionName, item.id), stripUndefined(item), { merge: true });
         });
         await batch.commit();
       }
       this.setStatus('connected');
     } catch (e) {
       console.warn(`[FirestoreSync] Failed batch save to ${collectionName}:`, e);
+      this.setStatus('offline');
+    }
+  }
+
+  /**
+   * Atomically clean overwrite a scoped slice (e.g. classId or periodId+classId) in Firestore
+   */
+  public async replaceScopedBatch(
+    collectionName: string,
+    filters: Array<{ field: string; value: string }>,
+    items: Array<{ id: string; [k: string]: any }>
+  ): Promise<void> {
+    try {
+      const constraints = filters.map((f) => where(f.field, '==', f.value));
+      const existingSnap = await getDocs(query(collection(db, collectionName), ...constraints));
+      const keepIds = new Set((items || []).map((it) => it.id));
+
+      const ops: Array<{ type: 'delete' | 'set'; id: string; data?: any }> = [];
+      existingSnap.docs.forEach((d) => {
+        if (!keepIds.has(d.id)) {
+          ops.push({ type: 'delete', id: d.id });
+        }
+      });
+      (items || []).forEach((item) => {
+        ops.push({ type: 'set', id: item.id, data: stripUndefined(item) });
+      });
+
+      const chunkSize = 450;
+      for (let i = 0; i < ops.length; i += chunkSize) {
+        const chunk = ops.slice(i, i + chunkSize);
+        const batch = writeBatch(db);
+        chunk.forEach((op) => {
+          const ref = doc(db, collectionName, op.id);
+          if (op.type === 'delete') {
+            batch.delete(ref);
+          } else {
+            batch.set(ref, op.data, { merge: true });
+          }
+        });
+        await batch.commit();
+      }
+      this.setStatus('connected');
+    } catch (e) {
+      console.warn(`[FirestoreSync] Failed scoped replacement on ${collectionName}:`, e);
       this.setStatus('offline');
     }
   }
@@ -400,6 +462,7 @@ registerCloudHandler({
   saveDocument: (col, id, data) => firestoreSync.saveDocument(col, id, data),
   deleteDocument: (col, id) => firestoreSync.deleteDocument(col, id),
   saveBatch: (col, items) => firestoreSync.saveBatch(col, items),
+  replaceScopedBatch: (col, filters, items) => firestoreSync.replaceScopedBatch(col, filters, items),
 });
 
 // Auto-initialize real-time cloud sync
