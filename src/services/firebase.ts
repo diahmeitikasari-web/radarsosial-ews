@@ -2,9 +2,11 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   getFirestore,
   doc,
+  getDoc,
   getDocFromServer,
   collection,
   getDocs,
+  getDocsFromServer,
   setDoc,
   deleteDoc,
   onSnapshot,
@@ -13,6 +15,8 @@ import {
   where,
   Unsubscribe,
   Firestore,
+  QuerySnapshot,
+  DocumentData,
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -24,6 +28,118 @@ export const db: Firestore =
   firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
     ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
     : getFirestore(app);
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  code?: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo: Array<{ providerId?: string | null; email?: string | null }>;
+  };
+}
+
+export interface ClassifiedFirestoreError {
+  kind: 'offline' | 'permission' | 'quota' | 'unknown';
+  userMessage: string;
+  rawMessage: string;
+  code: string;
+}
+
+export function classifyFirestoreError(error: unknown): ClassifiedFirestoreError {
+  const errObj = error as any;
+  const code = String(errObj?.code || '').toLowerCase();
+  const rawMessage = error instanceof Error ? error.message : String(error || 'Unknown Firestore error');
+  const msgLower = rawMessage.toLowerCase();
+
+  if (
+    code === 'resource-exhausted' ||
+    msgLower.includes('quota exceeded') ||
+    msgLower.includes('resource_exhausted')
+  ) {
+    return {
+      kind: 'quota',
+      code,
+      rawMessage,
+      userMessage:
+        'Kuota harian baca/tulis Cloud Firestore telah tercapai. Data tetap tersimpan aman di peramban lokal dan kuota akan reset keesokan harinya.',
+    };
+  }
+
+  if (code === 'permission-denied' || msgLower.includes('missing or insufficient permissions')) {
+    return {
+      kind: 'permission',
+      code,
+      rawMessage,
+      userMessage:
+        'Akses tulis ke Cloud Firestore ditolak oleh aturan keamanan (permission-denied). Periksa deployment firestore.rules.',
+    };
+  }
+
+  if (
+    code === 'unavailable' ||
+    code === 'failed-precondition' ||
+    msgLower.includes('offline') ||
+    msgLower.includes('client is offline') ||
+    msgLower.includes('network')
+  ) {
+    return {
+      kind: 'offline',
+      code,
+      rawMessage,
+      userMessage:
+        'Koneksi ke server Cloud Firestore terputus atau perangkat sedang offline. Data tersimpan di cache lokal.',
+    };
+  }
+
+  return {
+    kind: 'unknown',
+    code,
+    rawMessage,
+    userMessage: `Gagal menyinkronkan ke Cloud Firestore: ${rawMessage}`,
+  };
+}
+
+export function handleFirestoreError(
+  error: unknown,
+  operationType: OperationType,
+  path: string | null
+): never {
+  const classified = classifyFirestoreError(error);
+  const errInfo: FirestoreErrorInfo = {
+    error: classified.rawMessage,
+    code: classified.code || undefined,
+    operationType,
+    path,
+    authInfo: {
+      userId: null,
+      email: null,
+      emailVerified: null,
+      isAnonymous: null,
+      tenantId: null,
+      providerInfo: [],
+    },
+  };
+  console.error('[Firestore Error]', JSON.stringify(errInfo));
+  const enriched = new Error(classified.userMessage);
+  (enriched as any).firestoreInfo = errInfo;
+  (enriched as any).kind = classified.kind;
+  throw enriched;
+}
 
 // Connection test state
 let isCloudConnected = false;
@@ -49,41 +165,42 @@ function notifyConnection(status: boolean) {
   });
 }
 
-// Validate connection to Firestore as required by firebase-skill
+// Validate connection to Firestore as required by firebase-integration skill
 export async function testConnection(): Promise<boolean> {
   try {
-    // Attempt a read from server to verify live connectivity
-    await getDocFromServer(doc(db, 'settings', 'connection_test'));
+    await getDocFromServer(doc(db, 'test', 'connection'));
     notifyConnection(true);
     return true;
-  } catch (error: any) {
-    if (error && typeof error === 'object') {
-      const msg = error.message || '';
-      const code = error.code || '';
-      if (code === 'unavailable' || code === 'failed-precondition' || msg.includes('offline') || msg.includes('client is offline')) {
-        console.warn('[Firebase] Client appears offline, using local offline cache.');
-        notifyConnection(false);
-        return false;
-      }
-      if (code === 'permission-denied' || msg.includes('Missing or insufficient permissions')) {
-        console.warn('[Firebase] Permissions pending or denied. Operating in local storage mode.');
-        notifyConnection(false);
-        return false;
-      }
+  } catch (error: unknown) {
+    const classified = classifyFirestoreError(error);
+    if (classified.kind === 'offline') {
+      console.warn('[Firebase] Client appears offline, using local offline cache.');
+      notifyConnection(false);
+      return false;
     }
-    // Document not found or other non-fatal errors still indicate server connection
+    if (classified.kind === 'permission' || classified.kind === 'quota') {
+      console.warn(`[Firebase] ${classified.userMessage}`);
+      notifyConnection(false);
+      return false;
+    }
+    // Document not found (empty test/connection doc) still confirms live server roundtrip
     notifyConnection(true);
     return true;
   }
 }
 
-// Run connection test on module load
-testConnection().catch(() => notifyConnection(false));
+// Run connection test on browser boot
+if (typeof window !== 'undefined') {
+  testConnection().catch(() => notifyConnection(false));
+}
 
 export {
   collection,
   doc,
+  getDoc,
+  getDocFromServer,
   getDocs,
+  getDocsFromServer,
   setDoc,
   deleteDoc,
   onSnapshot,
@@ -91,4 +208,6 @@ export {
   query,
   where,
   type Unsubscribe,
+  type QuerySnapshot,
+  type DocumentData,
 };

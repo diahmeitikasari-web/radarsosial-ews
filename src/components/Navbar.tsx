@@ -53,12 +53,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const { currentUser, logout } = useAuth();
   const notifications = dataStorage.getNotifications(currentUser?.role);
-  const [cloudStatus, setCloudStatus] = React.useState<CloudSyncStatus>('connected');
+  const [cloudStatus, setCloudStatus] = React.useState<CloudSyncStatus>('idle');
+  const [lastSynced, setLastSynced] = React.useState<Date | null>(null);
+  const [lastError, setLastError] = React.useState<string | null>(null);
   const [isManualSyncing, setIsManualSyncing] = React.useState(false);
 
   React.useEffect(() => {
-    const unsub = firestoreSync.onStatusChange((status) => {
+    const unsub = firestoreSync.onStatusChange((status, syncedAt, errMsg) => {
       setCloudStatus(status);
+      setLastSynced(syncedAt);
+      setLastError(errMsg);
     });
     return () => unsub();
   }, []);
@@ -66,8 +70,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   const handleManualSync = async () => {
     setIsManualSyncing(true);
     await firestoreSync.pullAllFromCloud();
-    setTimeout(() => setIsManualSyncing(false), 600);
+    setTimeout(() => setIsManualSyncing(false), 500);
   };
+
+  const formattedLastSync = lastSynced
+    ? lastSynced.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+    : null;
 
   const getRoleLabel = (role?: UserRole) => {
     switch (role) {
@@ -187,40 +195,44 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={handleManualSync}
             disabled={isManualSyncing}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-xl text-xs font-medium border transition cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border transition cursor-pointer ${
               cloudStatus === 'connected'
                 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
-                : cloudStatus === 'syncing' || isManualSyncing
-                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
-                : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                : cloudStatus === 'syncing' || isManualSyncing || cloudStatus === 'idle'
+                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                : 'bg-rose-500/15 text-rose-300 border-rose-500/30 hover:bg-rose-500/25'
             }`}
-            title={`Database Firestore: ${
-              cloudStatus === 'connected'
-                ? 'Terhubung & Sinkron Antar-Peramban (Klik untuk segarkan)'
-                : cloudStatus === 'syncing'
-                ? 'Sedang menyinkronkan data...'
-                : 'Mode offline / fallback lokal'
-            }`}
+            title={
+              lastError
+                ? `Gangguan Cloud Firestore: ${lastError} (Klik untuk coba sinkron lagi)`
+                : cloudStatus === 'connected'
+                ? `Cloud Firestore Aktif & Tersinkron Antar-Perangkat${formattedLastSync ? ` (${formattedLastSync})` : ''}. Klik untuk tarik data terbaru.`
+                : cloudStatus === 'syncing' || isManualSyncing || cloudStatus === 'idle'
+                ? 'Menyinkronkan data dengan Cloud Firestore...'
+                : 'Mode offline / gagal terhubung. Klik untuk sinkron ulang.'
+            }
           >
-            {cloudStatus === 'offline' ? (
+            {cloudStatus === 'offline' || cloudStatus === 'error' ? (
               <CloudOff className="w-3.5 h-3.5 text-rose-400" />
-            ) : isManualSyncing || cloudStatus === 'syncing' ? (
+            ) : isManualSyncing || cloudStatus === 'syncing' || cloudStatus === 'idle' ? (
               <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" />
             ) : (
               <Cloud className="w-3.5 h-3.5 text-emerald-400" />
             )}
             <span className="hidden md:inline text-[11px] font-semibold">
-              {cloudStatus === 'connected'
-                ? 'Cloud Sync'
-                : cloudStatus === 'syncing' || isManualSyncing
+              {isManualSyncing || cloudStatus === 'syncing' || cloudStatus === 'idle'
                 ? 'Menyinkron...'
+                : cloudStatus === 'connected'
+                ? `Cloud Sync${formattedLastSync ? ` • ${formattedLastSync}` : ''}`
+                : cloudStatus === 'error'
+                ? 'Gagal Sinkron'
                 : 'Offline'}
             </span>
             <span
               className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                 cloudStatus === 'connected'
                   ? 'bg-emerald-400 animate-pulse'
-                  : cloudStatus === 'syncing' || isManualSyncing
+                  : cloudStatus === 'syncing' || isManualSyncing || cloudStatus === 'idle'
                   ? 'bg-amber-400'
                   : 'bg-rose-400'
               }`}

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { dataStorage } from './services/dataStorage';
+import './services/firestoreSync';
 import { calculateClassMetrics, calculateClassAggregate } from './services/snaEngine';
 import { Navbar } from './components/Navbar';
 import { OfflineIndicator } from './components/OfflineIndicator';
@@ -339,6 +340,7 @@ const MainApp: React.FC = () => {
                 schools={schools}
                 classes={classes}
                 periods={periods}
+                syncVersion={version}
                 onRefreshData={refresh}
               />
             )}
@@ -358,7 +360,16 @@ const MainApp: React.FC = () => {
           handleSelectClass(cid);
           refresh();
         }}
-        onUploadSuccess={() => refresh()}
+        onUploadSuccess={(res) => {
+          refresh();
+          if (res.cloudSynced) {
+            setSwitchToast({
+              message: `Tersimpan di Cloud Database (${res.students.length} siswa)`,
+              sub: 'Data otomatis sinkron ke seluruh perangkat & peramban lain.',
+            });
+            setTimeout(() => setSwitchToast(null), 3200);
+          }
+        }}
       />
 
       <OfficialPDFReport

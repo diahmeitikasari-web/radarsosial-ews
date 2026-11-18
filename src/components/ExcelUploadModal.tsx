@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Student, SchoolClass, Period } from '../types';
 import { generateExcelTemplate, parseUploadedExcel, ParsedExcelResult } from '../services/excelHandler';
 import { dataStorage } from '../services/dataStorage';
-import { FileSpreadsheet, Download, Upload, CheckCircle2, AlertTriangle, X, Loader2, ShieldCheck, RefreshCw } from 'lucide-react';
+import { FileSpreadsheet, Download, Upload, CheckCircle2, AlertTriangle, X, Loader2, ShieldCheck, RefreshCw, Cloud } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface ExcelUploadModalProps {
   isOpen: boolean;
@@ -11,7 +12,7 @@ interface ExcelUploadModalProps {
   activePeriod: Period;
   existingStudents: Student[];
   classes?: SchoolClass[];
-  onUploadSuccess: (result: ParsedExcelResult) => void;
+  onUploadSuccess: (result: ParsedExcelResult & { cloudSynced?: boolean }) => void;
   onSwitchClass?: (classId: string) => void;
 }
 
@@ -25,9 +26,12 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
   onUploadSuccess,
   onSwitchClass,
 }) => {
+  const { currentUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSavingToCloud, setIsSavingToCloud] = useState(false);
+  const [cloudError, setCloudError] = useState<string | null>(null);
   const [parsedResult, setParsedResult] = useState<ParsedExcelResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -41,7 +45,9 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
       setSelectedFile(null);
       setParsedResult(null);
       setErrorMsg(null);
+      setCloudError(null);
       setIsProcessing(false);
+      setIsSavingToCloud(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -135,100 +141,128 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
     }
   };
 
-  const handleConfirmSave = () => {
-    if (!parsedResult) return;
+  const handleConfirmSave = async () => {
+    if (!parsedResult || isSavingToCloud) return;
 
-    const manualTargetClass = classes.find((c) => c.id === selectedClassId) || activeClass;
-    let finalClassId = manualTargetClass.id;
-    let finalClassName = manualTargetClass.name;
-    const targetSchoolId = manualTargetClass.schoolId || activeClass.schoolId || classes[0]?.schoolId || 'sch-mtsn2-bangka';
+    setIsSavingToCloud(true);
+    setCloudError(null);
 
-    // Check if detected class matches an existing class or should create a new class in this school
-    if (parsedResult.detectedClassName && autoCreateNewClass) {
-      const dLower = parsedResult.detectedClassName.trim().toLowerCase();
-      const detectedNorm = dLower.replace(/[^a-z0-9]/g, '');
-      const existing = classes.find(
-        (c) =>
-          c.schoolId === targetSchoolId &&
-          (c.name.toLowerCase() === dLower ||
-            c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === detectedNorm ||
-            c.id.toLowerCase() === dLower ||
-            c.id.toLowerCase() === `cls-${detectedNorm}` ||
-            (detectedNorm.length >= 2 &&
-              (c.id.toLowerCase().endsWith(`-${detectedNorm}`) ||
-                new RegExp(`\\b${dLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(c.name.toLowerCase()))))
-      );
-      if (!existing) {
-        const created = dataStorage.addClass({
-          name: parsedResult.detectedClassName,
-          schoolId: targetSchoolId,
-          grade: '9',
-          academicYear: activePeriod.academicYear || '2026/2027',
-          homeroomTeacher: 'Wali Kelas Terdaftar',
-          counselorName: activeClass.counselorName,
-        });
-        finalClassId = created.id;
-        finalClassName = created.name;
-      } else {
-        finalClassId = existing.id;
-        finalClassName = existing.name;
+    try {
+      const manualTargetClass = classes.find((c) => c.id === selectedClassId) || activeClass;
+      let finalClassId = manualTargetClass.id;
+      let finalClassName = manualTargetClass.name;
+      const targetSchoolId = manualTargetClass.schoolId || activeClass.schoolId || classes[0]?.schoolId || 'sch-mtsn2-bangka';
+      let createdClassObj: SchoolClass | undefined;
+
+      // Check if detected class matches an existing class or should create a new class in this school
+      if (parsedResult.detectedClassName && autoCreateNewClass) {
+        const dLower = parsedResult.detectedClassName.trim().toLowerCase();
+        const detectedNorm = dLower.replace(/[^a-z0-9]/g, '');
+        const existing = classes.find(
+          (c) =>
+            c.schoolId === targetSchoolId &&
+            (c.name.toLowerCase() === dLower ||
+              c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === detectedNorm ||
+              c.id.toLowerCase() === dLower ||
+              c.id.toLowerCase() === `cls-${detectedNorm}` ||
+              (detectedNorm.length >= 2 &&
+                (c.id.toLowerCase().endsWith(`-${detectedNorm}`) ||
+                  new RegExp(`\\b${dLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(c.name.toLowerCase()))))
+        );
+        if (!existing) {
+          const created = dataStorage.addClass({
+            name: parsedResult.detectedClassName,
+            schoolId: targetSchoolId,
+            grade: '9',
+            academicYear: activePeriod.academicYear || '2026/2027',
+            homeroomTeacher: 'Wali Kelas Terdaftar',
+            counselorId: currentUser?.id,
+            counselorName: currentUser?.name || activeClass.counselorName,
+          });
+          createdClassObj = created;
+          finalClassId = created.id;
+          finalClassName = created.name;
+        } else {
+          finalClassId = existing.id;
+          finalClassName = existing.name;
+        }
       }
+
+      // Explicitly remap classId, className, schoolId, and periodId across all entities
+      const finalStudents = parsedResult.students.map((s) => ({
+        ...s,
+        classId: finalClassId,
+        className: finalClassName,
+        schoolId: targetSchoolId,
+      }));
+
+      const finalNominations = parsedResult.nominations.map((n, idx) => ({
+        ...n,
+        id: n.id || `nom-up-${activePeriod.id}-${finalClassId}-${Date.now()}-${idx}`,
+        classId: finalClassId,
+        periodId: activePeriod.id,
+      }));
+
+      const finalBehaviors = parsedResult.behavioralRatings.map((b) => ({
+        ...b,
+        id: `br-up-${activePeriod.id}-${finalClassId}-${b.studentId}`,
+        classId: finalClassId,
+        periodId: activePeriod.id,
+      }));
+
+      // Save to local cache & await full Cloud Firestore commit
+      const saveResult = await dataStorage.saveClassImportAsync({
+        classId: finalClassId,
+        periodId: activePeriod.id,
+        students: finalStudents,
+        nominations: finalNominations,
+        behaviors: finalBehaviors,
+        createdClass: createdClassObj,
+        notification: {
+          title: `Sinkronisasi Cloud & Excel: ${finalClassName}`,
+          message: `Diunggah ${finalStudents.length} siswa dan ${finalNominations.length} relasi (${activePeriod.name}) oleh ${currentUser?.name || 'Guru BK'}.`,
+          type: 'success',
+          read: false,
+          targetRoles: ['guru_bk', 'kepala_sekolah', 'admin'],
+          classId: finalClassId,
+          severity: 'low',
+        },
+        auditLog: {
+          userName: currentUser?.name || 'Guru BK',
+          userRole: currentUser?.role || 'guru_bk',
+          action: 'Unggah Berkas Excel Sosiometri (Cloud Sync)',
+          details: `File ${selectedFile?.name || 'Excel'} tersimpan untuk ${finalClassName} (${finalStudents.length} siswa, ${finalNominations.length} nominasi)`,
+        },
+      });
+
+      if (onSwitchClass) {
+        onSwitchClass(finalClassId);
+      }
+
+      const payloadResult = {
+        ...parsedResult,
+        students: finalStudents,
+        nominations: finalNominations,
+        behavioralRatings: finalBehaviors,
+        cloudSynced: saveResult.synced,
+      };
+
+      onUploadSuccess(payloadResult);
+
+      if (!saveResult.synced) {
+        setCloudError(
+          saveResult.error ||
+            'Data tersimpan di peramban ini, namun gagal tersinkron ke Cloud Firestore. Periksa koneksi internet lalu coba lagi.'
+        );
+        return;
+      }
+
+      onClose();
+    } catch (err: any) {
+      setCloudError(err?.message || 'Terjadi kesalahan saat menyimpan ke Cloud Firestore.');
+    } finally {
+      setIsSavingToCloud(false);
     }
-
-    // Explicitly remap classId, className, schoolId, and periodId across all entities
-    const finalStudents = parsedResult.students.map((s) => ({
-      ...s,
-      classId: finalClassId,
-      className: finalClassName,
-      schoolId: targetSchoolId,
-    }));
-
-    const finalNominations = parsedResult.nominations.map((n) => ({
-      ...n,
-      classId: finalClassId,
-      periodId: activePeriod.id,
-    }));
-
-    const finalBehaviors = parsedResult.behavioralRatings.map((b) => ({
-      ...b,
-      classId: finalClassId,
-      periodId: activePeriod.id,
-    }));
-
-    // Save into centralized data storage for that target class
-    dataStorage.setStudentsForClass(finalClassId, finalStudents);
-    dataStorage.setNominations(activePeriod.id, finalClassId, finalNominations);
-    dataStorage.setBehaviors(activePeriod.id, finalClassId, finalBehaviors);
-    dataStorage.setActiveClassId(finalClassId);
-
-    // Trigger Notification for system users
-    dataStorage.addNotification({
-      title: `Sinkronisasi Excel: ${finalClassName} Berhasil`,
-      message: `Telah diimpor ${finalStudents.length} siswa dan ${finalNominations.length} relasi sosiometri untuk ${activePeriod.name}. Analisis sosiogram langsung diperbarui.`,
-      type: 'success',
-      read: false,
-      targetRoles: ['guru_bk', 'kepala_sekolah', 'admin'],
-      classId: finalClassId,
-      severity: 'low',
-    });
-
-    dataStorage.addAuditLog(
-      'Guru BK',
-      'guru_bk',
-      'Unggah Berkas Excel Sosiometri',
-      `File ${selectedFile?.name || 'Excel'} berhasil diintegrasikan ke ${finalClassName} (${finalStudents.length} siswa, ${finalNominations.length} nominasi)`
-    );
-
-    if (onSwitchClass) {
-      onSwitchClass(finalClassId);
-    }
-    onUploadSuccess({
-      ...parsedResult,
-      students: finalStudents,
-      nominations: finalNominations,
-      behavioralRatings: finalBehaviors,
-    });
-    onClose();
   };
 
   const existingClassStudents = dataStorage.getStudents(targetClassObj.id);
@@ -476,30 +510,58 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
               )}
             </div>
           )}
+          {/* Cloud Sync Error Alert */}
+          {cloudError && (
+            <div className="p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs space-y-1.5">
+              <div className="font-bold flex items-center gap-2 text-amber-300">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Penyimpanan Cloud Database Belum Tuntas</span>
+              </div>
+              <p className="text-[11px] leading-relaxed">{cloudError}</p>
+            </div>
+          )}
         </div>
 
         {/* Footer actions */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition"
-          >
-            Batal
-          </button>
-          <button
-            disabled={!parsedResult}
-            onClick={handleConfirmSave}
-            className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:pointer-events-none text-xs font-bold text-white transition flex items-center gap-2 shadow-lg shadow-cyan-900/30 cursor-pointer"
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>
-              {!parsedResult
-                ? 'Pilih & Validasi File Excel Terlebih Dahulu'
-                : hasExistingData
-                ? `Perbarui & Timpa Data Rombel (${parsedResult.students.length} Siswa, ${parsedResult.nominations.length} Relasi)`
-                : `Simpan & Integrasikan ke Sistem Pusat (${parsedResult.students.length} Siswa, ${parsedResult.nominations.length} Relasi)`}
-            </span>
-          </button>
+        <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between gap-2">
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-emerald-300/90">
+            <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Tersimpan otomatis ke Cloud Firestore</span>
+          </div>
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={onClose}
+              disabled={isSavingToCloud}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-40 transition cursor-pointer"
+            >
+              {cloudError ? 'Tutup (Simpan Lokal)' : 'Batal'}
+            </button>
+            <button
+              disabled={!parsedResult || isSavingToCloud}
+              onClick={handleConfirmSave}
+              className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:pointer-events-none text-xs font-bold text-white transition flex items-center gap-2 shadow-lg shadow-cyan-900/30 cursor-pointer"
+            >
+              {isSavingToCloud ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Menyimpan ke Cloud Database...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>
+                    {cloudError
+                      ? 'Coba Simpan ke Cloud Lagi'
+                      : !parsedResult
+                      ? 'Pilih & Validasi File Excel Terlebih Dahulu'
+                      : hasExistingData
+                      ? `Perbarui & Simpan ke Cloud (${parsedResult.students.length} Siswa, ${parsedResult.nominations.length} Relasi)`
+                      : `Simpan ke Cloud Database (${parsedResult.students.length} Siswa, ${parsedResult.nominations.length} Relasi)`}
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

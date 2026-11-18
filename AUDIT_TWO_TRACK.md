@@ -21,7 +21,7 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 ## 1. Track 1: Laporan Audit Teknis AI (AI Technical Audit)
 
 ### 1.1 Arsitektur Aplikasi & Alur Data
-- **Pondasi Arsitektur**: Client-side Reactive Single Page Application berbasis **React 18 + Vite + TypeScript**, didukung oleh modul kalkulasi mandiri (*pure functions*) pada `/src/services/snaEngine.ts` dan `/src/services/seatingEngine.ts`, serta lapisan abstraksi persistensi ganda (*dual-write persistence*) di `/src/services/dataStorage.ts` dan `/src/services/firestoreSync.ts`.
+- **Pondasi Arsitektur**: Client-side Reactive Single Page Application berbasis **React 18 + Vite + TypeScript**, didukung oleh modul kalkulasi mandiri (*pure functions*) pada `/src/services/snaEngine.ts` dan `/src/services/seatingEngine.ts`, serta lapisan persistensi Cloud-First berbasis **Cloud Firestore Single Source of Truth** dengan cache lokal di `/src/services/dataStorage.ts` dan `/src/services/firestoreSync.ts` agar unggahan Guru BK konsisten lintas perangkat.
 - **Alur Data Lengkap**:
   1. *Input & Impor Instrumen*: Data siswa dan nominasi sosiometrik dimasukkan melalui kuisioner langsung atau diimpor massal via berkas Excel (`/src/services/excelHandler.ts`).
   2. *Agregasi Pilihan Mentah*: Menghitung total pilihan disukai (*Likes Received* / $L$), pilihan ditolak (*Dislikes Received* / $D$), serta nominasi yang diberikan (*Likes/Dislikes Given*).
@@ -239,31 +239,28 @@ Metodologi audit ini mengadopsi format **Dua Jalur (Two-Track Algorithmic Audit)
 
 ---
 
-### Anotasi #A-07: Isolasi Multi-Tenant Satuan Pendidikan & Proteksi Scoping Impor Data
-- **File & Baris**: `/src/components/ExcelUploadModal.tsx` (baris 38–173), `/src/services/dataStorage.ts` (baris 126–315), & `/src/dashboards/AdminDashboard.tsx` (baris 255–301)
-- **Fungsi / Variabel**: `handleConfirmSave()`, `matchesClassOrProdi()`, `syncFromCloud()`, `ALL_SCHOOLS` (7 tenant satuan pendidikan & perguruan tinggi)
+### Anotasi #A-07: Isolasi Multi-Tenant, Proteksi Scoping Impor Data & Sinkronisasi Cloud Lintas Perangkat
+- **File & Baris**: `/src/components/ExcelUploadModal.tsx` (baris 91–266), `/src/services/dataStorage.ts` (baris 238–350 & 714–800), `/src/services/firestoreSync.ts` (baris 337–431 & 491–537), & `/firestore.rules` (baris 1–151)
+- **Fungsi / Variabel**: `handleConfirmSave()`, `saveClassImportAsync()`, `syncFromCloud()`, `replaceScopedBatch()`, `seedMissingMasterTenantsToCloud()`
 - **Cuplikan Kode**:
   ```typescript
-  // ExcelUploadModal.tsx — Proteksi Scoping & Null Guard:
+  // ExcelUploadModal.tsx — Proteksi Scoping & Commit Cloud Terverifikasi:
   if (!isOpen || !activeClass || !activePeriod) return null;
-  const existingToPass = dataStorage.getStudents(effectiveTargetClass.id);
+  const saveResult = await dataStorage.saveClassImportAsync({
+    classId: finalClassId, periodId: activePeriod.id,
+    students: finalStudents, nominations: finalNominations, behaviors: finalBehaviors,
+    createdClass: createdClassObj,
+  });
 
-  // Pencarian kelas atau program studi existing wajib dikunci pada targetSchoolId
-  const existing = classes.find(
-    (c) =>
-      c.schoolId === targetSchoolId &&
-      (c.name.toLowerCase() === dLower ||
-        c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === detectedNorm ||
-        c.id.toLowerCase() === dLower ||
-        c.id.toLowerCase() === `cls-${detectedNorm}` ||
-        (detectedNorm.length >= 2 &&
-          (c.id.toLowerCase().endsWith(`-${detectedNorm}`) ||
-            new RegExp(`\\b${dLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(c.name.toLowerCase()))))
-  );
+  // firestoreSync.ts — Clean Overwrite Berbasis Kueri Tunggal (Tanpa Ketergantungan Composite Index):
+  const primaryFilter = filters.find((f) => f.field === 'classId') || filters[0];
+  const existingSnap = primaryFilter
+    ? await getDocs(query(collection(db, collectionName), where(primaryFilter.field, '==', primaryFilter.value)))
+    : await getDocs(collection(db, collectionName));
   ```
-- **Tinjauan AI**: AI awalnya mencari kelas hanya berdasarkan nama (`classes.find(c => c.name === name)`), mewariskan daftar siswa kelas sebelumnya saat modal dibuka, serta mengakses `parsedResult.students` sebelum file diunggah sehingga memicu *blank screen*. Selain itu `syncFromCloud()` menimpa ulang kelas yang sudah diunggah dengan data seed awal.
-- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI (Telah Diperbaiki)**. Scoping multi-tenant dan integritas timpa bersih (*clean overwrite*) wajib dijaga dari lapisan UI modal hingga sinkronisasi Firestore (`replaceScopedBatch`). Sistem kini melayani **7 tenant satuan pendidikan** (MTsN 2 Bangka, SMA Negeri Olahraga M. Noer, MTs Daarul Abror, SMPN 1 Bakam, SMPN 7 Pangkal Pinang, SMK N 5 Pangkalpinang, serta **IAIN Syaikh Abdurrahman Siddik / IAIN SAS** dengan Prodi **PAI**, **TBI**, dan **BKPI**) dengan identitas konselor berbasis peran lembaga (misal `BK SMP Negeri 1 Bakam`, `BK IAIN SAS`) sesuai Kode Etik ABKIN.
-- **Zona**: `✓ Konvergen (Telah Diperbaiki & Diuji Lintas 7 Tenant Pendidikan)`
+- **Tinjauan AI**: AI awalnya mencari kelas hanya berdasarkan nama (`classes.find(c => c.name === name)`), menutup modal Excel secara optimistik tanpa menunggu *commit* Cloud Firestore, menimpa ulang kelas yang sudah diunggah dengan data *mock* pada `syncFromCloud()`, memakai dua filter `where` yang gagal karena *composite index*, serta tidak menyertakan koleksi `users` dan `password_requests` di `firestore.rules`.
+- **Tinjauan Ahli Domain**: **Koreksi Terhadap AI (Telah Diperbaiki)**. Scoping multi-tenant, integritas timpa bersih (*clean overwrite*), dan persistensi lintas perangkat wajib dijaga dari lapisan UI hingga aturan keamanan Firestore (13 koleksi + `test/{docId}` dengan batas skema `isBoundedMap()` dan `isValidId()`). Sistem melayani **7 tenant satuan pendidikan** (MTsN 2 Bangka, SMA Negeri Olahraga M. Noer, MTs Daarul Abror, SMPN 1 Bakam, SMPN 7 Pangkal Pinang, SMK N 5 Pangkalpinang, serta **IAIN Syaikh Abdurrahman Siddik / IAIN SAS** dengan Prodi **PAI**, **TBI**, dan **BKPI**) menggunakan **Cloud Firestore sebagai Single Source of Truth** sehingga unggahan Guru BK otomatis sinkron ke seluruh perangkat secara *real-time*.
+- **Zona**: `✓ Konvergen (Telah Diperbaiki & Terverifikasi Cloud Sync Lintas Perangkat)`
 
 ---
 
@@ -319,7 +316,7 @@ Sistem Radar Sosial dirancang selaras dengan mandat pencegahan kekerasan di seko
 | **#A-04** | Komunitas klik cukup digambarkan dengan warna klaster. | Perlu E-I Index (Krackhardt) untuk membedakan geng tertutup dari kelompok terbuka. | **Konvergen** | Dihitung `exclusivityIndex` pada setiap subgrup di `snaEngine.ts`. |
 | **#A-05** | Penataan tempat duduk cukup acak atau urut abjad. | Tempat duduk adalah intervensi spasial; wajib pisahkan mutual-dislike & pasangkan buddy. | **Konvergen** | Mesin heuristik penataan meja dibangun di `seatingEngine.ts`. |
 | **#A-06** | Iklim kelas dihitung dari persentase pengisian angket. | Iklim kelas ditentukan kohesi jaringan & jumlah siswa rentan (Permendikbud 46/2023). | **Konvergen** | Formula indeks iklim kelas (0-100) diterapkan di `snaEngine.ts`. |
-| **#A-07** | Data siswa dapat diagregasi serentak tanpa filter sekolah. | Berbahaya; norma Z-score antar-sekolah tercampur dan melanggar privasi multi-tenant. | **Telah Diperbaiki** | Filter `selectedSchoolId` dan isolasi kueri diterapkan di `AdminDashboard.tsx`. |
+| **#A-07** | Data disimpan lokal/optimistik atau digabung dengan data seed awal saat sinkronisasi. | Merusak integritas antar-perangkat, memicu duplikasi lintas periode, serta menimpa unggahan BK. | **Telah Diperbaiki** | Cloud Firestore Single Source of Truth (`saveClassImportAsync`, `replaceScopedBatch` kueri tunggal, `firestore.rules` 13 koleksi). |
 | **#A-08** | Catatan teknis konseling krisis dapat ditampilkan ke wali murid. | Melanggar etika ABKIN; menimbulkan kecemasan; wajib bahasa pengasuhan positif. | **Telah Diperbaiki** | Diganti dari `dssRecommendation` ke `parentNote` di `OrangTuaDashboard.tsx`. |
 
 ---
@@ -338,7 +335,7 @@ Sistem Radar Sosial dirancang selaras dengan mandat pencegahan kekerasan di seko
    - **Jawaban Peneliti**: *"Di berkas `src/services/seatingEngine.ts` baris 45-62 dan baris 128-133, fungsi `isCompatiblePair(id1, id2)` memeriksa himpunan pasangan penolakan (`dislikePairs`). Jika terdapat nominasi penolakan satu arah maupun dua arah antara dua siswa, fungsi mengembalikan nilai `false`, sehingga algoritma menolak penempatan keduanya di meja yang sama. Selanjutnya pada baris 137-181, siswa yang berstatus rentan (Passive Victim atau Neglected) diprioritaskan terlebih dahulu untuk dipasangkan dengan siswa berkategori 'Populer-Prososial' di baris depan (meja 1 dan 2) sebagai mitra belajar suportif (*buddy system*)."*
 
 4. **Dosen Penguji**: *"Di mana letak koreksi paling mendasar yang Anda lakukan terhadap kode atau asumsi yang awalnya dibuat oleh AI?"*
-   - **Jawaban Peneliti**: *"Terdapat tiga koreksi paling fundamental: Pertama, pada etika pelaporan ke orang tua (`OrangTuaDashboard.tsx` baris 167), AI awalnya menampilkan rekomendasi klinis teknis Guru BK ('Intervensi Konseling Krisis: Perlindungan psikologis segera') ke layar orang tua. Kami mengoreksinya agar menampilkan narasi `parentNote` yang berorientasi pengasuhan positif di rumah untuk mencegah histeria dan menyelaraskan dengan asas kode etik ABKIN. Kedua, pada level arsitektur multi-tenant (`AdminDashboard.tsx` baris 255-301), kami membatasi agar standarisasi skor Z tidak mencampuradukkan data antar-satuan pendidikan serta mengoreksi penamaan properti `studentId`/`targetId` agar perhitungan resiprositas akurat. Ketiga, pada `snaEngine.ts` (baris 84-118, 272-356, dan 750-924), kami menambahkan zero-dislike Coie-Dodge guard, normalisasi densitas multi-kriteria, serta pemisahan komparatif Sosio-Instrumental (Belajar) vs Sosio-Afektif (Bermain) pada Sosiometri dan Laporan PDF Resmi (`OfficialPDFReport.tsx`)."*
+   - **Jawaban Peneliti**: *"Terdapat tiga koreksi paling fundamental: Pertama, pada etika pelaporan ke orang tua (`OrangTuaDashboard.tsx` baris 167), AI awalnya menampilkan rekomendasi klinis teknis Guru BK ('Intervensi Konseling Krisis: Perlindungan psikologis segera') ke layar orang tua. Kami mengoreksinya agar menampilkan narasi `parentNote` yang berorientasi pengasuhan positif di rumah untuk mencegah histeria dan menyelaraskan dengan asas kode etik ABKIN. Kedua, pada level arsitektur multi-tenant & sinkronisasi Cloud (`ExcelUploadModal.tsx`, `dataStorage.ts`, `firestoreSync.ts`, `firestore.rules`), kami memastikan seluruh unggahan Excel menunggu komitmen Cloud Firestore (`saveClassImportAsync`) dengan penghapusan bersih berfilter tunggal (`replaceScopedBatch`), aturan keamanan 13 koleksi tervalidasi, serta menghilangkan injeksi ulang data dummy pada `syncFromCloud()` sehingga data Guru BK identik di semua perangkat. Ketiga, pada `snaEngine.ts` (baris 84-118, 272-356, dan 750-924), kami menambahkan zero-dislike Coie-Dodge guard, normalisasi densitas multi-kriteria, serta pemisahan komparatif Sosio-Instrumental (Belajar) vs Sosio-Afektif (Bermain) pada Sosiometri dan Laporan PDF Resmi (`OfficialPDFReport.tsx`)."*
 
 ### Checklist Kelulusan Audit Viva:
 - [x] Minimal 8 anotasi kode riil dengan path berkas dan nomor baris persis.
@@ -355,7 +352,7 @@ Sistem Radar Sosial dirancang selaras dengan mandat pencegahan kekerasan di seko
 > Dokumen `AUDIT_TWO_TRACK.md` ini wajib diperiksa dan diperbaharui secara berkala setiap kali terjadi perubahan mendasar pada:
 > 1. Formula matematis skoring sosiometri atau ambang batas kategori di `/src/services/snaEngine.ts`.
 > 2. Logika heuristik penataan tempat duduk di `/src/services/seatingEngine.ts`.
-> 3. Skema penyimpanan data, hak akses, atau aturan keamanan di `firestore.rules` dan `/src/services/dataStorage.ts`.
+> 3. Skema penyimpanan data, hak akses, atau aturan keamanan di `firestore.rules`, `firebase-blueprint.json`, `/src/services/firestoreSync.ts`, dan `/src/services/dataStorage.ts`.
 > 4. Komponen antarmuka peranan pengguna (khususnya privasi Dashboard Orang Tua dan Guru BK).
 > 5. Penambahan instrumen atau kriteria nominasi baru dalam sistem.
 

@@ -2,63 +2,150 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
     function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128;
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_.\\-]+$');
+    }
+
+    function isBoundedMap() {
+      return request.resource.data is map && request.resource.data.keys().size() > 0 && request.resource.data.keys().size() <= 40;
+    }
+
+    // Connection health check path
+    match /test/{docId} {
+      allow read: if isValidId(docId);
+      allow write: if false;
     }
 
     match /schools/{schoolId} {
-      allow read: if true;
-      allow write: if isValidId(schoolId);
+      allow list: if true;
+      allow get: if isValidId(schoolId);
+      allow create, update: if isValidId(schoolId) && isBoundedMap()
+        && request.resource.data.id is string && request.resource.data.id.size() <= 128
+        && request.resource.data.name is string && request.resource.data.name.size() <= 200;
+      allow delete: if isValidId(schoolId);
     }
 
     match /periods/{periodId} {
-      allow read: if true;
-      allow write: if isValidId(periodId);
+      allow list: if true;
+      allow get: if isValidId(periodId);
+      allow create, update: if isValidId(periodId) && isBoundedMap()
+        && request.resource.data.id is string && request.resource.data.id.size() <= 128
+        && request.resource.data.name is string && request.resource.data.name.size() <= 150;
+      allow delete: if isValidId(periodId);
     }
 
     match /classes/{classId} {
-      allow read: if true;
-      allow write: if isValidId(classId);
+      allow list: if true;
+      allow get: if isValidId(classId);
+      allow create, update: if isValidId(classId) && isBoundedMap()
+        && request.resource.data.id is string && request.resource.data.id.size() <= 128
+        && request.resource.data.schoolId is string && request.resource.data.schoolId.size() <= 128
+        && request.resource.data.name is string && request.resource.data.name.size() <= 100;
+      allow delete: if isValidId(classId);
     }
 
     match /students/{studentId} {
-      allow read: if true;
-      allow write: if isValidId(studentId);
+      allow list: if true;
+      allow get: if isValidId(studentId);
+      allow create, update: if isValidId(studentId) && isBoundedMap()
+        && request.resource.data.id is string && request.resource.data.id.size() <= 128
+        && request.resource.data.classId is string && request.resource.data.classId.size() <= 128
+        && request.resource.data.name is string && request.resource.data.name.size() <= 150;
+      allow delete: if isValidId(studentId);
     }
 
     match /nominations/{nominationId} {
-      allow read: if true;
-      allow write: if isValidId(nominationId);
+      allow list: if true;
+      allow get: if isValidId(nominationId);
+      allow create, update: if isValidId(nominationId) && isBoundedMap()
+        && request.resource.data.id is string && request.resource.data.id.size() <= 128
+        && request.resource.data.classId is string && request.resource.data.classId.size() <= 128
+        && request.resource.data.periodId is string && request.resource.data.periodId.size() <= 128
+        && request.resource.data.studentId is string && request.resource.data.studentId.size() <= 128
+        && request.resource.data.targetId is string && request.resource.data.targetId.size() <= 128;
+      allow delete: if isValidId(nominationId);
     }
 
     match /behaviors/{behaviorId} {
-      allow read: if true;
-      allow write: if isValidId(behaviorId);
+      allow list: if true;
+      allow get: if isValidId(behaviorId);
+      allow create, update: if isValidId(behaviorId) && isBoundedMap()
+        && request.resource.data.id is string && request.resource.data.id.size() <= 128
+        && request.resource.data.classId is string && request.resource.data.classId.size() <= 128
+        && request.resource.data.periodId is string && request.resource.data.periodId.size() <= 128
+        && request.resource.data.studentId is string && request.resource.data.studentId.size() <= 128;
+      allow delete: if isValidId(behaviorId);
     }
 
     match /student_notes/{noteId} {
-      allow read: if true;
-      allow write: if isValidId(noteId);
+      allow list: if true;
+      allow get: if isValidId(noteId);
+      allow create, update: if isValidId(noteId) && isBoundedMap()
+        && request.resource.data.id is string && request.resource.data.id.size() <= 128
+        && request.resource.data.studentId is string && request.resource.data.studentId.size() <= 128
+        && request.resource.data.content is string && request.resource.data.content.size() <= 5000;
+      allow delete: if isValidId(noteId);
     }
 
     match /class_summaries/{summaryId} {
-      allow read: if true;
-      allow write: if isValidId(summaryId);
+      allow list: if true;
+      allow get: if isValidId(summaryId);
+      allow create, update: if isValidId(summaryId) && isBoundedMap()
+        && request.resource.data.classId is string && request.resource.data.classId.size() <= 128
+        && request.resource.data.periodId is string && request.resource.data.periodId.size() <= 128
+        && request.resource.data.counselorReflection is string && request.resource.data.counselorReflection.size() <= 10000;
+      allow delete: if isValidId(summaryId);
+    }
+
+    match /users/{userId} {
+      allow list: if true;
+      allow get: if isValidId(userId);
+      allow create, update: if isValidId(userId) && isBoundedMap()
+        && request.resource.data.id is string && request.resource.data.id.size() <= 128
+        && request.resource.data.email is string && request.resource.data.email.size() <= 150
+        && request.resource.data.role in ['guru_bk', 'kepala_sekolah', 'orang_tua', 'admin'];
+      allow delete: if isValidId(userId);
+    }
+
+    match /password_requests/{requestId} {
+      allow list: if true;
+      allow get: if isValidId(requestId);
+      allow create, update: if isValidId(requestId) && isBoundedMap()
+        && request.resource.data.id is string && request.resource.data.id.size() <= 128
+        && request.resource.data.userEmail is string && request.resource.data.userEmail.size() <= 150;
+      allow delete: if isValidId(requestId);
     }
 
     match /notifications/{notificationId} {
-      allow read: if true;
-      allow write: if isValidId(notificationId);
+      allow list: if true;
+      allow get: if isValidId(notificationId);
+      allow create, update: if isValidId(notificationId) && isBoundedMap()
+        && request.resource.data.id is string && request.resource.data.id.size() <= 128
+        && request.resource.data.title is string && request.resource.data.title.size() <= 200
+        && request.resource.data.message is string && request.resource.data.message.size() <= 1000;
+      allow delete: if isValidId(notificationId);
     }
 
     match /audit_logs/{auditLogId} {
-      allow read: if true;
-      allow write: if isValidId(auditLogId);
+      allow list: if true;
+      allow get: if isValidId(auditLogId);
+      allow create, update: if isValidId(auditLogId) && isBoundedMap()
+        && request.resource.data.id is string && request.resource.data.id.size() <= 128
+        && request.resource.data.action is string && request.resource.data.action.size() <= 200;
+      allow delete: if isValidId(auditLogId);
     }
 
     match /settings/{settingId} {
-      allow read: if true;
-      allow write: if isValidId(settingId);
+      allow list: if true;
+      allow get: if isValidId(settingId);
+      allow create, update: if isValidId(settingId) && isBoundedMap()
+        && request.resource.data.id is string && request.resource.data.id.size() <= 128;
+      allow delete: if isValidId(settingId);
     }
   }
 }

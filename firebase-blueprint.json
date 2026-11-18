@@ -5,16 +5,18 @@
       "description": "School profile and branding configuration",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "npsn": { "type": "string" },
-        "address": { "type": "string" },
-        "city": { "type": "string" },
-        "province": { "type": "string" },
-        "counselorName": { "type": "string" },
-        "counselorNip": { "type": "string" },
-        "principalName": { "type": "string" },
-        "principalNip": { "type": "string" }
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 200 },
+        "npsn": { "type": "string", "maxLength": 32 },
+        "address": { "type": "string", "maxLength": 300 },
+        "city": { "type": "string", "maxLength": 100 },
+        "type": { "type": "string", "enum": ["Madrasah", "SMP", "SMA", "SMK", "Perguruan Tinggi"] },
+        "totalClasses": { "type": "number" },
+        "principalName": { "type": "string", "maxLength": 150 },
+        "counselorName": { "type": "string", "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["aktif", "non-aktif"] },
+        "theme": { "type": "object" }
       },
       "required": ["id", "name"]
     },
@@ -23,155 +25,210 @@
       "description": "Sociometric assessment academic period",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "code": { "type": "string" },
-        "startDate": { "type": "string" },
-        "endDate": { "type": "string" },
-        "isActive": { "type": "boolean" },
-        "academicYear": { "type": "string" }
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 150 },
+        "code": { "type": "string", "maxLength": 50 },
+        "academicYear": { "type": "string", "maxLength": 32 },
+        "semester": { "type": "number" },
+        "cycleType": { "type": "string", "enum": ["semester", "triwulan"] },
+        "quarter": { "type": "number" },
+        "status": { "type": "string", "enum": ["aktif", "ditutup", "draft"] },
+        "startDate": { "type": "string", "maxLength": 32 },
+        "endDate": { "type": "string", "maxLength": 32 },
+        "description": { "type": "string", "maxLength": 500 }
       },
-      "required": ["id", "name", "code", "isActive"]
+      "required": ["id", "name", "code", "status"]
     },
     "SchoolClass": {
       "title": "SchoolClass",
       "description": "Classroom unit containing students",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "grade": { "type": "string" },
-        "totalStudents": { "type": "number" },
-        "academicYear": { "type": "string" },
-        "counselorName": { "type": "string" },
-        "notes": { "type": "string" }
+        "id": { "type": "string", "maxLength": 128 },
+        "schoolId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "grade": { "type": "string", "maxLength": 32 },
+        "academicYear": { "type": "string", "maxLength": 32 },
+        "homeroomTeacher": { "type": "string", "maxLength": 150 },
+        "counselorId": { "type": "string", "maxLength": 128 },
+        "counselorName": { "type": "string", "maxLength": 150 },
+        "targetStudentCount": { "type": "number" },
+        "description": { "type": "string", "maxLength": 300 }
       },
-      "required": ["id", "name", "grade"]
+      "required": ["id", "schoolId", "name", "grade"]
     },
     "Student": {
       "title": "Student",
       "description": "Student record in a class",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "classId": { "type": "string" },
-        "name": { "type": "string" },
+        "id": { "type": "string", "maxLength": 128 },
+        "nis": { "type": "string", "maxLength": 64 },
+        "nisn": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 150 },
         "gender": { "type": "string", "enum": ["L", "P"] },
-        "nisn": { "type": "string" },
-        "isSpecialNeeds": { "type": "boolean" },
-        "status": { "type": "string" }
+        "classId": { "type": "string", "maxLength": 128 },
+        "className": { "type": "string", "maxLength": 100 },
+        "schoolId": { "type": "string", "maxLength": 128 },
+        "avatarUrl": { "type": "string", "maxLength": 500 }
       },
       "required": ["id", "classId", "name", "gender"]
     },
     "SociometricNomination": {
       "title": "SociometricNomination",
-      "description": "Peer choice or nomination for study or play",
+      "description": "Peer choice or avoidance nomination for belajar (socio-instrumental) or bermain (socio-affective)",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "periodId": { "type": "string" },
-        "classId": { "type": "string" },
-        "voterStudentId": { "type": "string" },
-        "targetStudentId": { "type": "string" },
-        "criteria": { "type": "string" },
-        "rank": { "type": "number" },
-        "weight": { "type": "number" }
+        "id": { "type": "string", "maxLength": 128 },
+        "periodId": { "type": "string", "maxLength": 128 },
+        "classId": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "criteria": { "type": "string", "enum": ["belajar", "bermain"] },
+        "type": { "type": "string", "enum": ["like", "dislike"] }
       },
-      "required": ["id", "periodId", "classId", "voterStudentId", "targetStudentId", "criteria"]
+      "required": ["id", "periodId", "classId", "studentId", "targetId", "criteria", "type"]
     },
     "PeerBehavioralRating": {
       "title": "PeerBehavioralRating",
-      "description": "Peer rating across behavioral dimensions",
+      "description": "Peer rating across 5 behavioral dimensions",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "periodId": { "type": "string" },
-        "classId": { "type": "string" },
-        "voterStudentId": { "type": "string" },
-        "targetStudentId": { "type": "string" },
-        "behaviorDimension": { "type": "string" },
-        "score": { "type": "number" }
+        "id": { "type": "string", "maxLength": 128 },
+        "periodId": { "type": "string", "maxLength": 128 },
+        "classId": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "prosocial": { "type": "number" },
+        "aggressive": { "type": "number" },
+        "withdrawn": { "type": "number" },
+        "victimization": { "type": "number" },
+        "hyperactive": { "type": "number" }
       },
-      "required": ["id", "periodId", "classId", "voterStudentId", "targetStudentId", "behaviorDimension", "score"]
+      "required": ["id", "periodId", "classId", "studentId"]
     },
     "StudentQualitativeNote": {
       "title": "StudentQualitativeNote",
       "description": "Counselor observation or student self-report qualitative note",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "studentId": { "type": "string" },
-        "studentName": { "type": "string" },
-        "classId": { "type": "string" },
-        "periodId": { "type": "string" },
-        "authorId": { "type": "string" },
-        "authorName": { "type": "string" },
-        "authorRole": { "type": "string" },
-        "date": { "type": "string" },
-        "title": { "type": "string" },
-        "content": { "type": "string" },
-        "noteType": { "type": "string" },
-        "category": { "type": "string" },
-        "sentiment": { "type": "string" },
-        "isConfidential": { "type": "boolean" },
-        "aiInsight": { "type": "string" },
-        "createdAt": { "type": "string" },
-        "updatedAt": { "type": "string" }
+        "id": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 150 },
+        "classId": { "type": "string", "maxLength": 128 },
+        "periodId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 150 },
+        "authorRole": { "type": "string", "maxLength": 64 },
+        "date": { "type": "string", "maxLength": 32 },
+        "context": { "type": "string", "maxLength": 100 },
+        "content": { "type": "string", "maxLength": 5000 },
+        "thematicCategory": { "type": "string", "maxLength": 150 },
+        "sentiment": { "type": "string", "maxLength": 32 },
+        "keywords": { "type": "array" },
+        "aiInsight": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string", "maxLength": 64 }
       },
-      "required": ["id", "studentId", "title", "content", "noteType"]
+      "required": ["id", "studentId", "classId", "periodId", "content"]
     },
     "ClassCounselorSummary": {
       "title": "ClassCounselorSummary",
       "description": "Class-level qualitative synthesis and counselor reflection",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "classId": { "type": "string" },
-        "periodId": { "type": "string" },
-        "counselorName": { "type": "string" },
-        "date": { "type": "string" },
-        "narrativeSummary": { "type": "string" },
-        "recommendedActions": { "type": "string" },
-        "lastUpdated": { "type": "string" }
+        "id": { "type": "string", "maxLength": 128 },
+        "classId": { "type": "string", "maxLength": 128 },
+        "periodId": { "type": "string", "maxLength": 128 },
+        "counselorReflection": { "type": "string", "maxLength": 10000 },
+        "updatedAt": { "type": "string", "maxLength": 64 },
+        "updatedBy": { "type": "string", "maxLength": 150 }
       },
-      "required": ["id", "classId", "periodId", "narrativeSummary"]
+      "required": ["id", "classId", "periodId", "counselorReflection"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Multi-tenant school counselor, principal, parent, and lab admin account",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 150 },
+        "email": { "type": "string", "maxLength": 150 },
+        "role": { "type": "string", "enum": ["guru_bk", "kepala_sekolah", "orang_tua", "admin"] },
+        "schoolId": { "type": "string", "maxLength": 128 },
+        "schoolName": { "type": "string", "maxLength": 200 },
+        "assignedClassIds": { "type": "array" },
+        "nip": { "type": "string", "maxLength": 64 },
+        "phone": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "authProvider": { "type": "string", "maxLength": 50 },
+        "childId": { "type": "string", "maxLength": 128 },
+        "studentNis": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "maxLength": 150 },
+        "password": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "name", "email", "role", "schoolId"]
+    },
+    "PasswordResetRequest": {
+      "title": "PasswordResetRequest",
+      "description": "Account activation and password reset request awaiting Super-Admin approval",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 150 },
+        "userEmail": { "type": "string", "maxLength": 150 },
+        "userRole": { "type": "string", "maxLength": 64 },
+        "schoolName": { "type": "string", "maxLength": 200 },
+        "requestedAt": { "type": "string", "maxLength": 64 },
+        "reason": { "type": "string", "maxLength": 500 },
+        "proposedPassword": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "resolvedAt": { "type": "string", "maxLength": 64 },
+        "resolvedBy": { "type": "string", "maxLength": 150 },
+        "adminNote": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["id", "userName", "userEmail", "userRole", "status"]
     },
     "NotificationItem": {
       "title": "NotificationItem",
       "description": "System broadcast notification",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "type": { "type": "string" },
-        "title": { "type": "string" },
-        "message": { "type": "string" },
-        "timestamp": { "type": "string" },
-        "read": { "type": "boolean" }
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "message": { "type": "string", "maxLength": 1000 },
+        "type": { "type": "string", "maxLength": 32 },
+        "timestamp": { "type": "string", "maxLength": 64 },
+        "read": { "type": "boolean" },
+        "targetRoles": { "type": "array" },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "classId": { "type": "string", "maxLength": 128 },
+        "severity": { "type": "string", "maxLength": 32 }
       },
       "required": ["id", "title", "message", "timestamp"]
     },
     "AuditLog": {
       "title": "AuditLog",
-      "description": "Immutable security and audit trail log",
+      "description": "Security and activity audit trail log",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "timestamp": { "type": "string" },
-        "user": { "type": "string" },
-        "role": { "type": "string" },
-        "action": { "type": "string" },
-        "details": { "type": "string" }
+        "id": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string", "maxLength": 64 },
+        "userName": { "type": "string", "maxLength": 150 },
+        "userRole": { "type": "string", "maxLength": 64 },
+        "action": { "type": "string", "maxLength": 200 },
+        "details": { "type": "string", "maxLength": 1000 }
       },
-      "required": ["id", "timestamp", "user", "role", "action"]
+      "required": ["id", "timestamp", "userName", "userRole", "action"]
     },
     "AppSettings": {
       "title": "AppSettings",
-      "description": "Global application state and active selections",
+      "description": "Cloud bootstrap seed version and connection metadata",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "activePeriodId": { "type": "string" },
-        "activeClassId": { "type": "string" }
+        "id": { "type": "string", "maxLength": 128 },
+        "version": { "type": "string", "maxLength": 64 },
+        "activePeriodId": { "type": "string", "maxLength": 128 },
+        "lastUpdated": { "type": "string", "maxLength": 64 }
       },
       "required": ["id"]
     }
@@ -179,15 +236,15 @@
   "firestore": {
     "/schools/{schoolId}": {
       "schema": { "$ref": "#/entities/School" },
-      "description": "School metadata and settings"
+      "description": "Multi-tenant school metadata and theme branding"
     },
     "/periods/{periodId}": {
       "schema": { "$ref": "#/entities/Period" },
-      "description": "Assessment periods"
+      "description": "Sociometric assessment periods"
     },
     "/classes/{classId}": {
       "schema": { "$ref": "#/entities/SchoolClass" },
-      "description": "School classes"
+      "description": "School classes / study programs"
     },
     "/students/{studentId}": {
       "schema": { "$ref": "#/entities/Student" },
@@ -195,7 +252,7 @@
     },
     "/nominations/{nominationId}": {
       "schema": { "$ref": "#/entities/SociometricNomination" },
-      "description": "Sociometric student nominations"
+      "description": "Sociometric student nominations (belajar & bermain)"
     },
     "/behaviors/{behaviorId}": {
       "schema": { "$ref": "#/entities/PeerBehavioralRating" },
@@ -207,7 +264,15 @@
     },
     "/class_summaries/{summaryId}": {
       "schema": { "$ref": "#/entities/ClassCounselorSummary" },
-      "description": "Counselor summaries per class"
+      "description": "Counselor reflection summaries per class & period"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Multi-tenant school user accounts synced across devices"
+    },
+    "/password_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/PasswordResetRequest" },
+      "description": "Password reset & activation requests"
     },
     "/notifications/{notificationId}": {
       "schema": { "$ref": "#/entities/NotificationItem" },
@@ -219,7 +284,7 @@
     },
     "/settings/{settingId}": {
       "schema": { "$ref": "#/entities/AppSettings" },
-      "description": "Global active class/period settings"
+      "description": "Global cloud seed & period settings"
     }
   }
 }

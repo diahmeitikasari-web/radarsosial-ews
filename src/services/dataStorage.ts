@@ -68,11 +68,12 @@ export type CloudWriteHandler = {
   saveDocument: (collectionName: string, id: string, data: any) => Promise<void>;
   deleteDocument: (collectionName: string, id: string) => Promise<void>;
   saveBatch: (collectionName: string, items: Array<{ id: string; [k: string]: any }>) => Promise<void>;
-  replaceScopedBatch?: (
+  replaceScopedBatch: (
     collectionName: string,
     filters: Array<{ field: string; value: string }>,
     items: Array<{ id: string; [k: string]: any }>
   ) => Promise<void>;
+  resetCloud?: (mode: 'factory' | 'clean', factoryPayload?: any) => Promise<void>;
 };
 
 let cloudHandler: CloudWriteHandler | null = null;
@@ -98,6 +99,7 @@ export class DataStorageService {
   private studentNotes: StudentQualitativeNote[];
   private classSummaries: Record<string, ClassCounselorSummary>;
   private subscribers: Array<(event?: string) => void> = [];
+  private cloudSynced = false;
 
   private constructor() {
     this.periods = getStoredOr(STORAGE_KEYS.PERIODS, INITIAL_PERIODS);
@@ -229,92 +231,122 @@ export class DataStorageService {
     });
   }
 
-  public syncFromCloud(collectionName: string, items: any[]): void {
+  public isCloudSynced(): boolean {
+    return this.cloudSynced;
+  }
+
+  public syncFromCloud(collectionName: string, items: any[], options?: { silent?: boolean }): void {
     if (!items || !Array.isArray(items)) return;
+    this.cloudSynced = true;
+
     switch (collectionName) {
       case 'schools': {
-        const schoolMap = new Map<string, School>();
-        INITIAL_SCHOOLS.forEach((s) => schoolMap.set(s.id, s));
-        items.forEach((s: School) => schoolMap.set(s.id, { ...schoolMap.get(s.id), ...s }));
-        this.schools = Array.from(schoolMap.values());
-        setStored(STORAGE_KEYS.SCHOOLS, this.schools);
+        if (items.length > 0) {
+          this.schools = [...items];
+          setStored(STORAGE_KEYS.SCHOOLS, this.schools);
+        }
         break;
       }
       case 'classes': {
-        const classMap = new Map<string, SchoolClass>();
-        INITIAL_CLASSES.forEach((c) => classMap.set(c.id, c));
-        items.forEach((c: SchoolClass) => classMap.set(c.id, { ...classMap.get(c.id), ...c }));
-        this.classes = Array.from(classMap.values());
-        setStored(STORAGE_KEYS.CLASSES, this.classes);
+        if (items.length > 0) {
+          this.classes = items.map((c: SchoolClass) => ({
+            ...c,
+            counselorName:
+              c.counselorName ||
+              ('BK ' + (this.schools.find((s) => s.id === c.schoolId)?.name || 'Sekolah')),
+          }));
+          setStored(STORAGE_KEYS.CLASSES, this.classes);
+        }
         break;
       }
       case 'periods': {
-        const periodMap = new Map<string, Period>();
-        INITIAL_PERIODS.forEach((p) => periodMap.set(p.id, p));
-        items.forEach((p: Period) => periodMap.set(p.id, { ...periodMap.get(p.id), ...p }));
-        this.periods = Array.from(periodMap.values());
-        setStored(STORAGE_KEYS.PERIODS, this.periods);
+        if (items.length > 0) {
+          this.periods = [...items];
+          setStored(STORAGE_KEYS.PERIODS, this.periods);
+        }
+        break;
+      }
+      case 'users': {
+        if (items.length > 0) {
+          this.users = items.map((u: User) => {
+            if (!u.password) {
+              const defaultPwd =
+                u.role === 'admin'
+                  ? 'admin123456'
+                  : u.role === 'kepala_sekolah'
+                  ? 'kepsek123456'
+                  : 'bk123456';
+              return { ...u, password: defaultPwd };
+            }
+            return u;
+          });
+          setStored(STORAGE_KEYS.USERS, this.users);
+        }
+        break;
+      }
+      case 'password_requests': {
+        this.passwordRequests = [...items].sort(
+          (a: PasswordResetRequest, b: PasswordResetRequest) =>
+            new Date(b.requestedAt || 0).getTime() - new Date(a.requestedAt || 0).getTime()
+        );
+        setStored(STORAGE_KEYS.PASSWORD_REQUESTS, this.passwordRequests);
         break;
       }
       case 'students': {
-        const syncedClassIds = new Set(items.map((st: Student) => st.classId).filter(Boolean));
-        const studentMap = new Map<string, Student>();
-        INITIAL_STUDENTS.forEach((st) => {
-          if (!syncedClassIds.has(st.classId)) {
-            studentMap.set(st.id, st);
-          }
-        });
-        items.forEach((st: Student) => studentMap.set(st.id, { ...studentMap.get(st.id), ...st }));
-        this.students = Array.from(studentMap.values());
+        // Cloud Firestore adalah sumber kebenaran tunggal (Single Source of Truth)
+        this.students = [...items];
         setStored(STORAGE_KEYS.STUDENTS, this.students);
         break;
       }
-      case 'student_notes':
-        this.studentNotes = items;
+      case 'student_notes': {
+        this.studentNotes = [...items];
         setStored(STORAGE_KEYS.STUDENT_NOTES, this.studentNotes);
         break;
+      }
       case 'class_summaries': {
         const sumMap: Record<string, ClassCounselorSummary> = {};
         items.forEach((s) => {
-          const key = `${s.classId}_${s.periodId}`;
-          sumMap[key] = s;
+          if (s?.classId && s?.periodId) {
+            const key = `${s.classId}_${s.periodId}`;
+            sumMap[key] = s;
+          }
         });
         this.classSummaries = sumMap;
         setStored(STORAGE_KEYS.CLASS_SUMMARIES, this.classSummaries);
         break;
       }
       case 'nominations': {
-        const syncedScopes = new Set(
-          items.map((nm: SociometricNomination) => `${nm.periodId}_${nm.classId}`)
-        );
-        const nomMap = new Map<string, SociometricNomination>();
-        generateSeedNominations('period-2026-s1').forEach((nm) => {
-          if (!syncedScopes.has(`${nm.periodId}_${nm.classId}`)) {
-            nomMap.set(nm.id, nm);
-          }
-        });
-        items.forEach((nm: SociometricNomination) => nomMap.set(nm.id, nm));
-        this.nominations = Array.from(nomMap.values());
+        this.nominations = [...items];
         setStored(STORAGE_KEYS.NOMINATIONS, this.nominations);
         break;
       }
       case 'behaviors': {
-        const syncedScopes = new Set(
-          items.map((b: PeerBehavioralRating) => `${b.periodId}_${b.classId}`)
-        );
-        const behMap = new Map<string, PeerBehavioralRating>();
-        generateSeedBehavioralRatings('period-2026-s1').forEach((b) => {
-          if (!syncedScopes.has(`${b.periodId}_${b.classId}`)) {
-            behMap.set(b.id, b);
-          }
-        });
-        items.forEach((b: PeerBehavioralRating) => behMap.set(b.id, b));
-        this.behaviors = Array.from(behMap.values());
+        this.behaviors = [...items];
         setStored(STORAGE_KEYS.BEHAVIORS, this.behaviors);
         break;
       }
+      case 'notifications': {
+        this.notifications = [...items].sort(
+          (a: NotificationItem, b: NotificationItem) =>
+            new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
+        );
+        setStored(STORAGE_KEYS.NOTIFICATIONS, this.notifications);
+        break;
+      }
+      case 'audit_logs': {
+        this.auditLogs = [...items]
+          .sort(
+            (a: AuditLog, b: AuditLog) =>
+              new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
+          )
+          .slice(0, 100);
+        setStored(STORAGE_KEYS.AUDIT_LOGS, this.auditLogs);
+        break;
+      }
     }
-    this.notifySubscribers(collectionName);
+    if (!options?.silent) {
+      this.notifySubscribers(collectionName);
+    }
   }
 
   // Periods
@@ -343,12 +375,7 @@ export class DataStorageService {
     this.activePeriodId = periodId;
     setStored(STORAGE_KEYS.ACTIVE_PERIOD_ID, periodId);
     setStored(STORAGE_KEYS.PERIODS, this.periods);
-    this.periods.forEach((p) => cloudHandler?.saveDocument('periods', p.id, p));
-    cloudHandler?.saveDocument('settings', 'global', {
-      id: 'global',
-      activePeriodId: this.activePeriodId,
-      activeClassId: this.activeClassId,
-    });
+    cloudHandler?.saveBatch('periods', this.periods).catch((e) => console.warn('Sync periods failed:', e));
     this.notifySubscribers('periods');
   }
 
@@ -360,7 +387,11 @@ export class DataStorageService {
     }
     this.periods.push(period);
     setStored(STORAGE_KEYS.PERIODS, this.periods);
-    cloudHandler?.saveDocument('periods', period.id, period);
+    if (period.status === 'aktif') {
+      cloudHandler?.saveBatch('periods', this.periods).catch((e) => console.warn('Sync periods failed:', e));
+    } else {
+      cloudHandler?.saveDocument('periods', period.id, period).catch((e) => console.warn('Sync period failed:', e));
+    }
     this.notifySubscribers('periods');
   }
 
@@ -373,11 +404,12 @@ export class DataStorageService {
         );
         this.activePeriodId = period.id;
         setStored(STORAGE_KEYS.ACTIVE_PERIOD_ID, period.id);
+        cloudHandler?.saveBatch('periods', this.periods).catch((e) => console.warn('Sync periods failed:', e));
       } else {
         this.periods[idx] = period;
+        cloudHandler?.saveDocument('periods', period.id, period).catch((e) => console.warn('Sync period failed:', e));
       }
       setStored(STORAGE_KEYS.PERIODS, this.periods);
-      cloudHandler?.saveDocument('periods', period.id, period);
       this.notifySubscribers('periods');
     }
   }
@@ -481,14 +513,16 @@ export class DataStorageService {
     this.setActiveClassId(newClass.id);
 
     // Sync counselor's assignedClassIds
+    let updatedCounselor: User | undefined;
     if (newClass.counselorId) {
       this.users = this.users.map((u) => {
         if (u.id === newClass.counselorId) {
           const current = u.assignedClassIds || [];
-          return {
+          updatedCounselor = {
             ...u,
             assignedClassIds: current.includes(newClass.id) ? current : [...current, newClass.id],
           };
+          return updatedCounselor;
         }
         return u;
       });
@@ -496,7 +530,10 @@ export class DataStorageService {
     }
 
     this.addAuditLog('Guru BK / Admin', 'guru_bk', 'Tambah Rombel Baru', `Menambahkan rombel ${newClass.name} di ${targetSchool?.name || 'Sekolah'}`);
-    cloudHandler?.saveDocument('classes', newClass.id, newClass);
+    cloudHandler?.saveDocument('classes', newClass.id, newClass).catch((e) => console.warn('Sync class failed:', e));
+    if (updatedCounselor) {
+      cloudHandler?.saveDocument('users', updatedCounselor.id, updatedCounselor).catch((e) => console.warn('Sync user failed:', e));
+    }
     this.notifySubscribers('classes');
     return newClass;
   }
@@ -504,7 +541,6 @@ export class DataStorageService {
   public updateClass(updated: SchoolClass): void {
     const idx = this.classes.findIndex((c) => c.id === updated.id);
     if (idx !== -1) {
-      // Find counselor name if only id provided
       if (updated.counselorId) {
         const found = this.users.find((u) => u.id === updated.counselorId);
         if (found) updated.counselorName = found.name;
@@ -513,26 +549,33 @@ export class DataStorageService {
       this.classes[idx] = updated;
       setStored(STORAGE_KEYS.CLASSES, this.classes);
 
-      // Sync counselor's assignedClassIds
+      const modifiedUsers: User[] = [];
       this.users = this.users.map((u) => {
         if (u.id === updated.counselorId) {
           const current = u.assignedClassIds || [];
-          return {
+          const nextUser = {
             ...u,
             assignedClassIds: current.includes(updated.id) ? current : [...current, updated.id],
           };
+          modifiedUsers.push(nextUser);
+          return nextUser;
         } else if (u.assignedClassIds?.includes(updated.id) && u.id !== updated.counselorId) {
-          return {
+          const nextUser = {
             ...u,
             assignedClassIds: u.assignedClassIds.filter((id) => id !== updated.id),
           };
+          modifiedUsers.push(nextUser);
+          return nextUser;
         }
         return u;
       });
       setStored(STORAGE_KEYS.USERS, this.users);
 
       this.addAuditLog('Admin / Guru BK', 'guru_bk', 'Perbarui Rombel', `Memperbarui rombel ${updated.name}`);
-      cloudHandler?.saveDocument('classes', updated.id, updated);
+      cloudHandler?.saveDocument('classes', updated.id, updated).catch((e) => console.warn('Sync class failed:', e));
+      if (modifiedUsers.length > 0) {
+        cloudHandler?.saveBatch('users', modifiedUsers).catch((e) => console.warn('Sync users failed:', e));
+      }
       this.notifySubscribers('classes');
     }
   }
@@ -542,18 +585,28 @@ export class DataStorageService {
     this.classes = this.classes.filter((c) => c.id !== classId);
     setStored(STORAGE_KEYS.CLASSES, this.classes);
 
-    // Clean up class reference from users
-    this.users = this.users.map((u) => ({
-      ...u,
-      assignedClassIds: u.assignedClassIds?.filter((id) => id !== classId) || [],
-    }));
+    const modifiedUsers: User[] = [];
+    this.users = this.users.map((u) => {
+      if (u.assignedClassIds?.includes(classId)) {
+        const nextUser = {
+          ...u,
+          assignedClassIds: u.assignedClassIds.filter((id) => id !== classId),
+        };
+        modifiedUsers.push(nextUser);
+        return nextUser;
+      }
+      return u;
+    });
     setStored(STORAGE_KEYS.USERS, this.users);
 
     if (this.activeClassId === classId && this.classes.length > 0) {
       this.setActiveClassId(this.classes[0].id);
     }
     this.addAuditLog('Admin / Guru BK', 'guru_bk', 'Hapus Rombel', `Menghapus rombel: ${cls?.name || classId}`);
-    cloudHandler?.deleteDocument('classes', classId);
+    cloudHandler?.deleteDocument('classes', classId).catch((e) => console.warn('Delete class failed:', e));
+    if (modifiedUsers.length > 0) {
+      cloudHandler?.saveBatch('users', modifiedUsers).catch((e) => console.warn('Sync users failed:', e));
+    }
     this.notifySubscribers('classes');
   }
 
@@ -564,11 +617,6 @@ export class DataStorageService {
   public setActiveClassId(id: string): void {
     this.activeClassId = id;
     setStored(STORAGE_KEYS.ACTIVE_CLASS_ID, id);
-    cloudHandler?.saveDocument('settings', 'global', {
-      id: 'global',
-      activePeriodId: this.activePeriodId,
-      activeClassId: this.activeClassId,
-    });
     this.notifySubscribers('settings');
   }
 
@@ -589,15 +637,13 @@ export class DataStorageService {
     return [...this.students];
   }
 
-  public setStudentsForClass(classId: string, newStudents: Student[]): void {
+  public async setStudentsForClass(classId: string, newStudents: Student[]): Promise<void> {
     this.students = this.students.filter((s) => s.classId !== classId).concat(newStudents);
     setStored(STORAGE_KEYS.STUDENTS, this.students);
-    if (cloudHandler?.replaceScopedBatch) {
-      cloudHandler.replaceScopedBatch('students', [{ field: 'classId', value: classId }], newStudents);
-    } else {
-      cloudHandler?.saveBatch('students', newStudents);
-    }
     this.notifySubscribers('students');
+    if (cloudHandler) {
+      await cloudHandler.replaceScopedBatch('students', [{ field: 'classId', value: classId }], newStudents);
+    }
   }
 
   // Nominations & Behaviors
@@ -613,13 +659,14 @@ export class DataStorageService {
     return filtered;
   }
 
-  public setNominations(periodId: string, classId: string, newNoms: SociometricNomination[]): void {
+  public async setNominations(periodId: string, classId: string, newNoms: SociometricNomination[]): Promise<void> {
     this.nominations = this.nominations
       .filter((n) => !(n.periodId === periodId && n.classId === classId))
       .concat(newNoms);
     setStored(STORAGE_KEYS.NOMINATIONS, this.nominations);
-    if (cloudHandler?.replaceScopedBatch) {
-      cloudHandler.replaceScopedBatch(
+    this.notifySubscribers('nominations');
+    if (cloudHandler) {
+      await cloudHandler.replaceScopedBatch(
         'nominations',
         [
           { field: 'periodId', value: periodId },
@@ -627,10 +674,7 @@ export class DataStorageService {
         ],
         newNoms
       );
-    } else {
-      cloudHandler?.saveBatch('nominations', newNoms);
     }
-    this.notifySubscribers('nominations');
   }
 
   public getBehaviors(periodId?: string, classId?: string): PeerBehavioralRating[] {
@@ -645,13 +689,14 @@ export class DataStorageService {
     return filtered;
   }
 
-  public setBehaviors(periodId: string, classId: string, newBehaviors: PeerBehavioralRating[]): void {
+  public async setBehaviors(periodId: string, classId: string, newBehaviors: PeerBehavioralRating[]): Promise<void> {
     this.behaviors = this.behaviors
       .filter((b) => !(b.periodId === periodId && b.classId === classId))
       .concat(newBehaviors);
     setStored(STORAGE_KEYS.BEHAVIORS, this.behaviors);
-    if (cloudHandler?.replaceScopedBatch) {
-      cloudHandler.replaceScopedBatch(
+    this.notifySubscribers('behaviors');
+    if (cloudHandler) {
+      await cloudHandler.replaceScopedBatch(
         'behaviors',
         [
           { field: 'periodId', value: periodId },
@@ -659,21 +704,117 @@ export class DataStorageService {
         ],
         newBehaviors
       );
-    } else {
-      cloudHandler?.saveBatch('behaviors', newBehaviors);
     }
-    this.notifySubscribers('behaviors');
+  }
+
+  /**
+   * Persist complete class import (optional new class, students, nominations, behaviors)
+   * atomically to local cache AND Cloud Firestore, returning explicit verification status.
+   */
+  public async saveClassImportAsync(params: {
+    classId: string;
+    periodId: string;
+    students: Student[];
+    nominations: SociometricNomination[];
+    behaviors: PeerBehavioralRating[];
+    createdClass?: SchoolClass;
+    notification?: Omit<NotificationItem, 'id' | 'timestamp'>;
+    auditLog?: { userName: string; userRole: any; action: string; details: string };
+  }): Promise<{ synced: boolean; error?: string }> {
+    const { classId, periodId, students, nominations, behaviors, createdClass, notification, auditLog } = params;
+
+    // 1. Update local state and localStorage immediately
+    this.students = this.students.filter((s) => s.classId !== classId).concat(students);
+    this.nominations = this.nominations
+      .filter((n) => !(n.periodId === periodId && n.classId === classId))
+      .concat(nominations);
+    this.behaviors = this.behaviors
+      .filter((b) => !(b.periodId === periodId && b.classId === classId))
+      .concat(behaviors);
+    this.activeClassId = classId;
+
+    setStored(STORAGE_KEYS.STUDENTS, this.students);
+    setStored(STORAGE_KEYS.NOMINATIONS, this.nominations);
+    setStored(STORAGE_KEYS.BEHAVIORS, this.behaviors);
+    setStored(STORAGE_KEYS.ACTIVE_CLASS_ID, classId);
+
+    if (notification) {
+      this.addNotification(notification);
+    }
+    if (auditLog) {
+      this.addAuditLog(auditLog.userName, auditLog.userRole, auditLog.action, auditLog.details);
+    }
+
+    this.notifySubscribers('students');
+
+    if (!cloudHandler) {
+      return {
+        synced: false,
+        error: 'Layanan Cloud Firestore belum terinisialisasi. Data tersimpan secara lokal.',
+      };
+    }
+
+    // 2. Commit & await all Cloud Firestore batch writes
+    try {
+      if (createdClass) {
+        await cloudHandler.saveDocument('classes', createdClass.id, createdClass);
+        const updatedCounselor = createdClass.counselorId
+          ? this.users.find((u) => u.id === createdClass.counselorId)
+          : undefined;
+        if (updatedCounselor) {
+          await cloudHandler.saveDocument('users', updatedCounselor.id, updatedCounselor);
+        }
+      }
+
+      await cloudHandler.replaceScopedBatch(
+        'students',
+        [{ field: 'classId', value: classId }],
+        students
+      );
+
+      await cloudHandler.replaceScopedBatch(
+        'nominations',
+        [
+          { field: 'periodId', value: periodId },
+          { field: 'classId', value: classId },
+        ],
+        nominations
+      );
+
+      await cloudHandler.replaceScopedBatch(
+        'behaviors',
+        [
+          { field: 'periodId', value: periodId },
+          { field: 'classId', value: classId },
+        ],
+        behaviors
+      );
+
+      return { synced: true };
+    } catch (error: any) {
+      return {
+        synced: false,
+        error: error?.message || 'Gagal menyimpan unggahan Excel ke Cloud Firestore.',
+      };
+    }
   }
 
   // Simulation Engine
   public simulateClassData(
-    schoolId: string,
-    classId: string,
+    schoolIdOrClassId: string,
+    classIdOrPeriodId: string,
     scenario: 'healthy' | 'polarized' | 'isolated_risk' | 'random' = 'healthy'
   ): { studentCount: number; nominationCount: number; behaviorCount: number } {
-    const targetClass = this.classes.find((c) => c.id === classId);
+    // Mendukung panggilan (schoolId, classId, scenario) maupun (classId, periodId, scenario)
+    const directClassMatch = this.classes.find((c) => c.id === schoolIdOrClassId);
+    const targetClass = directClassMatch || this.classes.find((c) => c.id === classIdOrPeriodId);
+    const classId = targetClass?.id || (directClassMatch ? schoolIdOrClassId : classIdOrPeriodId);
+    const schoolId = targetClass?.schoolId || (directClassMatch ? directClassMatch.schoolId : schoolIdOrClassId);
     const className = targetClass?.name || 'Kelas Terpilih';
-    const periodId = this.activePeriodId;
+    const periodId =
+      directClassMatch && this.periods.some((p) => p.id === classIdOrPeriodId)
+        ? classIdOrPeriodId
+        : this.activePeriodId;
 
     const namesBoys = [
       'Aditya Pratama', 'Bima Sakti', 'Candra Wijaya', 'Daffa Al-Faris', 
@@ -812,12 +953,32 @@ export class DataStorageService {
     setStored(STORAGE_KEYS.NOMINATIONS, this.nominations);
     setStored(STORAGE_KEYS.BEHAVIORS, this.behaviors);
 
+    cloudHandler?.replaceScopedBatch('students', [{ field: 'classId', value: classId }], simStudents).catch((e) => console.warn('Sync sim students failed:', e));
+    cloudHandler?.replaceScopedBatch(
+      'nominations',
+      [
+        { field: 'periodId', value: periodId },
+        { field: 'classId', value: classId },
+      ],
+      simNominations
+    ).catch((e) => console.warn('Sync sim nominations failed:', e));
+    cloudHandler?.replaceScopedBatch(
+      'behaviors',
+      [
+        { field: 'periodId', value: periodId },
+        { field: 'classId', value: classId },
+      ],
+      simBehaviors
+    ).catch((e) => console.warn('Sync sim behaviors failed:', e));
+
     this.addAuditLog(
       'Super-Admin Lab',
       'admin',
       'Eksekusi Simulasi Sosiometri',
       `Skenario '${scenario}' berhasil disimulasikan untuk ${className} (${simStudents.length} siswa, ${simNominations.length} nominasi)`
     );
+
+    this.notifySubscribers('students');
 
     return {
       studentCount: simStudents.length,
@@ -854,23 +1015,31 @@ export class DataStorageService {
     };
     this.users.push(fullUser);
     setStored(STORAGE_KEYS.USERS, this.users);
+    cloudHandler?.saveDocument('users', fullUser.id, fullUser).catch((e) => console.warn('Sync addUser failed:', e));
 
     // If guru_bk has assigned classes, update counselorId & counselorName on those classes
     if (fullUser.role === 'guru_bk' && fullUser.assignedClassIds && fullUser.assignedClassIds.length > 0) {
+      const updatedClasses: SchoolClass[] = [];
       this.classes = this.classes.map((cls) => {
         if (fullUser.assignedClassIds?.includes(cls.id)) {
-          return {
+          const nextCls = {
             ...cls,
             counselorId: fullUser.id,
             counselorName: fullUser.name,
           };
+          updatedClasses.push(nextCls);
+          return nextCls;
         }
         return cls;
       });
       setStored(STORAGE_KEYS.CLASSES, this.classes);
+      if (updatedClasses.length > 0) {
+        cloudHandler?.saveBatch('classes', updatedClasses).catch((e) => console.warn('Sync classes failed:', e));
+      }
     }
 
     this.addAuditLog('Super-Admin', 'admin', 'Tambah Pengguna Baru', `Menambahkan akun ${fullUser.name} (${fullUser.role}) untuk ${fullUser.schoolName}`);
+    this.notifySubscribers('users');
     return fullUser;
   }
 
@@ -884,30 +1053,40 @@ export class DataStorageService {
       };
       this.users[idx] = updatedUser;
       setStored(STORAGE_KEYS.USERS, this.users);
+      cloudHandler?.saveDocument('users', updatedUser.id, updatedUser).catch((e) => console.warn('Sync updateUser failed:', e));
 
       // If guru_bk, sync assigned classes
       if (updatedUser.role === 'guru_bk') {
         const assignedIds = updatedUser.assignedClassIds || [];
+        const updatedClasses: SchoolClass[] = [];
         this.classes = this.classes.map((cls) => {
           if (assignedIds.includes(cls.id)) {
-            return {
+            const nextCls = {
               ...cls,
               counselorId: updatedUser.id,
               counselorName: updatedUser.name,
             };
+            updatedClasses.push(nextCls);
+            return nextCls;
           } else if (cls.counselorId === updatedUser.id) {
-            return {
+            const nextCls = {
               ...cls,
               counselorId: undefined,
               counselorName: 'Guru BK Konselor',
             };
+            updatedClasses.push(nextCls);
+            return nextCls;
           }
           return cls;
         });
         setStored(STORAGE_KEYS.CLASSES, this.classes);
+        if (updatedClasses.length > 0) {
+          cloudHandler?.saveBatch('classes', updatedClasses).catch((e) => console.warn('Sync classes failed:', e));
+        }
       }
 
       this.addAuditLog('Super-Admin', 'admin', 'Perbarui Pengguna', `Memperbarui akun ${user.name} (${user.role})`);
+      this.notifySubscribers('users');
     }
   }
 
@@ -915,21 +1094,29 @@ export class DataStorageService {
     const target = this.users.find((u) => u.id === userId);
     this.users = this.users.filter((u) => u.id !== userId);
     setStored(STORAGE_KEYS.USERS, this.users);
+    cloudHandler?.deleteDocument('users', userId).catch((e) => console.warn('Sync deleteUser failed:', e));
 
     // Clean up counselorId in classes if this user was a counselor
+    const updatedClasses: SchoolClass[] = [];
     this.classes = this.classes.map((cls) => {
       if (cls.counselorId === userId) {
-        return {
+        const nextCls = {
           ...cls,
           counselorId: undefined,
           counselorName: 'Guru BK Konselor',
         };
+        updatedClasses.push(nextCls);
+        return nextCls;
       }
       return cls;
     });
     setStored(STORAGE_KEYS.CLASSES, this.classes);
+    if (updatedClasses.length > 0) {
+      cloudHandler?.saveBatch('classes', updatedClasses).catch((e) => console.warn('Sync classes failed:', e));
+    }
 
     this.addAuditLog('Super-Admin', 'admin', 'Hapus Pengguna', `Menghapus ID pengguna: ${target?.name || userId}`);
+    this.notifySubscribers('users');
   }
 
   // Notifications
@@ -943,11 +1130,13 @@ export class DataStorageService {
   public addNotification(notif: Omit<NotificationItem, 'id' | 'timestamp'>): void {
     const newItem: NotificationItem = {
       ...notif,
-      id: `notif-${Date.now()}`,
+      id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
       timestamp: new Date().toISOString(),
     };
     this.notifications.unshift(newItem);
     setStored(STORAGE_KEYS.NOTIFICATIONS, this.notifications);
+    cloudHandler?.saveDocument('notifications', newItem.id, newItem).catch((e) => console.warn('Sync notification failed:', e));
+    this.notifySubscribers('notifications');
   }
 
   public markNotificationAsRead(id: string): void {
@@ -955,12 +1144,18 @@ export class DataStorageService {
     if (notif) {
       notif.read = true;
       setStored(STORAGE_KEYS.NOTIFICATIONS, this.notifications);
+      cloudHandler?.saveDocument('notifications', notif.id, notif).catch((e) => console.warn('Sync markRead failed:', e));
+      this.notifySubscribers('notifications');
     }
   }
 
   public markAllNotificationsAsRead(): void {
     this.notifications.forEach((n) => (n.read = true));
     setStored(STORAGE_KEYS.NOTIFICATIONS, this.notifications);
+    if (this.notifications.length > 0) {
+      cloudHandler?.saveBatch('notifications', this.notifications).catch((e) => console.warn('Sync markAllRead failed:', e));
+    }
+    this.notifySubscribers('notifications');
   }
 
   // Audit Logs
@@ -970,7 +1165,7 @@ export class DataStorageService {
 
   public addAuditLog(userName: string, userRole: any, action: string, details: string): void {
     const newLog: AuditLog = {
-      id: `log-${Date.now()}`,
+      id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
       timestamp: new Date().toISOString(),
       userName,
       userRole,
@@ -980,6 +1175,7 @@ export class DataStorageService {
     this.auditLogs.unshift(newLog);
     if (this.auditLogs.length > 100) this.auditLogs.pop();
     setStored(STORAGE_KEYS.AUDIT_LOGS, this.auditLogs);
+    cloudHandler?.saveDocument('audit_logs', newLog.id, newLog).catch((e) => console.warn('Sync auditLog failed:', e));
   }
 
   public setUserPassword(userId: string, newPassword: string, adminName: string = 'Super-Admin'): boolean {
@@ -987,6 +1183,7 @@ export class DataStorageService {
     if (userIndex !== -1) {
       this.users[userIndex].password = newPassword;
       setStored(STORAGE_KEYS.USERS, this.users);
+      cloudHandler?.saveDocument('users', this.users[userIndex].id, this.users[userIndex]).catch((e) => console.warn('Sync password failed:', e));
       this.addAuditLog(
         adminName,
         'admin',
@@ -1001,6 +1198,7 @@ export class DataStorageService {
         severity: 'low',
         read: false,
       });
+      this.notifySubscribers('users');
       return true;
     }
     return false;
@@ -1021,7 +1219,7 @@ export class DataStorageService {
     proposedPassword?: string;
   }): PasswordResetRequest {
     const newRequest: PasswordResetRequest = {
-      id: `req-${Date.now()}`,
+      id: `req-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
       userId: req.userId,
       userName: req.userName,
       userEmail: req.userEmail,
@@ -1034,6 +1232,7 @@ export class DataStorageService {
     };
     this.passwordRequests.unshift(newRequest);
     setStored(STORAGE_KEYS.PASSWORD_REQUESTS, this.passwordRequests);
+    cloudHandler?.saveDocument('password_requests', newRequest.id, newRequest).catch((e) => console.warn('Sync password request failed:', e));
 
     this.addAuditLog(
       req.userName,
@@ -1051,6 +1250,7 @@ export class DataStorageService {
       read: false,
     });
 
+    this.notifySubscribers('password_requests');
     return newRequest;
   }
 
@@ -1064,14 +1264,13 @@ export class DataStorageService {
       return { success: false, message: 'Permintaan tidak ditemukan.' };
     }
 
-    // Determine new password
     const newPassword = customNewPassword || req.proposedPassword || 'bk123456';
 
-    // Find the user by ID or email
-    let user = this.users.find((u) => (req.userId && u.id === req.userId) || u.email.toLowerCase() === req.userEmail.toLowerCase());
+    const user = this.users.find((u) => (req.userId && u.id === req.userId) || u.email.toLowerCase() === req.userEmail.toLowerCase());
     if (user) {
       user.password = newPassword;
       setStored(STORAGE_KEYS.USERS, this.users);
+      cloudHandler?.saveDocument('users', user.id, user).catch((e) => console.warn('Sync approved user password failed:', e));
     }
 
     req.status = 'approved';
@@ -1079,6 +1278,7 @@ export class DataStorageService {
     req.resolvedBy = adminName;
     req.adminNote = `Disetujui. Kata sandi baru diterapkan: ${newPassword}`;
     setStored(STORAGE_KEYS.PASSWORD_REQUESTS, this.passwordRequests);
+    cloudHandler?.saveDocument('password_requests', req.id, req).catch((e) => console.warn('Sync approve request failed:', e));
 
     this.addAuditLog(
       adminName,
@@ -1096,6 +1296,7 @@ export class DataStorageService {
       read: false,
     });
 
+    this.notifySubscribers('password_requests');
     return {
       success: true,
       newPassword,
@@ -1112,6 +1313,7 @@ export class DataStorageService {
     req.resolvedBy = adminName;
     req.adminNote = reason || 'Permintaan ditolak oleh Administrator.';
     setStored(STORAGE_KEYS.PASSWORD_REQUESTS, this.passwordRequests);
+    cloudHandler?.saveDocument('password_requests', req.id, req).catch((e) => console.warn('Sync reject request failed:', e));
 
     this.addAuditLog(
       adminName,
@@ -1129,6 +1331,7 @@ export class DataStorageService {
       read: false,
     });
 
+    this.notifySubscribers('password_requests');
     return true;
   }
 
@@ -1160,6 +1363,7 @@ export class DataStorageService {
   public seedSimulationNotes(classId: string = 'cls-8a', periodId: string = 'period-2026-s1'): StudentQualitativeNote[] {
     const freshNotes = INITIAL_STUDENT_NOTES.map((n) => ({
       ...n,
+      id: `${n.id}-${classId}-${periodId}`,
       classId,
       periodId,
     }));
@@ -1168,6 +1372,14 @@ export class DataStorageService {
       ...this.studentNotes.filter((n) => !(n.classId === classId && n.periodId === periodId)),
     ];
     setStored(STORAGE_KEYS.STUDENT_NOTES, this.studentNotes);
+    cloudHandler?.replaceScopedBatch(
+      'student_notes',
+      [
+        { field: 'classId', value: classId },
+        { field: 'periodId', value: periodId },
+      ],
+      freshNotes
+    ).catch((e) => console.warn('Sync simulation notes failed:', e));
 
     if (INITIAL_CLASS_SUMMARIES['cls-8a_period-2026-s1']) {
       this.saveClassCounselorSummary(
@@ -1181,9 +1393,10 @@ export class DataStorageService {
       'Guru BK',
       'guru_bk',
       'Muat Data Simulasi Catatan Kualitatif',
-      `Memuat 12 catatan anekdotal & sintesis tematik percontohan untuk ${classId}`
+      `Memuat ${freshNotes.length} catatan anekdotal & sintesis tematik percontohan untuk ${classId}`
     );
 
+    this.notifySubscribers('student_notes');
     return this.getStudentNotes(undefined, classId, periodId);
   }
 
@@ -1284,8 +1497,13 @@ export class DataStorageService {
       setStored(STORAGE_KEYS.BEHAVIORS, []);
       setStored(STORAGE_KEYS.STUDENT_NOTES, []);
       this.addAuditLog('Super-Admin', 'admin', 'Reset Data Asesmen (Clean)', 'Data isian survei sosiometri & perilaku siswa dibersihkan.');
+      cloudHandler?.resetCloud?.('clean').catch((e) => console.warn('Sync clean reset failed:', e));
+      this.notifySubscribers('students');
     } else {
-      localStorage.clear();
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.clear();
+        localStorage.setItem('radar_sosial_seed_v2026_iainsas_v25', 'true');
+      }
       this.periods = INITIAL_PERIODS;
       this.schools = INITIAL_SCHOOLS;
       this.classes = INITIAL_CLASSES;
@@ -1299,8 +1517,33 @@ export class DataStorageService {
       this.classSummaries = INITIAL_CLASS_SUMMARIES;
       this.auditLogs = [];
       this.activePeriodId = 'period-2026-s1';
-      this.activeClassId = 'cls-8a';
-      this.addAuditLog('Super-Admin', 'admin', 'Reset Pabrik (Factory Default)', 'Sistem dipulihkan ke konfigurasi percontohan MTs Negeri 2 Bangka.');
+      this.activeClassId = 'cls-3b';
+      setStored(STORAGE_KEYS.PERIODS, this.periods);
+      setStored(STORAGE_KEYS.SCHOOLS, this.schools);
+      setStored(STORAGE_KEYS.CLASSES, this.classes);
+      setStored(STORAGE_KEYS.STUDENTS, this.students);
+      setStored(STORAGE_KEYS.NOMINATIONS, this.nominations);
+      setStored(STORAGE_KEYS.BEHAVIORS, this.behaviors);
+      setStored(STORAGE_KEYS.USERS, this.users);
+      setStored(STORAGE_KEYS.NOTIFICATIONS, this.notifications);
+      setStored(STORAGE_KEYS.PASSWORD_REQUESTS, this.passwordRequests);
+      setStored(STORAGE_KEYS.STUDENT_NOTES, this.studentNotes);
+      setStored(STORAGE_KEYS.CLASS_SUMMARIES, this.classSummaries);
+      this.addAuditLog('Super-Admin', 'admin', 'Reset Pabrik (Factory Default)', 'Sistem dipulihkan ke konfigurasi standar multi-tenant & benchmark Kelas 3B.');
+      cloudHandler?.resetCloud?.('factory', {
+        periods: this.periods,
+        schools: this.schools,
+        classes: this.classes,
+        students: this.students,
+        nominations: this.nominations,
+        behaviors: this.behaviors,
+        users: this.users,
+        notifications: this.notifications,
+        passwordRequests: this.passwordRequests,
+        studentNotes: this.studentNotes,
+        classSummaries: this.classSummaries,
+      }).catch((e) => console.warn('Sync factory reset failed:', e));
+      this.notifySubscribers('factory');
     }
   }
 }

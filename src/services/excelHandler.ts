@@ -1007,7 +1007,7 @@ export async function parseUploadedExcel(
       );
 
       behavioralRatings.push({
-        id: `br-up-${nominator.id}`,
+        id: `br-up-${periodId}-${classId}-${nominator.id}`,
         periodId,
         classId,
         studentId: nominator.id,

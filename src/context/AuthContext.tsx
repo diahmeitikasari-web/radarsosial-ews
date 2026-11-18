@@ -41,10 +41,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const users = dataStorage.getUsers();
       const fresh = users.find((u) => u.id === currentUser.id);
       if (fresh) {
-        setCurrentUser({ ...fresh });
+        if (fresh.status === 'inactive') {
+          setCurrentUser(null);
+        } else {
+          setCurrentUser({ ...fresh });
+        }
       }
     }
   };
+
+  useEffect(() => {
+    const unsub = dataStorage.subscribe((event) => {
+      if (!event || event === 'users' || event === 'classes' || event === 'cloud_pull' || event === 'factory') {
+        setCurrentUser((prev) => {
+          if (!prev) return prev;
+          const fresh = dataStorage.getUsers().find((u) => u.id === prev.id);
+          if (!fresh) return prev;
+          if (fresh.status === 'inactive') return null;
+          if (JSON.stringify(fresh) === JSON.stringify(prev)) return prev;
+          return { ...fresh };
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
 
   const login = async (email: string, pass: string): Promise<{ success: boolean; message: string }> => {
     const trimmedEmail = email.toLowerCase().trim();

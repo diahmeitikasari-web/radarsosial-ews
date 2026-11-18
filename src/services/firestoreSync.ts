@@ -2,7 +2,9 @@ import {
   db,
   collection,
   doc,
+  getDoc,
   getDocs,
+  getDocsFromServer,
   setDoc,
   deleteDoc,
   onSnapshot,
@@ -11,8 +13,29 @@ import {
   where,
   Unsubscribe,
   testConnection,
+  OperationType,
+  classifyFirestoreError,
+  handleFirestoreError,
+  QuerySnapshot,
+  DocumentData,
 } from './firebase';
 import { dataStorage, registerCloudHandler } from './dataStorage';
+import {
+  School,
+  SchoolClass,
+  Period,
+  Student,
+  SociometricNomination,
+  PeerBehavioralRating,
+  StudentQualitativeNote,
+  ClassCounselorSummary,
+  NotificationItem,
+  AuditLog,
+  User,
+  PasswordResetRequest,
+} from '../types';
+
+const CLOUD_SEED_VERSION = '2026_iainsas_v25';
 
 function stripUndefined<T>(value: T): T {
   if (Array.isArray(value)) {
@@ -29,18 +52,6 @@ function stripUndefined<T>(value: T): T {
   }
   return value;
 }
-import {
-  School,
-  SchoolClass,
-  Period,
-  Student,
-  SociometricNomination,
-  PeerBehavioralRating,
-  StudentQualitativeNote,
-  ClassCounselorSummary,
-  NotificationItem,
-  AuditLog,
-} from '../types';
 
 export type CloudSyncStatus = 'idle' | 'syncing' | 'connected' | 'offline' | 'error';
 
@@ -48,10 +59,14 @@ class FirestoreSyncService {
   private static instance: FirestoreSyncService;
   private unsubscribers: Unsubscribe[] = [];
   private isInitialized = false;
+  private initPromise: Promise<void> | null = null;
+  private onlineListenerRegistered = false;
   private syncStatus: CloudSyncStatus = 'idle';
   private lastSyncedTime: Date | null = null;
-  private statusListeners: Array<(status: CloudSyncStatus, lastSynced: Date | null) => void> = [];
-  private isApplyingRemoteUpdate = false;
+  private lastError: string | null = null;
+  private statusListeners: Array<
+    (status: CloudSyncStatus, lastSynced: Date | null, lastError: string | null) => void
+  > = [];
 
   private constructor() {}
 
@@ -62,297 +77,357 @@ class FirestoreSyncService {
     return FirestoreSyncService.instance;
   }
 
-  public onStatusChange(callback: (status: CloudSyncStatus, lastSynced: Date | null) => void): () => void {
+  public onStatusChange(
+    callback: (status: CloudSyncStatus, lastSynced: Date | null, lastError: string | null) => void
+  ): () => void {
     this.statusListeners.push(callback);
-    callback(this.syncStatus, this.lastSyncedTime);
+    callback(this.syncStatus, this.lastSyncedTime, this.lastError);
     return () => {
       const idx = this.statusListeners.indexOf(callback);
       if (idx !== -1) this.statusListeners.splice(idx, 1);
     };
   }
 
-  private setStatus(status: CloudSyncStatus) {
+  private setStatus(status: CloudSyncStatus, errorMsg: string | null = null) {
     this.syncStatus = status;
+    this.lastError = errorMsg;
     if (status === 'connected') {
       this.lastSyncedTime = new Date();
     }
     this.statusListeners.forEach((fn) => {
       try {
-        fn(this.syncStatus, this.lastSyncedTime);
+        fn(this.syncStatus, this.lastSyncedTime, this.lastError);
       } catch (e) {
         console.warn('Status listener error:', e);
       }
     });
   }
 
-  public getStatus(): { status: CloudSyncStatus; lastSynced: Date | null } {
-    return { status: this.syncStatus, lastSynced: this.lastSyncedTime };
+  public getStatus(): { status: CloudSyncStatus; lastSynced: Date | null; lastError: string | null } {
+    return { status: this.syncStatus, lastSynced: this.lastSyncedTime, lastError: this.lastError };
+  }
+
+  private registerReconnectOnOnline(): void {
+    if (typeof window === 'undefined' || this.onlineListenerRegistered) return;
+    this.onlineListenerRegistered = true;
+    window.addEventListener('online', () => {
+      if (!this.isInitialized || this.syncStatus === 'offline' || this.syncStatus === 'error') {
+        this.isInitialized = false;
+        this.initPromise = null;
+        this.initSync().catch(() => {});
+      }
+    });
   }
 
   /**
-   * Initialize two-way synchronization between Firestore and DataStorageService.
-   * If Firestore is empty initially, seeds it from local initial data.
-   * Listens for real-time changes so other browsers reflect updates immediately.
+   * Initialize real-time two-way synchronization between Cloud Firestore and DataStorageService.
+   * Ensures every browser/device shares one authoritative Cloud database.
    */
   public async initSync(): Promise<void> {
-    if (this.isInitialized) return;
-    this.isInitialized = true;
-    this.setStatus('syncing');
+    if (this.initPromise) return this.initPromise;
+    if (this.isInitialized && this.unsubscribers.length > 0) return;
 
-    try {
-      const isOnline = await testConnection();
-      if (!isOnline) {
-        this.setStatus('offline');
-        return;
-      }
+    this.registerReconnectOnOnline();
+    this.setStatus('syncing', null);
 
-      // Check if Firestore already has classes and schools
-      const [classesSnap, schoolsSnap] = await Promise.all([
-        getDocs(collection(db, 'classes')),
-        getDocs(collection(db, 'schools')),
-      ]);
-
-      if (classesSnap.empty) {
-        // First-time setup: Seed cloud database with initial local dataset
-        console.info('[FirestoreSync] Cloud database is empty. Performing initial seed to Firestore...');
-        await this.seedInitialDataToCloud();
-      } else {
-        // Cloud has existing data: pull down initial state to memory & cache
-        console.info('[FirestoreSync] Cloud database active. Fetching latest remote documents...');
-        await this.pullAllFromCloud();
-
-        // Check if any multi-tenant schools or classes (e.g. IAIN SAS & field schools) are missing in Firestore
-        const localSchools = dataStorage.getSchools();
-        const localClasses = dataStorage.getClasses();
-        const hasAllSchools = localSchools.every((ls) => schoolsSnap.docs.some((d) => d.id === ls.id));
-        const hasAllClasses = localClasses.every((lc) => classesSnap.docs.some((d) => d.id === lc.id));
-        if (!hasAllSchools || !hasAllClasses) {
-          console.info('[FirestoreSync] Cloud missing multi-tenant documents. Uploading updated tenant seed to Firestore...');
-          await this.seedMissingTenantsToCloud();
+    this.initPromise = (async () => {
+      try {
+        const isOnline = await testConnection();
+        if (!isOnline) {
+          this.setStatus('offline', 'Perangkat offline atau gagal menjangkau server Cloud Firestore.');
+          return;
         }
-      }
 
-      // Setup real-time Firestore listeners for multi-browser live updates
-      this.setupRealtimeListeners();
-      this.setStatus('connected');
-    } catch (error) {
-      console.warn('[FirestoreSync] Cloud synchronization fallback to local cache:', error);
-      this.setStatus('offline');
-    }
+        // Verify bootstrap state without overwriting existing class/student uploads
+        const [classesSnap, schoolsSnap, usersSnap, periodsSnap, seedVersionSnap] = await Promise.all([
+          getDocs(collection(db, 'classes')),
+          getDocs(collection(db, 'schools')),
+          getDocs(collection(db, 'users')),
+          getDocs(collection(db, 'periods')),
+          getDoc(doc(db, 'settings', 'seed_version')).catch(() => null),
+        ]);
+
+        if (classesSnap.empty && schoolsSnap.empty) {
+          console.info('[FirestoreSync] Cloud database kosong. Melakukan seed awal ke Firestore...');
+          await this.seedInitialDataToCloud();
+        } else {
+          // Ensure users directory exists in cloud if migrating from older rule version
+          if (usersSnap.empty) {
+            await this.saveBatch('users', dataStorage.getUsers());
+          }
+
+          const remoteSeedVersion = seedVersionSnap?.exists()
+            ? (seedVersionSnap.data() as any)?.version
+            : null;
+
+          if (remoteSeedVersion !== CLOUD_SEED_VERSION) {
+            await this.seedMissingMasterTenantsToCloud(schoolsSnap, classesSnap, periodsSnap, usersSnap);
+          }
+        }
+
+        // Attach realtime onSnapshot listeners across all collections and await initial load
+        await this.setupRealtimeListeners();
+        this.isInitialized = true;
+        this.setStatus('connected', null);
+      } catch (error) {
+        const classified = classifyFirestoreError(error);
+        console.warn('[FirestoreSync] Cloud synchronization notice:', classified.rawMessage);
+        this.setStatus(
+          classified.kind === 'offline' ? 'offline' : 'error',
+          classified.userMessage
+        );
+      } finally {
+        this.initPromise = null;
+      }
+    })();
+
+    return this.initPromise;
   }
 
   /**
-   * Pull all collections from Firestore into DataStorageService
+   * Manually pull all collections directly from Cloud Firestore server
    */
-  public async pullAllFromCloud(): Promise<void> {
+  public async pullAllFromCloud(): Promise<{
+    success: boolean;
+    error?: string;
+    syncedDocs?: number;
+  }> {
+    this.setStatus('syncing', null);
     try {
+      const fetchCol = async (colName: string) => {
+        try {
+          return await getDocsFromServer(collection(db, colName));
+        } catch {
+          return await getDocs(collection(db, colName));
+        }
+      };
+
       const [
         schoolsSnap,
         classesSnap,
         periodsSnap,
+        usersSnap,
+        passwordRequestsSnap,
         studentsSnap,
         notesSnap,
         summariesSnap,
         nomsSnap,
         behaviorsSnap,
+        notificationsSnap,
+        auditLogsSnap,
       ] = await Promise.all([
-        getDocs(collection(db, 'schools')),
-        getDocs(collection(db, 'classes')),
-        getDocs(collection(db, 'periods')),
-        getDocs(collection(db, 'students')),
-        getDocs(collection(db, 'student_notes')),
-        getDocs(collection(db, 'class_summaries')),
-        getDocs(collection(db, 'nominations')),
-        getDocs(collection(db, 'behaviors')),
+        fetchCol('schools'),
+        fetchCol('classes'),
+        fetchCol('periods'),
+        fetchCol('users'),
+        fetchCol('password_requests'),
+        fetchCol('students'),
+        fetchCol('student_notes'),
+        fetchCol('class_summaries'),
+        fetchCol('nominations'),
+        fetchCol('behaviors'),
+        fetchCol('notifications'),
+        fetchCol('audit_logs'),
       ]);
 
-      this.isApplyingRemoteUpdate = true;
-
       if (!schoolsSnap.empty) {
-        const schools = schoolsSnap.docs.map((d) => d.data() as School);
-        dataStorage.syncFromCloud('schools', schools);
+        dataStorage.syncFromCloud('schools', schoolsSnap.docs.map((d) => d.data() as School), { silent: true });
       }
       if (!classesSnap.empty) {
-        const classes = classesSnap.docs.map((d) => d.data() as SchoolClass);
-        dataStorage.syncFromCloud('classes', classes);
+        dataStorage.syncFromCloud('classes', classesSnap.docs.map((d) => d.data() as SchoolClass), { silent: true });
       }
       if (!periodsSnap.empty) {
-        const periods = periodsSnap.docs.map((d) => d.data() as Period);
-        dataStorage.syncFromCloud('periods', periods);
+        dataStorage.syncFromCloud('periods', periodsSnap.docs.map((d) => d.data() as Period), { silent: true });
       }
-      if (!studentsSnap.empty) {
-        const students = studentsSnap.docs.map((d) => d.data() as Student);
-        dataStorage.syncFromCloud('students', students);
-      }
-      if (!notesSnap.empty) {
-        const notes = notesSnap.docs.map((d) => d.data() as StudentQualitativeNote);
-        dataStorage.syncFromCloud('student_notes', notes);
-      }
-      if (!summariesSnap.empty) {
-        const summaries = summariesSnap.docs.map((d) => d.data() as ClassCounselorSummary);
-        dataStorage.syncFromCloud('class_summaries', summaries);
-      }
-      if (!nomsSnap.empty) {
-        const noms = nomsSnap.docs.map((d) => d.data() as SociometricNomination);
-        dataStorage.syncFromCloud('nominations', noms);
-      }
-      if (!behaviorsSnap.empty) {
-        const behaviors = behaviorsSnap.docs.map((d) => d.data() as PeerBehavioralRating);
-        dataStorage.syncFromCloud('behaviors', behaviors);
+      if (!usersSnap.empty) {
+        dataStorage.syncFromCloud('users', usersSnap.docs.map((d) => d.data() as User), { silent: true });
       }
 
-      this.isApplyingRemoteUpdate = false;
-      this.setStatus('connected');
+      dataStorage.syncFromCloud(
+        'password_requests',
+        passwordRequestsSnap.docs.map((d) => d.data() as PasswordResetRequest),
+        { silent: true }
+      );
+      dataStorage.syncFromCloud('students', studentsSnap.docs.map((d) => d.data() as Student), { silent: true });
+      dataStorage.syncFromCloud(
+        'student_notes',
+        notesSnap.docs.map((d) => d.data() as StudentQualitativeNote),
+        { silent: true }
+      );
+      dataStorage.syncFromCloud(
+        'class_summaries',
+        summariesSnap.docs.map((d) => d.data() as ClassCounselorSummary),
+        { silent: true }
+      );
+      dataStorage.syncFromCloud(
+        'nominations',
+        nomsSnap.docs.map((d) => d.data() as SociometricNomination),
+        { silent: true }
+      );
+      dataStorage.syncFromCloud(
+        'behaviors',
+        behaviorsSnap.docs.map((d) => d.data() as PeerBehavioralRating),
+        { silent: true }
+      );
+      dataStorage.syncFromCloud(
+        'notifications',
+        notificationsSnap.docs.map((d) => d.data() as NotificationItem),
+        { silent: true }
+      );
+      dataStorage.syncFromCloud(
+        'audit_logs',
+        auditLogsSnap.docs.map((d) => d.data() as AuditLog),
+        { silent: true }
+      );
+
+      dataStorage.notifySubscribers('cloud_pull');
+
+      // Re-attach listeners if user refreshed from an offline boot
+      if (!this.isInitialized || this.unsubscribers.length === 0) {
+        await this.setupRealtimeListeners();
+        this.isInitialized = true;
+      }
+
+      this.setStatus('connected', null);
+      const totalDocs =
+        schoolsSnap.size +
+        classesSnap.size +
+        studentsSnap.size +
+        nomsSnap.size +
+        behaviorsSnap.size +
+        notesSnap.size;
+      return { success: true, syncedDocs: totalDocs };
     } catch (e) {
-      this.isApplyingRemoteUpdate = false;
-      console.error('[FirestoreSync] Error pulling from cloud:', e);
+      const classified = classifyFirestoreError(e);
+      console.error('[FirestoreSync] Error pulling from cloud:', classified.rawMessage);
+      this.setStatus(
+        classified.kind === 'offline' ? 'offline' : 'error',
+        classified.userMessage
+      );
+      return { success: false, error: classified.userMessage };
     }
   }
 
   /**
-   * Seed all initial data from dataStorage into Firestore safely using batched chunks
+   * Seed initial master & benchmark data when Firestore DB is completely empty
    */
   private async seedInitialDataToCloud(): Promise<void> {
-    try {
-      const schools = dataStorage.getSchools();
-      await this.saveBatch('schools', schools);
+    await this.saveBatch('schools', dataStorage.getSchools());
+    await this.saveBatch('classes', dataStorage.getClasses());
+    await this.saveBatch('periods', dataStorage.getPeriods());
+    await this.saveBatch('users', dataStorage.getUsers());
+    await this.saveBatch('students', dataStorage.getAllStudents());
+    await this.saveBatch('student_notes', dataStorage.getStudentNotes());
+    await this.saveBatch('nominations', dataStorage.getNominations());
+    await this.saveBatch('behaviors', dataStorage.getBehaviors());
+    await this.saveBatch('notifications', dataStorage.getNotifications());
+    await this.saveBatch('password_requests', dataStorage.getPasswordRequests());
 
-      const classes = dataStorage.getClasses();
-      await this.saveBatch('classes', classes);
+    await this.saveDocument('settings', 'seed_version', {
+      id: 'seed_version',
+      version: CLOUD_SEED_VERSION,
+      lastUpdated: new Date().toISOString(),
+    });
+  }
 
-      const periods = dataStorage.getPeriods();
-      await this.saveBatch('periods', periods);
+  /**
+   * Non-destructive migration: add only missing master tenant documents
+   * without touching existing cloud students, nominations, or behaviors.
+   */
+  private async seedMissingMasterTenantsToCloud(
+    schoolsSnap: QuerySnapshot<DocumentData>,
+    classesSnap: QuerySnapshot<DocumentData>,
+    periodsSnap: QuerySnapshot<DocumentData>,
+    usersSnap: QuerySnapshot<DocumentData>
+  ): Promise<void> {
+    const existingSchoolIds = new Set(schoolsSnap.docs.map((d) => d.id));
+    const existingClassIds = new Set(classesSnap.docs.map((d) => d.id));
+    const existingPeriodIds = new Set(periodsSnap.docs.map((d) => d.id));
+    const existingUserIds = new Set(usersSnap.docs.map((d) => d.id));
 
-      const students = dataStorage.getAllStudents();
-      await this.saveBatch('students', students);
+    const missingSchools = dataStorage.getSchools().filter((s) => !existingSchoolIds.has(s.id));
+    const missingClasses = dataStorage.getClasses().filter((c) => !existingClassIds.has(c.id));
+    const missingPeriods = dataStorage.getPeriods().filter((p) => !existingPeriodIds.has(p.id));
+    const missingUsers = dataStorage.getUsers().filter((u) => !existingUserIds.has(u.id));
 
-      const notes = dataStorage.getStudentNotes();
-      await this.saveBatch('student_notes', notes);
+    if (missingSchools.length > 0) await this.saveBatch('schools', missingSchools);
+    if (missingClasses.length > 0) await this.saveBatch('classes', missingClasses);
+    if (missingPeriods.length > 0) await this.saveBatch('periods', missingPeriods);
+    if (missingUsers.length > 0) await this.saveBatch('users', missingUsers);
 
-      const noms = dataStorage.getNominations();
-      await this.saveBatch('nominations', noms);
+    await this.saveDocument('settings', 'seed_version', {
+      id: 'seed_version',
+      version: CLOUD_SEED_VERSION,
+      lastUpdated: new Date().toISOString(),
+    });
+  }
 
-      const behaviors = dataStorage.getBehaviors();
-      await this.saveBatch('behaviors', behaviors);
+  /**
+   * Attach real-time Firestore listeners so uploads/edits from any Guru BK
+   * appear immediately on all other connected browsers & devices.
+   */
+  private async setupRealtimeListeners(): Promise<void> {
+    this.unsubscribers.forEach((u) => u());
+    this.unsubscribers = [];
 
-      await this.saveDocument('settings', 'global', {
-        id: 'global',
-        activePeriodId: dataStorage.getActivePeriod()?.id || 'period-2026-s1',
-        activeClassId: dataStorage.getActiveClass()?.id || 'cls-8a',
-        lastUpdated: new Date().toISOString(),
+    const attachCollectionListener = <T>(
+      colName: string,
+      options?: { allowEmptyUpdate?: boolean }
+    ): Promise<void> => {
+      return new Promise((resolve) => {
+        let initialResolved = false;
+        const markResolved = () => {
+          if (!initialResolved) {
+            initialResolved = true;
+            resolve();
+          }
+        };
+
+        const unsub = onSnapshot(
+          collection(db, colName),
+          (snap) => {
+            // Avoid overwriting in-memory state from an empty offline cache before server responds
+            if (snap.empty && snap.metadata.fromCache) {
+              markResolved();
+              return;
+            }
+
+            const docs = snap.docs.map((d) => d.data() as T);
+            if (options?.allowEmptyUpdate || !snap.empty) {
+              dataStorage.syncFromCloud(colName, docs);
+            }
+            this.setStatus('connected', null);
+            markResolved();
+          },
+          (err) => {
+            const classified = classifyFirestoreError(err);
+            console.warn(`[FirestoreSync] Listener notice on ${colName}:`, classified.rawMessage);
+            this.setStatus(
+              classified.kind === 'offline' ? 'offline' : 'error',
+              classified.userMessage
+            );
+            markResolved();
+          }
+        );
+
+        this.unsubscribers.push(unsub);
       });
-      console.info('[FirestoreSync] Initial seed committed successfully to Firestore.');
-    } catch (e) {
-      console.error('[FirestoreSync] Error seeding initial data:', e);
-    }
-  }
-
-  /**
-   * Seed missing multi-tenant schools, classes, and students to cloud Firestore
-   */
-  private async seedMissingTenantsToCloud(): Promise<void> {
-    try {
-      const schools = dataStorage.getSchools();
-      await this.saveBatch('schools', schools);
-
-      const classes = dataStorage.getClasses();
-      await this.saveBatch('classes', classes);
-
-      const students = dataStorage.getAllStudents();
-      await this.saveBatch('students', students);
-
-      const noms = dataStorage.getNominations();
-      await this.saveBatch('nominations', noms);
-
-      const behaviors = dataStorage.getBehaviors();
-      await this.saveBatch('behaviors', behaviors);
-      console.info('[FirestoreSync] Missing tenant records committed successfully to Firestore.');
-    } catch (e) {
-      console.warn('[FirestoreSync] Error seeding missing tenants to cloud:', e);
-    }
-  }
-
-  /**
-   * Realtime listeners: whenever data changes in Firestore (e.g. from another browser),
-   * apply changes to local DataStorageService and notify UI components.
-   */
-  private setupRealtimeListeners(): void {
-    const handleListenerError = (collectionName: string) => (err: any) => {
-      console.warn(`[FirestoreSync] Realtime listener notice for ${collectionName}:`, err?.message || err);
-      this.setStatus('offline');
     };
 
-    // Classes listener
-    const unsubClasses = onSnapshot(collection(db, 'classes'), (snap) => {
-      if (this.isApplyingRemoteUpdate || snap.empty) return;
-      const classes = snap.docs.map((d) => d.data() as SchoolClass);
-      dataStorage.syncFromCloud('classes', classes);
-      this.setStatus('connected');
-    }, handleListenerError('classes'));
-    this.unsubscribers.push(unsubClasses);
-
-    // Students listener
-    const unsubStudents = onSnapshot(collection(db, 'students'), (snap) => {
-      if (this.isApplyingRemoteUpdate || snap.empty) return;
-      const students = snap.docs.map((d) => d.data() as Student);
-      dataStorage.syncFromCloud('students', students);
-      this.setStatus('connected');
-    }, handleListenerError('students'));
-    this.unsubscribers.push(unsubStudents);
-
-    // Qualitative Notes listener
-    const unsubNotes = onSnapshot(collection(db, 'student_notes'), (snap) => {
-      if (this.isApplyingRemoteUpdate || snap.empty) return;
-      const notes = snap.docs.map((d) => d.data() as StudentQualitativeNote);
-      dataStorage.syncFromCloud('student_notes', notes);
-      this.setStatus('connected');
-    }, handleListenerError('student_notes'));
-    this.unsubscribers.push(unsubNotes);
-
-    // Class Summaries listener
-    const unsubSummaries = onSnapshot(collection(db, 'class_summaries'), (snap) => {
-      if (this.isApplyingRemoteUpdate || snap.empty) return;
-      const summaries = snap.docs.map((d) => d.data() as ClassCounselorSummary);
-      dataStorage.syncFromCloud('class_summaries', summaries);
-      this.setStatus('connected');
-    }, handleListenerError('class_summaries'));
-    this.unsubscribers.push(unsubSummaries);
-
-    // Schools listener
-    const unsubSchools = onSnapshot(collection(db, 'schools'), (snap) => {
-      if (this.isApplyingRemoteUpdate || snap.empty) return;
-      const schools = snap.docs.map((d) => d.data() as School);
-      dataStorage.syncFromCloud('schools', schools);
-      this.setStatus('connected');
-    }, handleListenerError('schools'));
-    this.unsubscribers.push(unsubSchools);
-
-    // Periods listener
-    const unsubPeriods = onSnapshot(collection(db, 'periods'), (snap) => {
-      if (this.isApplyingRemoteUpdate || snap.empty) return;
-      const periods = snap.docs.map((d) => d.data() as Period);
-      dataStorage.syncFromCloud('periods', periods);
-      this.setStatus('connected');
-    }, handleListenerError('periods'));
-    this.unsubscribers.push(unsubPeriods);
-
-    // Nominations listener
-    const unsubNoms = onSnapshot(collection(db, 'nominations'), (snap) => {
-      if (this.isApplyingRemoteUpdate || snap.empty) return;
-      const noms = snap.docs.map((d) => d.data() as SociometricNomination);
-      dataStorage.syncFromCloud('nominations', noms);
-      this.setStatus('connected');
-    }, handleListenerError('nominations'));
-    this.unsubscribers.push(unsubNoms);
-
-    // Behaviors listener
-    const unsubBehaviors = onSnapshot(collection(db, 'behaviors'), (snap) => {
-      if (this.isApplyingRemoteUpdate || snap.empty) return;
-      const behaviors = snap.docs.map((d) => d.data() as PeerBehavioralRating);
-      dataStorage.syncFromCloud('behaviors', behaviors);
-      this.setStatus('connected');
-    }, handleListenerError('behaviors'));
-    this.unsubscribers.push(unsubBehaviors);
+    await Promise.all([
+      attachCollectionListener<School>('schools', { allowEmptyUpdate: false }),
+      attachCollectionListener<SchoolClass>('classes', { allowEmptyUpdate: false }),
+      attachCollectionListener<Period>('periods', { allowEmptyUpdate: false }),
+      attachCollectionListener<User>('users', { allowEmptyUpdate: false }),
+      attachCollectionListener<PasswordResetRequest>('password_requests', { allowEmptyUpdate: true }),
+      attachCollectionListener<Student>('students', { allowEmptyUpdate: true }),
+      attachCollectionListener<StudentQualitativeNote>('student_notes', { allowEmptyUpdate: true }),
+      attachCollectionListener<ClassCounselorSummary>('class_summaries', { allowEmptyUpdate: true }),
+      attachCollectionListener<SociometricNomination>('nominations', { allowEmptyUpdate: true }),
+      attachCollectionListener<PeerBehavioralRating>('behaviors', { allowEmptyUpdate: true }),
+      attachCollectionListener<NotificationItem>('notifications', { allowEmptyUpdate: true }),
+      attachCollectionListener<AuditLog>('audit_logs', { allowEmptyUpdate: true }),
+    ]);
   }
 
   /**
@@ -361,33 +436,37 @@ class FirestoreSyncService {
   public async saveDocument(collectionName: string, docId: string, data: any): Promise<void> {
     try {
       await setDoc(doc(db, collectionName, docId), stripUndefined(data), { merge: true });
-      this.setStatus('connected');
+      this.setStatus('connected', null);
     } catch (e) {
-      console.warn(`[FirestoreSync] Failed to save document ${collectionName}/${docId}:`, e);
-      this.setStatus('offline');
+      const classified = classifyFirestoreError(e);
+      this.setStatus(classified.kind === 'offline' ? 'offline' : 'error', classified.userMessage);
+      handleFirestoreError(e, OperationType.WRITE, `${collectionName}/${docId}`);
     }
   }
 
   /**
-   * Delete a document from Firestore
+   * Delete a single document from Firestore
    */
   public async deleteDocument(collectionName: string, docId: string): Promise<void> {
     try {
       await deleteDoc(doc(db, collectionName, docId));
-      this.setStatus('connected');
+      this.setStatus('connected', null);
     } catch (e) {
-      console.warn(`[FirestoreSync] Failed to delete document ${collectionName}/${docId}:`, e);
-      this.setStatus('offline');
+      const classified = classifyFirestoreError(e);
+      this.setStatus(classified.kind === 'offline' ? 'offline' : 'error', classified.userMessage);
+      handleFirestoreError(e, OperationType.DELETE, `${collectionName}/${docId}`);
     }
   }
 
   /**
-   * Save a batch of documents (e.g. students imported via Excel)
+   * Save a batch of documents in chunks of 450
    */
-  public async saveBatch(collectionName: string, items: Array<{ id: string; [k: string]: any }>): Promise<void> {
+  public async saveBatch(
+    collectionName: string,
+    items: Array<{ id: string; [k: string]: any }>
+  ): Promise<void> {
     if (!items || items.length === 0) return;
     try {
-      // Chunk into 450 items max per batch (Firestore batch limit is 500)
       const chunkSize = 450;
       for (let i = 0; i < items.length; i += chunkSize) {
         const chunk = items.slice(i, i + chunkSize);
@@ -397,15 +476,17 @@ class FirestoreSyncService {
         });
         await batch.commit();
       }
-      this.setStatus('connected');
+      this.setStatus('connected', null);
     } catch (e) {
-      console.warn(`[FirestoreSync] Failed batch save to ${collectionName}:`, e);
-      this.setStatus('offline');
+      const classified = classifyFirestoreError(e);
+      this.setStatus(classified.kind === 'offline' ? 'offline' : 'error', classified.userMessage);
+      handleFirestoreError(e, OperationType.WRITE, collectionName);
     }
   }
 
   /**
-   * Atomically clean overwrite a scoped slice (e.g. classId or periodId+classId) in Firestore
+   * Atomically clean overwrite a scoped slice (e.g. classId or periodId+classId) in Firestore.
+   * Uses a single-field Firestore query + JS filter to avoid composite index dependency.
    */
   public async replaceScopedBatch(
     collectionName: string,
@@ -413,16 +494,22 @@ class FirestoreSyncService {
     items: Array<{ id: string; [k: string]: any }>
   ): Promise<void> {
     try {
-      const constraints = filters.map((f) => where(f.field, '==', f.value));
-      const existingSnap = await getDocs(query(collection(db, collectionName), ...constraints));
-      const keepIds = new Set((items || []).map((it) => it.id));
+      const primaryFilter = filters.find((f) => f.field === 'classId') || filters[0];
+      const existingSnap = primaryFilter
+        ? await getDocs(query(collection(db, collectionName), where(primaryFilter.field, '==', primaryFilter.value)))
+        : await getDocs(collection(db, collectionName));
 
+      const keepIds = new Set((items || []).map((it) => it.id));
       const ops: Array<{ type: 'delete' | 'set'; id: string; data?: any }> = [];
+
       existingSnap.docs.forEach((d) => {
-        if (!keepIds.has(d.id)) {
+        const data = d.data() || {};
+        const matchesScope = filters.every((f) => data[f.field] === f.value);
+        if (matchesScope && !keepIds.has(d.id)) {
           ops.push({ type: 'delete', id: d.id });
         }
       });
+
       (items || []).forEach((item) => {
         ops.push({ type: 'set', id: item.id, data: stripUndefined(item) });
       });
@@ -441,10 +528,71 @@ class FirestoreSyncService {
         });
         await batch.commit();
       }
-      this.setStatus('connected');
+      this.setStatus('connected', null);
     } catch (e) {
-      console.warn(`[FirestoreSync] Failed scoped replacement on ${collectionName}:`, e);
-      this.setStatus('offline');
+      const classified = classifyFirestoreError(e);
+      this.setStatus(classified.kind === 'offline' ? 'offline' : 'error', classified.userMessage);
+      handleFirestoreError(e, OperationType.WRITE, collectionName);
+    }
+  }
+
+  /**
+   * Clear or factory-restore Firestore collections when Admin executes resetToDefault()
+   */
+  public async resetCloudDatabase(
+    mode: 'factory' | 'clean',
+    factoryPayload?: Record<string, any>
+  ): Promise<void> {
+    const deleteCollectionDocs = async (colName: string) => {
+      const snap = await getDocs(collection(db, colName));
+      const docs = snap.docs;
+      const chunkSize = 450;
+      for (let i = 0; i < docs.length; i += chunkSize) {
+        const batch = writeBatch(db);
+        docs.slice(i, i + chunkSize).forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+      }
+    };
+
+    try {
+      await Promise.all([
+        deleteCollectionDocs('students'),
+        deleteCollectionDocs('nominations'),
+        deleteCollectionDocs('behaviors'),
+        deleteCollectionDocs('student_notes'),
+      ]);
+
+      if (mode === 'factory' && factoryPayload) {
+        await Promise.all([
+          deleteCollectionDocs('class_summaries'),
+          deleteCollectionDocs('notifications'),
+          deleteCollectionDocs('password_requests'),
+          deleteCollectionDocs('audit_logs'),
+        ]);
+        await this.saveBatch('schools', factoryPayload.schools || []);
+        await this.saveBatch('classes', factoryPayload.classes || []);
+        await this.saveBatch('periods', factoryPayload.periods || []);
+        await this.saveBatch('users', factoryPayload.users || []);
+        await this.saveBatch('students', factoryPayload.students || []);
+        await this.saveBatch('nominations', factoryPayload.nominations || []);
+        await this.saveBatch('behaviors', factoryPayload.behaviors || []);
+        await this.saveBatch('student_notes', factoryPayload.studentNotes || []);
+        await this.saveBatch('notifications', factoryPayload.notifications || []);
+        await this.saveBatch('password_requests', factoryPayload.passwordRequests || []);
+
+        const summariesObj = factoryPayload.classSummaries || {};
+        const summaryItems = Object.entries(summariesObj).map(([k, v]: [string, any]) => ({
+          id: k,
+          ...v,
+        }));
+        await this.saveBatch('class_summaries', summaryItems);
+      }
+
+      this.setStatus('connected', null);
+    } catch (e) {
+      const classified = classifyFirestoreError(e);
+      this.setStatus(classified.kind === 'offline' ? 'offline' : 'error', classified.userMessage);
+      handleFirestoreError(e, OperationType.WRITE, 'resetCloudDatabase');
     }
   }
 
@@ -452,6 +600,7 @@ class FirestoreSyncService {
     this.unsubscribers.forEach((unsub) => unsub());
     this.unsubscribers = [];
     this.isInitialized = false;
+    this.initPromise = null;
   }
 }
 
@@ -463,6 +612,7 @@ registerCloudHandler({
   deleteDocument: (col, id) => firestoreSync.deleteDocument(col, id),
   saveBatch: (col, items) => firestoreSync.saveBatch(col, items),
   replaceScopedBatch: (col, filters, items) => firestoreSync.replaceScopedBatch(col, filters, items),
+  resetCloud: (mode, payload) => firestoreSync.resetCloudDatabase(mode, payload),
 });
 
 // Auto-initialize real-time cloud sync

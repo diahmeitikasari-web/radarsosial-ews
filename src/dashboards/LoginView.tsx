@@ -31,6 +31,16 @@ export const LoginView: React.FC = () => {
   // Active Tab on the Landing Page: 'home' | 'login' | 'guide'
   const [activeTab, setActiveTab] = useState<'home' | 'login' | 'guide'>('home');
   const [isQuestionnaireOpen, setIsQuestionnaireOpen] = useState(false);
+  const [, setSyncTick] = useState(0);
+
+  React.useEffect(() => {
+    const unsub = dataStorage.subscribe((event) => {
+      if (!event || event === 'users' || event === 'cloud_pull' || event === 'factory') {
+        setSyncTick((t) => t + 1);
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Login form state
   const [email, setEmail] = useState('gurubk@radarsosial.id');

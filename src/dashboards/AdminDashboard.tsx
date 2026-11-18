@@ -66,6 +66,7 @@ interface AdminDashboardProps {
   schools: School[];
   classes: SchoolClass[];
   periods: Period[];
+  syncVersion?: number;
   onRefreshData: () => void;
 }
 
@@ -74,6 +75,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   schools,
   classes,
   periods,
+  syncVersion = 0,
   onRefreshData,
 }) => {
   const [activeTab, setActiveTab] = useState<
@@ -251,6 +253,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const auditLogs = dataStorage.getAuditLogs();
 
+  React.useEffect(() => {
+    setPasswordRequests(dataStorage.getPasswordRequests());
+  }, [syncVersion]);
+
   // Load students and data according to School & Class Filter
   const allStudents = useMemo(() => {
     let studentList: Student[] = [];
@@ -264,7 +270,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       studentList = dataStorage.getStudents(selectedClassId);
     }
     return studentList;
-  }, [selectedSchoolId, selectedClassId]);
+  }, [selectedSchoolId, selectedClassId, syncVersion]);
 
   const studentIdSet = useMemo(() => new Set(allStudents.map((s) => s.id)), [allStudents]);
 
@@ -277,7 +283,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return rawNoms.filter((n) => studentIdSet.has(n.studentId) || studentIdSet.has(n.targetId));
     }
     return rawNoms;
-  }, [selectedPeriodId, selectedClassId, selectedSchoolId, studentIdSet]);
+  }, [selectedPeriodId, selectedClassId, selectedSchoolId, studentIdSet, syncVersion]);
 
   const allBehaviors = useMemo(() => {
     const rawBehs = dataStorage.getBehaviors(
@@ -288,7 +294,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return rawBehs.filter((b) => studentIdSet.has(b.studentId));
     }
     return rawBehs;
-  }, [selectedPeriodId, selectedClassId, selectedSchoolId, studentIdSet]);
+  }, [selectedPeriodId, selectedClassId, selectedSchoolId, studentIdSet, syncVersion]);
 
   // Calculate SNA and Behavioral Metrics
   const calculatedMetrics = useMemo(() => {
